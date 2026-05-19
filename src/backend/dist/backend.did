@@ -1,0 +1,136 @@
+type _ImmutableObjectStorageRefillResult = 
+ record {
+   success: opt bool;
+   topped_up_amount: opt nat;
+ };
+type _ImmutableObjectStorageRefillInformation = record {
+                                                  proposed_top_up_amount:
+                                                   opt nat;};
+type _ImmutableObjectStorageCreateCertificateResult = 
+ record {
+   blob_hash: text;
+   method: text;
+ };
+type UserRole = 
+ variant {
+   admin;
+   guest;
+   user;
+ };
+type UserApprovalInfo = 
+ record {
+   "principal": principal;
+   status: ApprovalStatus;
+ };
+type QuizResult = 
+ record {
+   description: text;
+   resultType: text;
+ };
+type QuizQuestion = 
+ record {
+   id: nat;
+   options: vec QuizOption;
+   "text": text;
+ };
+type QuizOption = 
+ record {
+   id: nat;
+   "text": text;
+ };
+type GuestQuizResult = 
+ record {
+   applicationId: nat;
+   resultType: text;
+   takenAt: int;
+ };
+type ExternalBlob = blob;
+type Confession = 
+ record {
+   createdAt: int;
+   id: nat;
+   "text": text;
+ };
+type ApprovalStatus = 
+ variant {
+   approved;
+   pending;
+   rejected;
+ };
+type ApplicationView = 
+ record {
+   email: text;
+   id: nat;
+   instagramHandle: text;
+   inviteCode: text;
+   name: text;
+   phone: text;
+   photos: vec ExternalBlob;
+   plusOne: bool;
+   qrToken: opt text;
+   status: ApplicationStatus;
+   submittedAt: int;
+ };
+type ApplicationStatus = 
+ variant {
+   approved;
+   pending;
+   rejected;
+ };
+type ApplicationInput = 
+ record {
+   email: text;
+   instagramHandle: text;
+   inviteCode: text;
+   name: text;
+   phone: text;
+   photos: vec ExternalBlob;
+   plusOne: bool;
+ };
+type ApplicationId = nat;
+type AdminStats = 
+ record {
+   approved: nat;
+   pending: nat;
+   rejected: nat;
+   total: nat;
+ };
+service : {
+  _immutableObjectStorageBlobsAreLive: (hashes: vec blob) -> (vec bool) query;
+  _immutableObjectStorageBlobsToDelete: () -> (vec blob) query;
+  _immutableObjectStorageConfirmBlobDeletion: (blobs: vec blob) -> ();
+  _immutableObjectStorageCreateCertificate: (blobHash: text) ->
+   (_ImmutableObjectStorageCreateCertificateResult);
+  _immutableObjectStorageRefillCashier: (refillInformation:
+   opt _ImmutableObjectStorageRefillInformation) ->
+   (_ImmutableObjectStorageRefillResult);
+  _immutableObjectStorageUpdateGatewayPrincipals: () -> ();
+  _initializeAccessControl: () -> ();
+  addInviteCode: (code: text) -> ();
+  approveApplication: (id: ApplicationId) -> ();
+  assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  getAdminStats: () -> (AdminStats) query;
+  getApplicationStatus: (id: ApplicationId) ->
+   (opt record {
+          ApplicationStatus;
+          opt text;
+        }) query;
+  getApprovedPhotos: () -> (vec ExternalBlob) query;
+  getCallerUserRole: () -> (UserRole) query;
+  getMyQuizResult: (applicationId: ApplicationId) ->
+   (opt GuestQuizResult) query;
+  getQuizQuestions: () -> (vec QuizQuestion) query;
+  getQuizResultTypes: () -> (vec QuizResult) query;
+  isCallerAdmin: () -> (bool) query;
+  isCallerApproved: () -> (bool) query;
+  listApplications: () -> (vec ApplicationView) query;
+  listApprovals: () -> (vec UserApprovalInfo) query;
+  listConfessions: () -> (vec Confession) query;
+  listInviteCodes: () -> (vec text) query;
+  rejectApplication: (id: ApplicationId) -> ();
+  requestApproval: () -> ();
+  setApproval: (user: principal, status: ApprovalStatus) -> ();
+  submitApplication: (input: ApplicationInput) -> (ApplicationId);
+  submitConfession: ("text": text) -> (nat);
+  submitQuizResult: (applicationId: ApplicationId, resultType: text) -> ();
+}

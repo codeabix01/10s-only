@@ -1,0 +1,28 @@
+{
+  "overview": "An exclusive, visually stunning mobile-first party website for the '10s Only' event — a dark cinematic nightlife experience with Y2K nostalgia, neon aesthetics, and premium underground rave vibes. Features a FOMO-inducing hero, guest application system with photo uploads, admin approval dashboard, QR code tickets, and a locked interactive portal for approved guests including a personality quiz, confessions wall, and polaroid photo gallery.",
+  "features": [
+    "Fullscreen cinematic hero with live countdown to May 23rd 2026",
+    "Background music toggle (off by default)",
+    "Guest application form with invite code validation and photo upload (3-5 photos)",
+    "Admin dashboard with approve/reject workflow and QR code generation",
+    "Approved guest portal with QR ticket display",
+    "Party personality quiz (locked to approved guests)",
+    "Anonymous confessions wall (locked to approved guests)",
+    "Polaroid-style photo gallery (locked to approved guests)",
+    "Dark Y2K neon aesthetic with glassmorphism, grain texture, and smooth animations",
+    "Mobile-first responsive design"
+  ],
+  "category": "entertainment-events",
+  "tags": [
+    "party",
+    "event",
+    "exclusive",
+    "y2k",
+    "nightlife",
+    "rsvp",
+    "gallery",
+    "neon",
+    "mobile-first"
+  ],
+  "last_updated": "2026-05-19T10:36:57.919Z"
+}

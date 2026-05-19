@@ -1,0 +1,79 @@
+// Version: 1.0.0
+type ApplicationId__702901380 = Nat;
+type ApplicationStatus__163954182 = {#approved; #pending; #rejected};
+type Application__670275444 =
+  {
+    email : Text;
+    id : Nat;
+    instagramHandle : Text;
+    inviteCode : Text;
+    name : Text;
+    phone : Text;
+    photos : [ExternalBlob__671167343];
+    plusOne : Bool;
+    qrToken : ?Text;
+    status : ApplicationStatus__163954182;
+    submittedAt : Int
+  };
+type ApprovalStatus__944573617 = {#approved; #pending; #rejected};
+type Confession__473162931 = {createdAt : Int; id : Nat; text : Text};
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type ExternalBlob__671167343 = Blob;
+type GuestQuizResult__718206713 =
+  {applicationId : Nat; resultType : Text; takenAt : Int};
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type Map__158565046<K, V> = Map__297112838<K, V>;
+type Map__297112838<K, V> =
+  {var root : Node__46230540<K, V>; var size : Nat__490723111};
+type Map__605269027<K, V> = Map__158565046<K, V>;
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type QuizOption__313865416 = {id : Nat; text : Text};
+type QuizQuestion__692474474 =
+  {id : Nat; options : [QuizOption__313865416]; text : Text};
+type UserRole__1073662873 = {#admin; #guest; #user};
+actor {
+  stable accessControlState :
+    {
+      var adminAssigned : Bool;
+      userRoles : Map__605269027<Principal, UserRole__1073662873>
+    };
+  stable appState : {var nextAppId : Nat};
+  stable applications :
+    {
+      var root :
+        Node__46230540<ApplicationId__702901380, Application__670275444>;
+      var size : Nat__490723111
+    };
+  stable approvalState :
+    {
+      var approvalStatus :
+        Map__605269027<Principal, ApprovalStatus__944573617>
+    };
+  stable confessionState : {var nextConfessionId : Nat};
+  stable confessions :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?Confession__473162931]];
+      var elementIndex : Nat__490723111
+    };
+  stable inviteCodes :
+    {var root : Node__46230540<Text, Bool>; var size : Nat__490723111};
+  stable quizQuestions :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?QuizQuestion__692474474]];
+      var elementIndex : Nat__490723111
+    };
+  stable quizResults :
+    {
+      var root :
+        Node__46230540<ApplicationId__702901380, GuestQuizResult__718206713>;
+      var size : Nat__490723111
+    }
+};
