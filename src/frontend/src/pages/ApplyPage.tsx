@@ -1,12 +1,10 @@
 import { ExternalBlob } from "@/backend";
 import { NeonCard } from "@/components/NeonCard";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSubmitApplication } from "@/hooks/useBackend";
 import { cn } from "@/lib/utils";
-import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
   ArrowRight,
@@ -39,8 +37,6 @@ interface Step1Fields {
 
 interface Step2Fields {
   inviteCode: string;
-  plusOne: boolean;
-  partnerName: string;
 }
 
 interface FieldErrors {
@@ -301,10 +297,10 @@ function ExclusivityQuote({ text }: { text: string }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function ApplyPage() {
-  const navigate = useNavigate();
   const submitMutation = useSubmitApplication();
 
   const [step, setStep] = useState(0);
+  const [successId, setSuccessId] = useState<bigint | null>(null);
   const [step1, setStep1] = useState<Step1Fields>({
     name: "",
     instagram: "",
@@ -313,8 +309,6 @@ export default function ApplyPage() {
   });
   const [step2, setStep2] = useState<Step2Fields>({
     inviteCode: "",
-    plusOne: false,
-    partnerName: "",
   });
   const [photos, setPhotos] = useState<PhotoEntry[]>([]);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -330,11 +324,7 @@ export default function ApplyPage() {
   }
 
   function validateStep2(): FieldErrors {
-    const e: FieldErrors = {};
-    if (!step2.inviteCode.trim()) e.inviteCode = "Invite code is required";
-    if (step2.plusOne && !step2.partnerName.trim())
-      e.partnerName = "Partner\u2019s name is required";
-    return e;
+    return {};
   }
 
   const handleAddPhotos = useCallback(
@@ -421,7 +411,7 @@ export default function ApplyPage() {
   async function handleSubmit() {
     const readyPhotos = photos.filter((p) => p.done && p.blob);
     if (readyPhotos.length < 3) {
-      toast.error("Upload at least 3 photos to proceed");
+      toast.error("Please upload at least 3 photos to continue");
       return;
     }
     if (photos.some((p) => p.uploading)) {
@@ -438,10 +428,10 @@ export default function ApplyPage() {
         email: step1.email.trim(),
         phone: step1.phone.trim(),
         inviteCode: step2.inviteCode.trim(),
-        plusOne: step2.plusOne,
+        plusOne: false,
         photos: blobs,
       });
-      navigate({ to: "/status", search: { id: id.toString() } });
+      setSuccessId(id);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Submission failed";
       if (msg.toLowerCase().includes("invite")) {
@@ -456,6 +446,118 @@ export default function ApplyPage() {
   const readyCount = photos.filter((p) => p.done).length;
   const uploadingCount = photos.filter((p) => p.uploading).length;
 
+  if (successId !== null) {
+    return (
+      <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center px-4">
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
+          <div className="absolute top-[-20%] left-[10%] w-[40vw] h-[40vw] rounded-full bg-primary/8 blur-[120px]" />
+          <div className="absolute bottom-[-10%] right-[5%] w-[35vw] h-[35vw] rounded-full bg-secondary/6 blur-[100px]" />
+        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.6, type: "spring" }}
+          className="relative z-10 w-full max-w-md"
+          data-ocid="apply.success_state"
+        >
+          <NeonCard glow="cyan" className="p-8 text-center space-y-6">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+              className="text-6xl"
+            >
+              🎉
+            </motion.div>
+            <div className="space-y-2">
+              <p className="text-xs font-display tracking-[0.35em] uppercase text-primary/60">
+                Application Received
+              </p>
+              <h2
+                className="text-3xl font-display font-black tracking-tight"
+                style={{ textShadow: "0 0 30px oklch(0.68 0.27 305 / 0.6)" }}
+              >
+                You're In The Queue
+              </h2>
+              <p className="text-sm text-muted-foreground font-body leading-relaxed">
+                Your application has been submitted. The committee reviews every
+                submission personally — you'll be notified at{" "}
+                <span className="text-foreground font-semibold">
+                  {step1.email}
+                </span>{" "}
+                once a decision is made.
+              </p>
+            </div>
+            <div className="border-t border-border/30" />
+            <div className="space-y-2">
+              <p className="text-xs font-display tracking-widest text-muted-foreground uppercase">
+                Your Application ID:
+              </p>
+              <p
+                className="text-2xl font-mono font-bold tracking-widest"
+                style={{
+                  color: "oklch(0.68 0.27 305)",
+                  textShadow: "0 0 16px oklch(0.68 0.27 305 / 0.5)",
+                }}
+                data-ocid="apply.success_app_id"
+              >
+                #{successId.toString().padStart(6, "0")}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(successId.toString());
+                  toast.success("Application ID copied!");
+                }}
+                className="mt-1 flex items-center gap-1.5 mx-auto text-xs text-muted-foreground hover:text-foreground transition-colors font-body"
+                data-ocid="apply.copy_id_button"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-label="Copy"
+                  role="img"
+                >
+                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                </svg>
+                Tap to copy ID
+              </button>
+              <p className="text-xs text-muted-foreground font-body mt-2">
+                Save this ID — visit{" "}
+                <span className="font-mono text-foreground/70">/status</span>{" "}
+                anytime to check your application status
+              </p>
+            </div>
+            <div className="border-t border-border/30" />
+            <Button
+              type="button"
+              asChild
+              className="w-full font-display font-bold tracking-wide text-sm"
+              style={{
+                background:
+                  "linear-gradient(135deg, oklch(0.65 0.22 290), oklch(0.55 0.25 315))",
+                boxShadow: "0 0 20px oklch(0.65 0.22 290 / 0.4)",
+              }}
+              data-ocid="apply.check_status_button"
+            >
+              <a href={`/status?id=${successId.toString()}`}>
+                Check My Application Status
+              </a>
+            </Button>
+          </NeonCard>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Ambient glows */}
@@ -463,6 +565,27 @@ export default function ApplyPage() {
         <div className="absolute top-[-20%] left-[10%] w-[40vw] h-[40vw] rounded-full bg-primary/8 blur-[120px]" />
         <div className="absolute bottom-[-10%] right-[5%] w-[35vw] h-[35vw] rounded-full bg-secondary/6 blur-[100px]" />
         <div className="absolute top-[40%] left-[-5%] w-[25vw] h-[25vw] rounded-full bg-accent/5 blur-[80px]" />
+        <div
+          className="party-blob-1 absolute top-1/4 left-1/3 w-80 h-80 rounded-full opacity-20 blur-3xl pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(circle, oklch(0.65 0.25 15), oklch(0.55 0.22 340))",
+          }}
+        />
+        <div
+          className="party-blob-2 absolute bottom-1/4 right-1/4 w-72 h-72 rounded-full opacity-15 blur-3xl pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(circle, oklch(0.75 0.18 80), oklch(0.60 0.20 45))",
+          }}
+        />
+        <div
+          className="party-blob-3 absolute top-3/4 left-1/4 w-64 h-64 rounded-full opacity-20 blur-3xl pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(circle, oklch(0.70 0.22 320), oklch(0.60 0.18 290))",
+          }}
+        />
       </div>
 
       <div className="relative z-10 max-w-lg mx-auto px-4 py-12 pb-20">
@@ -512,10 +635,10 @@ export default function ApplyPage() {
                 data-ocid="apply.step1_card"
               >
                 <h2 className="text-lg font-display font-bold tracking-wide uppercase mb-1">
-                  Who are you?
+                  Who Are You?
                 </h2>
                 <p className="text-xs text-muted-foreground/60 font-body mb-6">
-                  We check every single handle. Make it real.
+                  We verify every handle. Make it real.
                 </p>
                 <div className="space-y-4">
                   <NeonInput
@@ -644,16 +767,16 @@ export default function ApplyPage() {
                 data-ocid="apply.step2_card"
               >
                 <h2 className="text-lg font-display font-bold tracking-wide uppercase mb-1">
-                  Prove your access
+                  Prove Your Access
                 </h2>
                 <p className="text-xs text-muted-foreground/60 font-body mb-6">
-                  No code? No entry. It\u2019s that simple.
+                  Got an invite code? Enter it below — otherwise just continue.
                 </p>
                 <div className="space-y-5">
                   <NeonInput
                     id="inviteCode"
-                    label="Invite Code"
-                    placeholder="Enter your code"
+                    label="Invite Code (Optional)"
+                    placeholder="Enter your code if you have one"
                     value={step2.inviteCode}
                     onChange={(e) => {
                       setStep2((s) => ({
@@ -667,58 +790,6 @@ export default function ApplyPage() {
                     autoComplete="off"
                     spellCheck={false}
                   />
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 py-3 px-4 rounded-lg bg-card/20 border border-border/30">
-                      <Checkbox
-                        id="plusOne"
-                        checked={step2.plusOne}
-                        onCheckedChange={(checked) =>
-                          setStep2((s) => ({
-                            ...s,
-                            plusOne: !!checked,
-                            partnerName: checked ? s.partnerName : "",
-                          }))
-                        }
-                        className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                        data-ocid="apply.plus_one_checkbox"
-                      />
-                      <Label
-                        htmlFor="plusOne"
-                        className="text-sm font-body text-foreground/80 cursor-pointer"
-                      >
-                        I\u2019m bringing someone special
-                        <span className="block text-[11px] text-muted-foreground/50 mt-0.5">
-                          Plus-ones are subject to separate review
-                        </span>
-                      </Label>
-                    </div>
-                    <AnimatePresence>
-                      {step2.plusOne && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
-                          <NeonInput
-                            id="partnerName"
-                            label="Partner\u2019s Name"
-                            placeholder="Their full name"
-                            value={step2.partnerName}
-                            onChange={(e) =>
-                              setStep2((s) => ({
-                                ...s,
-                                partnerName: e.target.value,
-                              }))
-                            }
-                            error={errors.partnerName}
-                            data-ocid="apply.partner_name_input"
-                          />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
                 </div>
               </NeonCard>
               <ExclusivityQuote text="Every name on this list earned their spot. Will yours?" />
@@ -739,10 +810,10 @@ export default function ApplyPage() {
                 data-ocid="apply.step3_card"
               >
                 <h2 className="text-lg font-display font-bold tracking-wide uppercase mb-1">
-                  Show us your world
+                  Show Us Your World
                 </h2>
                 <p className="text-xs text-muted-foreground/60 font-body mb-2">
-                  3\u20135 photos. Real ones only. We see everything.
+                  3–5 photos, real ones only
                 </p>
                 <div className="flex items-center gap-2 mb-5">
                   {[1, 2, 3, 4, 5].map((n) => (
@@ -772,18 +843,7 @@ export default function ApplyPage() {
                     Start uploading to submit your application
                   </p>
                 )}
-                {readyCount >= 3 && (
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="mt-3 text-xs text-primary text-center font-display tracking-wider"
-                    style={{ textShadow: "0 0 10px oklch(var(--primary)/0.5)" }}
-                  >
-                    \u2726 Looking good. Ready to submit.
-                  </motion.p>
-                )}
               </NeonCard>
-              <ExclusivityQuote text="The door opens for a reason. Don\u2019t waste your shot." />
             </motion.div>
           )}
         </AnimatePresence>

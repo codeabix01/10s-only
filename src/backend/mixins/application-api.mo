@@ -23,7 +23,12 @@ mixin (
     };
   };
   public shared func submitApplication(input : AppTypes.ApplicationInput) : async Common.ApplicationId {
-    AppLib.submitApplication(applications, inviteCodes, { var nextId = appState.nextAppId }, input);
+    let id = AppLib.submitApplication(applications, inviteCodes, appState, input);
+    switch (applications.get(id)) {
+      case (?app) { await AppLib.sendSubmissionEmail<system>(app, id) };
+      case null {};
+    };
+    id;
   };
 
   public query func getApplicationStatus(id : Common.ApplicationId) : async ?(AppTypes.ApplicationStatus, ?Text) {
@@ -34,7 +39,7 @@ mixin (
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admins can approve applications");
     };
-    AppLib.approveApplication(applications, id);
+    await AppLib.approveApplication<system>(applications, id);
   };
 
   public shared ({ caller }) func rejectApplication(id : Common.ApplicationId) : async () {
@@ -60,6 +65,20 @@ mixin (
 
   public query func getApprovedPhotos() : async [Storage.ExternalBlob] {
     AppLib.getApprovedPhotos(applications);
+  };
+
+  public shared ({ caller }) func resendApprovalEmail(id : Common.ApplicationId) : async { #ok; #err : Text } {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      return #err("Unauthorized: Only admins can resend approval emails");
+    };
+    await AppLib.resendApprovalEmail<system>(applications, id);
+  };
+
+  public shared ({ caller }) func broadcastToApprovedGuests(subject : Text, message : Text) : async { #ok : Nat; #err : Text } {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      return #err("Unauthorized: Only admins can broadcast messages");
+    };
+    await AppLib.broadcastToApprovedGuests<system>(applications, subject, message);
   };
 
   public shared ({ caller }) func addInviteCode(code : Text) : async () {

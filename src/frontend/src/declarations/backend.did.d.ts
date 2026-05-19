@@ -18,7 +18,7 @@ export interface AdminStats {
 }
 export type ApplicationId = bigint;
 export interface ApplicationInput {
-  'plusOne' : boolean,
+  'plusOne' : [] | [boolean],
   'name' : string,
   'instagramHandle' : string,
   'email' : string,
@@ -32,7 +32,8 @@ export type ApplicationStatus = { 'pending' : null } |
 export interface ApplicationView {
   'id' : bigint,
   'status' : ApplicationStatus,
-  'plusOne' : boolean,
+  'plusOne' : [] | [boolean],
+  'applicationId' : string,
   'name' : string,
   'instagramHandle' : string,
   'submittedAt' : bigint,
@@ -101,9 +102,15 @@ export interface _SERVICE {
   >,
   '_immutableObjectStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControl' : ActorMethod<[], undefined>,
+  'addAdmin' : ActorMethod<[Principal], { 'ok' : null } | { 'err' : string }>,
   'addInviteCode' : ActorMethod<[string], undefined>,
   'approveApplication' : ActorMethod<[ApplicationId], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'broadcastToApprovedGuests' : ActorMethod<
+    [string, string],
+    { 'ok' : bigint } |
+      { 'err' : string }
+  >,
   'getAdminStats' : ActorMethod<[], AdminStats>,
   'getApplicationStatus' : ActorMethod<
     [ApplicationId],
@@ -116,12 +123,23 @@ export interface _SERVICE {
   'getQuizResultTypes' : ActorMethod<[], Array<QuizResult>>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isCallerApproved' : ActorMethod<[], boolean>,
+  'listAdmins' : ActorMethod<[], Array<Principal>>,
   'listApplications' : ActorMethod<[], Array<ApplicationView>>,
   'listApprovals' : ActorMethod<[], Array<UserApprovalInfo>>,
   'listConfessions' : ActorMethod<[], Array<Confession>>,
   'listInviteCodes' : ActorMethod<[], Array<string>>,
   'rejectApplication' : ActorMethod<[ApplicationId], undefined>,
+  'removeAdmin' : ActorMethod<
+    [Principal],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
   'requestApproval' : ActorMethod<[], undefined>,
+  'resendApprovalEmail' : ActorMethod<
+    [ApplicationId],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
   'setApproval' : ActorMethod<[Principal, ApprovalStatus], undefined>,
   'submitApplication' : ActorMethod<[ApplicationInput], ApplicationId>,
   'submitConfession' : ActorMethod<[string], bigint>,

@@ -11,7 +11,12 @@ import Common "types/common";
 import ApplicationMixin "mixins/application-api";
 import QuizMixin "mixins/quiz-api";
 import ConfessionMixin "mixins/confession-api";
+import AdminMixin "mixins/admin-api";
+import Migration "migration";
 
+
+
+(with migration = Migration.run)
 actor {
   // Authorization & approval state
   let accessControlState = AccessControl.initState();
@@ -28,6 +33,8 @@ actor {
   let appState = { var nextAppId = 0 };
 
   include ApplicationMixin(accessControlState, applications, inviteCodes, appState);
+  // Admin management endpoints
+  include AdminMixin(accessControlState);
 
   // Quiz state
   let quizQuestions = List.empty<QuizTypes.QuizQuestion>();

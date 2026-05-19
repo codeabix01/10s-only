@@ -5,15 +5,21 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import {
+  useAddAdmin,
   useAddInviteCode,
   useAdminStats,
   useApproveApplication,
+  useBroadcastToApprovedGuests,
   useInviteCodes,
+  useListAdmins,
   useListApplications,
   useRejectApplication,
+  useRemoveAdmin,
+  useResendApprovalEmail,
 } from "@/hooks/useBackend";
 import { cn } from "@/lib/utils";
 import type { ApplicationView } from "@/types";
+import { Principal } from "@icp-sdk/core/principal";
 import { useNavigate } from "@tanstack/react-router";
 import {
   CheckCircle,
@@ -21,8 +27,13 @@ import {
   ChevronUp,
   Clock,
   Loader2,
+  Mail,
+  MessageSquare,
   Plus,
   QrCode,
+  Send,
+  Shield,
+  Trash2,
   UserCheck,
   UserX,
   Users,
@@ -31,6 +42,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function formatDate(ts: bigint) {
@@ -42,24 +54,19 @@ function formatDate(ts: bigint) {
 }
 
 function getStatus(app: ApplicationView): "pending" | "approved" | "rejected" {
-  if ("approved" in app.status) return "approved";
-  if ("rejected" in app.status) return "rejected";
-  return "pending";
-}
-
-// ── safe URL helper ──────────────────────────────────────────────────────────
-function safeGetURL(photo: unknown): string | null {
-  try {
-    if (
-      !photo ||
-      typeof (photo as { getDirectURL?: unknown }).getDirectURL !== "function"
-    )
-      return null;
-    const url = (photo as { getDirectURL: () => string }).getDirectURL();
-    return typeof url === "string" && url.length > 0 ? url : null;
-  } catch {
-    return null;
+  const s = app.status;
+  // Backend returns ApplicationStatus as a plain string enum value
+  if (typeof s === "string") {
+    if (s === "approved") return "approved";
+    if (s === "rejected") return "rejected";
+    return "pending";
   }
+  // Fallback: handle legacy Motoko variant object shape {approved: null} etc.
+  if (typeof s === "object" && s !== null) {
+    if ("approved" in (s as Record<string, unknown>)) return "approved";
+    if ("rejected" in (s as Record<string, unknown>)) return "rejected";
+  }
+  return "pending";
 }
 
 // ── Stat Card ─────────────────────────────────────────────────────────────────
@@ -204,14 +211,34 @@ function ApplicationCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [qrTarget, setQrTarget] = useState<string | null>(null);
+  const [resendMsg, setResendMsg] = useState<string | null>(null);
   const approve = useApproveApplication();
   const reject = useRejectApplication();
+  const resendEmail = useResendApprovalEmail();
   const status = getStatus(app);
   const isPending = status === "pending";
   const isApproved = status === "approved";
 
   const approvingThis = approve.isPending;
   const rejectingThis = reject.isPending;
+
+  function handleResendEmail() {
+    setResendMsg(null);
+    resendEmail.mutate(app.id, {
+      onSuccess: () => {
+        setResendMsg("sent");
+        toast.success("Approval email resent!");
+        setTimeout(() => setResendMsg(null), 4000);
+      },
+      onError: (err) => {
+        setResendMsg("error");
+        toast.error(
+          err instanceof Error ? err.message : "Failed to resend email",
+        );
+        setTimeout(() => setResendMsg(null), 4000);
+      },
+    });
+  }
 
   return (
     <>
@@ -248,6 +275,17 @@ function ApplicationCard({
           >
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
+                <span
+                  className="text-[11px] font-mono font-bold tracking-widest shrink-0"
+                  style={{
+                    color: "oklch(0.68 0.27 305)",
+                    textShadow: "0 0 10px oklch(0.68 0.27 305 / 0.5)",
+                  }}
+                  data-ocid={`admin.app.id.${index + 1}`}
+                >
+                  {app.applicationId ||
+                    `#${app.id.toString().padStart(6, "0")}`}
+                </span>
                 <span className="font-display font-semibold text-foreground truncate">
                   {app.name}
                 </span>
@@ -259,7 +297,7 @@ function ApplicationCard({
                 )}
               </div>
               <p className="text-sm text-muted-foreground truncate">
-                @{app.instagramHandle}
+                {app.instagramHandle}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5 truncate">
                 {app.email}
@@ -315,47 +353,27 @@ function ApplicationCard({
                   </div>
 
                   {/* photos */}
-                  {(app.photos ?? []).length > 0 && (
+                  {app.photos.length > 0 && (
                     <div>
                       <p className="text-xs text-muted-foreground font-mono mb-2">
                         Photos ({app.photos.length})
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {(app.photos ?? []).map((photo, pi) => {
-                          const url = safeGetURL(photo);
-                          if (!url)
-                            return (
-                              <div
-                                key={`${app.id}-broken-${pi}`}
-                                className="w-16 h-16 rounded-lg border border-border/30 bg-muted/20 flex items-center justify-center"
-                                title="Photo unavailable"
-                              >
-                                <span className="text-muted-foreground text-xs font-mono">
-                                  ?
-                                </span>
-                              </div>
-                            );
-                          return (
-                            <a
-                              key={`${app.id}-photo-${url}`}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block"
-                            >
-                              <img
-                                src={url}
-                                alt={`Submission ${pi + 1}`}
-                                className="w-16 h-16 object-cover rounded-lg border border-border/30 hover:border-accent/50 transition-colors"
-                                onError={(e) => {
-                                  (
-                                    e.currentTarget as HTMLImageElement
-                                  ).style.display = "none";
-                                }}
-                              />
-                            </a>
-                          );
-                        })}
+                        {app.photos.map((photo, pi) => (
+                          <a
+                            key={photo.getDirectURL()}
+                            href={photo.getDirectURL()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block"
+                          >
+                            <img
+                              src={photo.getDirectURL()}
+                              alt={`Submission ${pi + 1}`}
+                              className="w-16 h-16 object-cover rounded-lg border border-border/30 hover:border-accent/50 transition-colors"
+                            />
+                          </a>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -407,6 +425,27 @@ function ApplicationCard({
                       >
                         <QrCode className="w-3 h-3 mr-1" />
                         View QR
+                      </Button>
+                    )}
+                    {isApproved && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={resendEmail.isPending}
+                        onClick={handleResendEmail}
+                        className="bg-yellow-500/10 border border-yellow-400/40 text-yellow-300 hover:bg-yellow-500/20 hover:border-yellow-400/70 transition-all"
+                        data-ocid={`admin.app.resend_email_button.${index + 1}`}
+                      >
+                        {resendEmail.isPending ? (
+                          <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                        ) : (
+                          <Mail className="w-3 h-3 mr-1" />
+                        )}
+                        {resendMsg === "sent"
+                          ? "Email sent!"
+                          : resendMsg === "error"
+                            ? "Failed"
+                            : "Resend Email"}
                       </Button>
                     )}
                   </div>
@@ -463,7 +502,7 @@ function InviteCodesPanel() {
       {/* add form */}
       <NeonCard glow="purple" className="p-4">
         <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest mb-3">
-          Add New Code
+          Add New Invite Code
         </p>
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Input
@@ -492,7 +531,7 @@ function InviteCodesPanel() {
       {/* codes list */}
       <div>
         <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest mb-3">
-          Active Codes ({codes.length})
+          Active Invite Codes ({codes.length})
         </p>
         {isLoading ? (
           <div className="flex flex-wrap gap-2">
@@ -507,7 +546,7 @@ function InviteCodesPanel() {
             data-ocid="admin.invite_codes.empty_state"
           >
             <p className="text-muted-foreground text-sm">
-              No invite codes yet. Add the first one above.
+              No invite codes yet. Create your first code above.
             </p>
           </NeonCard>
         ) : (
@@ -531,19 +570,360 @@ function InviteCodesPanel() {
   );
 }
 
+// ── Admins Panel ─────────────────────────────────────────────────────────────
+function AdminsPanel({
+  currentPrincipal,
+}: { currentPrincipal: Principal | null }) {
+  const { data: admins = [], isLoading, error } = useListAdmins();
+  const addAdmin = useAddAdmin();
+  const removeAdmin = useRemoveAdmin();
+  const [newPrincipal, setNewPrincipal] = useState("");
+  const [addError, setAddError] = useState("");
+
+  function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = newPrincipal.trim();
+    if (!trimmed) return;
+    setAddError("");
+    let principal: Principal;
+    try {
+      principal = Principal.fromText(trimmed);
+    } catch {
+      setAddError("Invalid principal ID format.");
+      return;
+    }
+    addAdmin.mutate(principal, {
+      onSuccess: () => setNewPrincipal(""),
+      onError: (err) =>
+        setAddError(err instanceof Error ? err.message : "Failed to add admin"),
+    });
+  }
+
+  return (
+    <div className="space-y-6" data-ocid="admin.admins.panel">
+      {/* add form */}
+      <NeonCard glow="cyan" className="p-4">
+        <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest mb-3">
+          Add New Admin
+        </p>
+        <form onSubmit={handleAdd} className="flex gap-2">
+          <Input
+            value={newPrincipal}
+            onChange={(e) => {
+              setNewPrincipal(e.target.value);
+              setAddError("");
+            }}
+            placeholder="Paste principal ID (e.g. aaaaa-aa)"
+            className="font-mono text-xs bg-background/40 border-border/40 text-foreground placeholder:text-muted-foreground/50 flex-1"
+            aria-label="New admin principal"
+            data-ocid="admin.admins.input"
+          />
+          <Button
+            type="submit"
+            disabled={!newPrincipal.trim() || addAdmin.isPending}
+            className="bg-accent/80 hover:bg-accent transition-all border border-accent/40"
+            data-ocid="admin.admins.add_button"
+          >
+            {addAdmin.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
+          </Button>
+        </form>
+        {addError && (
+          <p
+            className="text-destructive text-xs font-mono mt-2"
+            data-ocid="admin.admins.error_state"
+          >
+            {addError}
+          </p>
+        )}
+      </NeonCard>
+
+      {/* admins list */}
+      <div>
+        <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest mb-3">
+          Current Admins ({isLoading ? "…" : admins.length})
+        </p>
+        {isLoading ? (
+          <div className="space-y-2" data-ocid="admin.admins.loading_state">
+            {[1, 2].map((i) => (
+              <NeonCard key={i} glow="none" className="p-3">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-8 h-8 rounded-lg bg-muted/40" />
+                  <Skeleton className="h-4 flex-1 bg-muted/30" />
+                  <Skeleton className="h-8 w-16 rounded-lg bg-muted/20" />
+                </div>
+              </NeonCard>
+            ))}
+          </div>
+        ) : error ? (
+          <NeonCard
+            glow="none"
+            className="p-6 text-center"
+            data-ocid="admin.admins.error_state"
+          >
+            <p className="text-destructive text-sm">Failed to load admins.</p>
+          </NeonCard>
+        ) : admins.length === 0 ? (
+          <NeonCard
+            glow="none"
+            className="p-6 text-center"
+            data-ocid="admin.admins.empty_state"
+          >
+            <p className="text-muted-foreground text-sm">No admins found.</p>
+          </NeonCard>
+        ) : (
+          <div className="space-y-2">
+            {admins.map((admin, i) => {
+              const isSelf =
+                currentPrincipal !== null &&
+                admin.toString() === currentPrincipal.toString();
+              return (
+                <motion.div
+                  key={admin.toString()}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  data-ocid={`admin.admins.item.${i + 1}`}
+                >
+                  <NeonCard
+                    glow={isSelf ? "cyan" : "none"}
+                    className="p-3 flex items-center gap-3"
+                  >
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                      style={{
+                        background: isSelf
+                          ? "oklch(0.7 0.2 200 / 0.15)"
+                          : "oklch(0.68 0.27 305 / 0.1)",
+                      }}
+                    >
+                      <Shield
+                        className="w-4 h-4"
+                        style={{
+                          color: isSelf
+                            ? "oklch(0.7 0.2 200)"
+                            : "oklch(0.68 0.27 305)",
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-mono text-xs text-foreground truncate">
+                        {admin.toString()}
+                      </p>
+                      {isSelf && (
+                        <p
+                          className="text-[10px] font-mono tracking-widest"
+                          style={{ color: "oklch(0.7 0.2 200)" }}
+                        >
+                          YOU
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      disabled={isSelf || removeAdmin.isPending}
+                      onClick={() => removeAdmin.mutate(admin)}
+                      title={isSelf ? "Cannot remove yourself" : "Remove admin"}
+                      className={cn(
+                        "shrink-0 transition-all",
+                        isSelf
+                          ? "opacity-30 cursor-not-allowed"
+                          : "text-red-400 hover:text-red-300 hover:bg-red-400/10 border border-red-400/20 hover:border-red-400/40",
+                      )}
+                      data-ocid={`admin.admins.delete_button.${i + 1}`}
+                    >
+                      {removeAdmin.isPending ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3 h-3" />
+                      )}
+                    </Button>
+                  </NeonCard>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Broadcast Panel ─────────────────────────────────────────────────────────
+function BroadcastPanel({ approvedCount }: { approvedCount?: bigint }) {
+  const broadcast = useBroadcastToApprovedGuests();
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [sentCount, setSentCount] = useState<bigint | null>(null);
+  const [broadcastError, setBroadcastError] = useState("");
+
+  function handleSend(e: React.FormEvent) {
+    e.preventDefault();
+    setBroadcastError("");
+    setSentCount(null);
+    const trimSubject = subject.trim();
+    const trimMessage = message.trim();
+    if (!trimSubject || !trimMessage) {
+      setBroadcastError("Subject and message are required.");
+      return;
+    }
+    broadcast.mutate(
+      { subject: trimSubject, message: trimMessage },
+      {
+        onSuccess: (count) => {
+          setSentCount(count);
+          setSubject("");
+          setMessage("");
+          toast.success(`Message sent to ${count.toString()} approved guests!`);
+        },
+        onError: (err) => {
+          setBroadcastError(
+            err instanceof Error ? err.message : "Failed to broadcast message.",
+          );
+        },
+      },
+    );
+  }
+
+  return (
+    <div className="space-y-6" data-ocid="admin.broadcast.panel">
+      <NeonCard glow="cyan" className="p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: "oklch(0.7 0.2 200 / 0.15)" }}
+          >
+            <MessageSquare
+              className="w-4 h-4"
+              style={{ color: "oklch(0.7 0.2 200)" }}
+            />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest">
+              Broadcast Message
+            </p>
+            <p className="text-xs text-muted-foreground/60 font-body">
+              Send to all{" "}
+              <span className="text-emerald-300 font-mono">
+                {approvedCount !== undefined ? approvedCount.toString() : "–"}
+              </span>{" "}
+              approved guests
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSend} className="space-y-4">
+          <div className="space-y-1.5">
+            <label
+              htmlFor="broadcast-subject"
+              className="text-xs font-mono uppercase tracking-widest text-muted-foreground"
+            >
+              Subject
+            </label>
+            <input
+              id="broadcast-subject"
+              value={subject}
+              onChange={(e) => {
+                setSubject(e.target.value);
+                setBroadcastError("");
+              }}
+              placeholder="e.g. Event Night — Final Details"
+              className="w-full h-10 px-3 rounded-lg bg-background/40 border border-border/40 text-foreground placeholder:text-muted-foreground/40 font-body text-sm focus:outline-none focus:border-accent/60 transition-colors"
+              data-ocid="admin.broadcast.subject_input"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label
+              htmlFor="broadcast-message"
+              className="text-xs font-mono uppercase tracking-widest text-muted-foreground"
+            >
+              Message
+            </label>
+            <textarea
+              id="broadcast-message"
+              value={message}
+              onChange={(e) => {
+                setMessage(e.target.value);
+                setBroadcastError("");
+              }}
+              placeholder="Write your message here…"
+              rows={5}
+              className="w-full px-3 py-2 rounded-lg bg-background/40 border border-border/40 text-foreground placeholder:text-muted-foreground/40 font-body text-sm leading-relaxed focus:outline-none focus:border-accent/60 transition-colors resize-none"
+              data-ocid="admin.broadcast.textarea"
+            />
+          </div>
+
+          {broadcastError && (
+            <p
+              className="text-xs text-destructive font-mono"
+              data-ocid="admin.broadcast.error_state"
+            >
+              {broadcastError}
+            </p>
+          )}
+
+          {sentCount !== null && (
+            <motion.p
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-xs font-mono text-emerald-300 flex items-center gap-1.5"
+              data-ocid="admin.broadcast.success_state"
+            >
+              <CheckCircle className="w-3 h-3" />
+              Sent to {sentCount.toString()} guests
+            </motion.p>
+          )}
+
+          <Button
+            type="submit"
+            disabled={broadcast.isPending || !subject.trim() || !message.trim()}
+            className="w-full font-display font-bold tracking-wide text-sm"
+            style={{
+              background:
+                "linear-gradient(135deg, oklch(0.7 0.2 200), oklch(0.65 0.22 225))",
+              boxShadow: "0 0 16px oklch(0.7 0.2 200 / 0.3)",
+            }}
+            data-ocid="admin.broadcast.submit_button"
+          >
+            {broadcast.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                Sending…
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4 mr-2" />
+                Send to All Approved Guests
+              </>
+            )}
+          </Button>
+        </form>
+      </NeonCard>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const navigate = useNavigate();
-  const { isConnected, isAdmin } = useAuth();
+  const { isConnected, isAdmin, identity } = useAuth();
   const { data: stats } = useAdminStats();
   const {
     data: applications = [],
     isLoading: appsLoading,
     error: appsError,
   } = useListApplications();
-  const [activeTab, setActiveTab] = useState<"applications" | "invite-codes">(
-    "applications",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "applications" | "broadcast" | "invite-codes" | "admins"
+  >("applications");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "pending" | "approved" | "rejected"
+  >("pending");
 
   // Guard: not connected → redirect home
   if (!isConnected) {
@@ -565,7 +945,7 @@ export default function AdminPage() {
             Admin Access Required
           </h2>
           <p className="text-muted-foreground text-sm">
-            You don't have permission to view this page.
+            You don't have permission to access this page.
           </p>
         </NeonCard>
       </div>
@@ -631,27 +1011,58 @@ export default function AdminPage() {
         className="flex gap-1 p-1 rounded-xl bg-card/20 backdrop-blur-sm border border-border/20"
         data-ocid="admin.tabs"
       >
-        {(["applications", "invite-codes"] as const).map((tab) => (
+        {(
+          [
+            { key: "applications", label: "Applications" },
+            { key: "broadcast", label: "Broadcast" },
+            { key: "invite-codes", label: "Invite Codes" },
+            { key: "admins", label: "Admins" },
+          ] as const
+        ).map(({ key, label }) => (
           <button
-            key={tab}
+            key={key}
             type="button"
-            onClick={() => setActiveTab(tab)}
-            data-ocid={`admin.tab.${tab}`}
+            onClick={() => setActiveTab(key)}
+            data-ocid={`admin.tab.${key}`}
             className={cn(
-              "flex-1 py-2 px-3 rounded-lg text-sm font-mono uppercase tracking-wider transition-all duration-200",
-              activeTab === tab
+              "flex-1 py-2 px-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all duration-200",
+              activeTab === key
                 ? "bg-primary/80 text-foreground shadow-[0_0_16px_rgba(104,0,255,0.5)]"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {tab === "applications" ? "Applications" : "Invite Codes"}
+            {label}
           </button>
         ))}
       </div>
 
       {/* tab content */}
       <AnimatePresence mode="wait">
-        {activeTab === "applications" ? (
+        {activeTab === "broadcast" ? (
+          <motion.div
+            key="broadcast"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+          >
+            <BroadcastPanel approvedCount={stats?.approved} />
+          </motion.div>
+        ) : activeTab === "admins" ? (
+          <motion.div
+            key="admins"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+          >
+            <AdminsPanel
+              currentPrincipal={
+                isConnected ? (identity?.getPrincipal() ?? null) : null
+              }
+            />
+          </motion.div>
+        ) : activeTab === "applications" ? (
           <motion.div
             key="applications"
             initial={{ opacity: 0, y: 8 }}
@@ -660,38 +1071,108 @@ export default function AdminPage() {
             transition={{ duration: 0.2 }}
             data-ocid="admin.apps.section"
           >
-            {appsLoading ? (
-              <AppSkeleton />
-            ) : appsError ? (
-              <NeonCard
-                glow="none"
-                className="p-6 text-center"
-                data-ocid="admin.apps.error_state"
+            {/* Status filter tabs */}
+            {!appsLoading && !appsError && (
+              <div
+                className="flex gap-1 p-1 rounded-xl bg-card/20 backdrop-blur-sm border border-border/20 mb-4"
+                data-ocid="admin.apps.filter.tabs"
               >
-                <p className="text-destructive-foreground text-sm">
-                  Failed to load applications. Please refresh.
-                </p>
-              </NeonCard>
-            ) : applications.length === 0 ? (
-              <NeonCard
-                glow="none"
-                className="p-8 text-center"
-                data-ocid="admin.apps.empty_state"
-              >
-                <Users className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">No applications yet.</p>
-              </NeonCard>
-            ) : (
-              <div className="space-y-3">
-                {applications.map((app, i) => (
-                  <ApplicationCard
-                    key={app.id.toString()}
-                    app={app}
-                    index={i}
-                  />
+                {(
+                  [
+                    {
+                      key: "pending",
+                      label: "Pending",
+                      color: "text-yellow-300",
+                    },
+                    {
+                      key: "approved",
+                      label: "Approved",
+                      color: "text-emerald-300",
+                    },
+                    {
+                      key: "rejected",
+                      label: "Rejected",
+                      color: "text-red-300",
+                    },
+                    { key: "all", label: "All", color: "text-foreground" },
+                  ] as const
+                ).map(({ key, label, color }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setStatusFilter(key)}
+                    data-ocid={`admin.apps.filter.${key}`}
+                    className={cn(
+                      "flex-1 py-1.5 px-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all duration-200",
+                      statusFilter === key
+                        ? cn(
+                            "bg-card/60 border border-border/40 shadow-[0_0_10px_rgba(104,0,255,0.3)]",
+                            color,
+                          )
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {label}
+                  </button>
                 ))}
               </div>
             )}
+
+            {(() => {
+              const filtered =
+                statusFilter === "all"
+                  ? applications
+                  : applications.filter(
+                      (app) => getStatus(app) === statusFilter,
+                    );
+              return appsLoading ? (
+                <AppSkeleton />
+              ) : appsError ? (
+                <NeonCard
+                  glow="none"
+                  className="p-6 text-center"
+                  data-ocid="admin.apps.error_state"
+                >
+                  <p className="text-destructive text-sm">
+                    Failed to load applications. Please refresh the page.
+                  </p>
+                </NeonCard>
+              ) : applications.length === 0 ? (
+                <NeonCard
+                  glow="none"
+                  className="p-8 text-center"
+                  data-ocid="admin.apps.empty_state"
+                >
+                  <Users className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground text-sm">
+                    No applications yet — share your invite codes to get
+                    started.
+                  </p>
+                </NeonCard>
+              ) : filtered.length === 0 ? (
+                <NeonCard
+                  glow="none"
+                  className="p-8 text-center"
+                  data-ocid="admin.apps.filter.empty_state"
+                >
+                  <Users className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground text-sm">
+                    No {statusFilter !== "all" ? statusFilter : ""}{" "}
+                    applications.
+                  </p>
+                </NeonCard>
+              ) : (
+                <div className="space-y-3">
+                  {filtered.map((app, i) => (
+                    <ApplicationCard
+                      key={app.id.toString()}
+                      app={app}
+                      index={i}
+                    />
+                  ))}
+                </div>
+              );
+            })()}
           </motion.div>
         ) : (
           <motion.div

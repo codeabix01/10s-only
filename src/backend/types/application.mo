@@ -9,12 +9,13 @@ module {
 
   public type Application = {
     id : Nat;
+    applicationId : Text;
     name : Text;
     instagramHandle : Text;
     email : Text;
     phone : Text;
     inviteCode : Text;
-    plusOne : Bool;
+    plusOne : ?Bool;
     photos : [Storage.ExternalBlob];
     status : ApplicationStatus;
     submittedAt : Int;
@@ -27,18 +28,19 @@ module {
     email : Text;
     phone : Text;
     inviteCode : Text;
-    plusOne : Bool;
+    plusOne : ?Bool;
     photos : [Storage.ExternalBlob];
   };
 
   public type ApplicationView = {
     id : Nat;
+    applicationId : Text;
     name : Text;
     instagramHandle : Text;
     email : Text;
     phone : Text;
     inviteCode : Text;
-    plusOne : Bool;
+    plusOne : ?Bool;
     photos : [Storage.ExternalBlob];
     status : ApplicationStatus;
     submittedAt : Int;

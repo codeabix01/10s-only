@@ -2,7 +2,7 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { NeonCard } from "@/components/NeonCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, Volume2, VolumeX } from "lucide-react";
+import { ChevronDown, Music2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 // ── Entrance animation helper ────────────────────────────────────────────────
@@ -86,11 +86,15 @@ export default function HomePage() {
     <>
       {/* ── Hidden audio element ── */}
       {/* biome-ignore lint/a11y/useMediaCaption: ambient background music */}
+      {/* biome-ignore lint/a11y/useMediaCaption: ambient background music */}
       <audio
         ref={audioRef}
         loop
-        src="/assets/audio/ambient.mp3"
+        src="https://iriefm.fast.idealsolutions.media/iriefm"
         preload="none"
+        onCanPlay={(e) => {
+          (e.currentTarget as HTMLAudioElement).volume = 0.08;
+        }}
       />
 
       {/* ══════════════════════════════════════════════════
@@ -184,7 +188,7 @@ export default function HomePage() {
               data-ocid="hero.countdown"
             >
               <p className="text-[0.6rem] tracking-[0.3em] uppercase text-muted-foreground mb-3 font-mono">
-                Time remaining
+                Time Remaining
               </p>
               <CountdownTimer />
             </NeonCard>
@@ -208,7 +212,7 @@ export default function HomePage() {
                 <Link to="/apply">✦ Apply Now ✦</Link>
               </Button>
               <p className="text-xs text-muted-foreground tracking-widest uppercase font-mono">
-                Only the chosen few make the list
+                Only the chosen few make the cut
               </p>
             </div>
           </FadeUp>
@@ -357,7 +361,7 @@ export default function HomePage() {
           {/* Secondary CTA */}
           <div className="mt-12 text-center flex flex-col items-center gap-4">
             <p className="font-display text-muted-foreground text-sm max-w-sm">
-              Think you've got what it takes? Applications are reviewed
+              Think you have what it takes? Every application is reviewed
               personally.
             </p>
             <Button
@@ -415,8 +419,7 @@ export default function HomePage() {
             </h2>
             <p className="mt-4 text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
               Spots are extremely limited. Applications close when we're full —
-              and we fill fast. Every hour you wait is an hour closer to being
-              too late.
+              Every hour you wait is an hour closer to missing out.
             </p>
           </div>
 
@@ -468,24 +471,34 @@ export default function HomePage() {
         type="button"
         onClick={toggleMusic}
         aria-label={
-          musicPlaying ? "Mute background music" : "Unmute background music"
+          musicPlaying ? "Mute background music" : "Play background music"
         }
         data-ocid="music.toggle"
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full flex items-center justify-center transition-smooth hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 h-10 rounded-full transition-smooth hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         style={{
-          background: "oklch(0.12 0.02 270 / 0.85)",
-          border: "1px solid oklch(0.65 0.22 290 / 0.4)",
-          backdropFilter: "blur(12px)",
+          background: "oklch(0.12 0.02 270 / 0.88)",
+          border: `1px solid ${musicPlaying ? "oklch(0.65 0.22 290 / 0.7)" : "oklch(0.65 0.22 290 / 0.3)"}`,
+          backdropFilter: "blur(14px)",
           boxShadow: musicPlaying
-            ? "0 0 16px oklch(0.65 0.22 290 / 0.6), 0 0 32px oklch(0.55 0.25 315 / 0.3)"
-            : "0 0 8px oklch(0.65 0.22 290 / 0.2)",
+            ? "0 0 18px oklch(0.65 0.22 290 / 0.55), 0 0 36px oklch(0.55 0.25 315 / 0.25)"
+            : "0 0 8px oklch(0.65 0.22 290 / 0.15)",
         }}
       >
         {musicPlaying ? (
-          <Volume2 size={18} style={{ color: "oklch(0.68 0.27 305)" }} />
+          <Music2 size={15} style={{ color: "oklch(0.68 0.27 305)" }} />
         ) : (
-          <VolumeX size={18} className="text-muted-foreground" />
+          <VolumeX size={15} className="text-muted-foreground" />
         )}
+        <span
+          className="text-[0.6rem] font-mono tracking-[0.25em] uppercase select-none"
+          style={{
+            color: musicPlaying
+              ? "oklch(0.68 0.27 305)"
+              : "oklch(0.55 0.15 270)",
+          }}
+        >
+          IRIE FM
+        </span>
       </button>
     </>
   );

@@ -1,6 +1,7 @@
 import { createActor } from "@/backend";
 import type { ApplicationInput } from "@/types";
 import { useActor } from "@caffeineai/core-infrastructure";
+import type { Principal } from "@icp-sdk/core/principal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export function useApplicationStatus(id: bigint | null) {
@@ -200,6 +201,49 @@ export function useAddInviteCode() {
     },
   });
 }
+export function useListAdmins() {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["listAdmins"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.listAdmins();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAddAdmin() {
+  const { actor } = useActor(createActor);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (principal: Principal) => {
+      if (!actor) throw new Error("No actor");
+      const result = await actor.addAdmin(principal);
+      if (result.__kind__ === "err") throw new Error(result.err);
+      return result;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["listAdmins"] });
+    },
+  });
+}
+
+export function useRemoveAdmin() {
+  const { actor } = useActor(createActor);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (principal: Principal) => {
+      if (!actor) throw new Error("No actor");
+      const result = await actor.removeAdmin(principal);
+      if (result.__kind__ === "err") throw new Error(result.err);
+      return result;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["listAdmins"] });
+    },
+  });
+}
 
 export function useListApprovals() {
   const { actor, isFetching } = useActor(createActor);
@@ -210,5 +254,31 @@ export function useListApprovals() {
       return actor.listApprovals();
     },
     enabled: !!actor && !isFetching,
+  });
+}
+export function useResendApprovalEmail() {
+  const { actor } = useActor(createActor);
+  return useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error("No actor");
+      const result = await actor.resendApprovalEmail(id);
+      if (result.__kind__ === "err") throw new Error(result.err);
+      return result;
+    },
+  });
+}
+
+export function useBroadcastToApprovedGuests() {
+  const { actor } = useActor(createActor);
+  return useMutation({
+    mutationFn: async ({
+      subject,
+      message,
+    }: { subject: string; message: string }) => {
+      if (!actor) throw new Error("No actor");
+      const result = await actor.broadcastToApprovedGuests(subject, message);
+      if (result.__kind__ === "err") throw new Error(result.err);
+      return result.ok as bigint;
+    },
   });
 }

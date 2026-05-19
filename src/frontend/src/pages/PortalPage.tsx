@@ -75,14 +75,38 @@ function QRTicket({ qrToken, plusOne }: { qrToken: string; plusOne: boolean }) {
 
   return (
     <NeonCard glow="cyan" className="max-w-xs mx-auto p-6 text-center">
-      <p className="text-xs font-display tracking-[0.3em] uppercase text-muted-foreground mb-4">
+      <p
+        className="text-[0.6rem] font-mono tracking-[0.35em] uppercase mb-1"
+        style={{ color: "oklch(0.65 0.22 290 / 0.7)" }}
+      >
+        ✦ EXCLUSIVE ACCESS ✦
+      </p>
+      <p
+        className="text-base font-display font-black tracking-[0.25em] uppercase mb-4"
+        style={{
+          background:
+            "linear-gradient(90deg, oklch(0.72 0.25 200), oklch(0.65 0.22 290))",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+          filter: "drop-shadow(0 0 10px oklch(0.65 0.22 290 / 0.5))",
+        }}
+      >
         YOUR ENTRY TICKET
       </p>
-      <div className="mx-auto w-fit rounded-lg p-3 bg-white mb-4">
+      <div className="mx-auto w-fit rounded-lg p-3 bg-white mb-4 shadow-[0_0_24px_oklch(0.65_0.22_290/0.3)]">
         <canvas ref={canvasRef} className="w-[120px] h-[120px]" />
       </div>
-      <p className="font-mono text-xs text-muted-foreground truncate mb-2">
+      <p className="font-mono text-xs text-muted-foreground truncate mb-3">
         {qrToken}
+      </p>
+      <p
+        className="text-[0.65rem] font-body leading-relaxed mb-3"
+        style={{ color: "oklch(0.60 0.15 290 / 0.8)" }}
+      >
+        Present this QR code at the door for entry.
+        <br />
+        Screenshot and save it.
       </p>
       {plusOne && (
         <Badge
@@ -346,7 +370,7 @@ function PersonalityQuiz({ appId }: { appId: bigint }) {
         ) : (
           <NeonCard glow="none" className="p-8 text-center">
             <p className="text-muted-foreground font-display">
-              No questions available yet. Check back soon.
+              No questions available yet — check back soon.
             </p>
           </NeonCard>
         )}
@@ -545,7 +569,7 @@ function GalleryTab() {
         >
           <p className="text-4xl mb-3">📷</p>
           <p className="font-display font-semibold text-foreground mb-1">
-            The night hasn't happened yet.
+            The night hasn't started yet.
           </p>
           <p className="text-sm text-muted-foreground font-body">
             Photos will appear here after the event.
@@ -668,7 +692,7 @@ export default function PortalPage() {
         <div className="space-y-4 text-center">
           <div className="w-16 h-16 mx-auto rounded-full border-2 border-primary/40 border-t-primary animate-spin" />
           <p className="text-muted-foreground font-display text-sm tracking-widest">
-            ACCESSING VAULT…
+            LOADING YOUR PORTAL…
           </p>
         </div>
       </div>
@@ -690,8 +714,11 @@ export default function PortalPage() {
             Access Restricted
           </h2>
           <p className="text-sm text-muted-foreground font-body">
-            Your application is {appStatus ?? "pending review"}. The portal
-            unlocks once you're approved.
+            Your application is currently{" "}
+            {appStatus === "rejected"
+              ? "not approved for this event"
+              : "pending review"}
+            . The portal unlocks once you're approved.
           </p>
           <Button
             type="button"
@@ -719,6 +746,20 @@ export default function PortalPage() {
                 "radial-gradient(ellipse 80% 60% at 50% 0%, oklch(0.65 0.22 290 / 0.15) 0%, transparent 70%)",
             }}
           />
+          <div
+            className="party-blob-1 absolute top-1/3 left-1/4 w-96 h-96 rounded-full opacity-15 blur-3xl pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(circle, oklch(0.65 0.25 15), oklch(0.55 0.22 340))",
+            }}
+          />
+          <div
+            className="party-blob-2 absolute bottom-1/3 right-1/3 w-80 h-80 rounded-full opacity-[0.12] blur-3xl pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(circle, oklch(0.75 0.18 80), oklch(0.60 0.20 45))",
+            }}
+          />
         </div>
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -727,7 +768,7 @@ export default function PortalPage() {
           className="relative z-10"
         >
           <p className="text-xs font-display tracking-[0.4em] text-muted-foreground uppercase mb-3">
-            exclusive access granted
+            Exclusive Access Granted
           </p>
           <h1
             className="text-4xl md:text-6xl font-display font-black tracking-tight mb-2"
@@ -743,7 +784,7 @@ export default function PortalPage() {
             YOU ARE ON THE LIST
           </h1>
           <p className="text-sm text-muted-foreground font-body">
-            Saturday, May 23rd · The most exclusive night of the year
+            Saturday, 23rd May 2026 · The most exclusive night of the year
           </p>
         </motion.div>
       </section>
@@ -763,16 +804,61 @@ export default function PortalPage() {
           ) : (
             <NeonCard glow="cyan" className="p-6 text-center">
               <p className="text-xs font-display tracking-widest text-muted-foreground mb-4">
-                YOUR ENTRY TICKET
+                YOUR ENTRY TICKET — PRESENT AT THE DOOR
               </p>
               <div className="w-[120px] h-[120px] mx-auto rounded-lg bg-muted/30 flex items-center justify-center mb-4">
                 <Skeleton className="w-full h-full rounded-lg" />
               </div>
               <p className="text-xs text-muted-foreground font-body">
-                Ticket generating…
+                Your ticket is being generated…
               </p>
             </NeonCard>
           )}
+        </motion.div>
+      </section>
+
+      {/* Location Info Card */}
+      <section
+        className="px-4 max-w-sm mx-auto mb-10"
+        data-ocid="portal.location_section"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.35 }}
+        >
+          <NeonCard
+            glow="magenta"
+            className="p-6 text-center"
+            style={{
+              boxShadow:
+                "0 0 28px oklch(0.55 0.25 315 / 0.25), 0 0 60px oklch(0.55 0.25 315 / 0.1), inset 0 1px 0 oklch(1 0 0 / 0.06)",
+            }}
+          >
+            <p
+              className="text-[0.6rem] font-mono tracking-[0.35em] uppercase mb-1"
+              style={{ color: "oklch(0.55 0.25 315 / 0.7)" }}
+            >
+              ✦ DETAILS ✦
+            </p>
+            <h3
+              className="text-sm font-display font-black tracking-[0.25em] uppercase mb-4"
+              style={{
+                background:
+                  "linear-gradient(90deg, oklch(0.68 0.27 305), oklch(0.55 0.25 315))",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                filter: "drop-shadow(0 0 10px oklch(0.55 0.25 315 / 0.5))",
+              }}
+            >
+              EVENT LOCATION
+            </h3>
+            <p className="text-sm font-body leading-relaxed text-muted-foreground">
+              The exact address will be disclosed soon on your WhatsApp number.
+              Make sure your number is saved and stay ready.
+            </p>
+          </NeonCard>
         </motion.div>
       </section>
 

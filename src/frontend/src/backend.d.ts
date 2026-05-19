@@ -31,7 +31,8 @@ export interface Confession {
 export interface ApplicationView {
     id: bigint;
     status: ApplicationStatus;
-    plusOne: boolean;
+    plusOne?: boolean;
+    applicationId: string;
     name: string;
     instagramHandle: string;
     submittedAt: bigint;
@@ -52,7 +53,7 @@ export interface AdminStats {
     rejected: bigint;
 }
 export interface ApplicationInput {
-    plusOne: boolean;
+    plusOne?: boolean;
     name: string;
     instagramHandle: string;
     email: string;
@@ -81,9 +82,23 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
+    addAdmin(principal: Principal): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     addInviteCode(code: string): Promise<void>;
     approveApplication(id: ApplicationId): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    broadcastToApprovedGuests(subject: string, message: string): Promise<{
+        __kind__: "ok";
+        ok: bigint;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     getAdminStats(): Promise<AdminStats>;
     getApplicationStatus(id: ApplicationId): Promise<[ApplicationStatus, string | null] | null>;
     getApprovedPhotos(): Promise<Array<ExternalBlob>>;
@@ -93,12 +108,27 @@ export interface backendInterface {
     getQuizResultTypes(): Promise<Array<QuizResult>>;
     isCallerAdmin(): Promise<boolean>;
     isCallerApproved(): Promise<boolean>;
+    listAdmins(): Promise<Array<Principal>>;
     listApplications(): Promise<Array<ApplicationView>>;
     listApprovals(): Promise<Array<UserApprovalInfo>>;
     listConfessions(): Promise<Array<Confession>>;
     listInviteCodes(): Promise<Array<string>>;
     rejectApplication(id: ApplicationId): Promise<void>;
+    removeAdmin(principal: Principal): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     requestApproval(): Promise<void>;
+    resendApprovalEmail(id: ApplicationId): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     setApproval(user: Principal, status: ApprovalStatus): Promise<void>;
     submitApplication(input: ApplicationInput): Promise<ApplicationId>;
     submitConfession(text: string): Promise<bigint>;

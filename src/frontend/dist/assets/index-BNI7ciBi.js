@@ -30187,7 +30187,8 @@ const QuizResult = Record({
 const ApplicationView = Record({
   "id": Nat,
   "status": ApplicationStatus,
-  "plusOne": Bool,
+  "plusOne": Opt(Bool),
+  "applicationId": Text,
   "name": Text,
   "instagramHandle": Text,
   "submittedAt": Int,
@@ -30212,7 +30213,7 @@ const Confession = Record({
   "text": Text
 });
 const ApplicationInput = Record({
-  "plusOne": Bool,
+  "plusOne": Opt(Bool),
   "name": Text,
   "instagramHandle": Text,
   "email": Text,
@@ -30248,9 +30249,19 @@ Service({
   ),
   "_immutableObjectStorageUpdateGatewayPrincipals": Func([], [], []),
   "_initializeAccessControl": Func([], [], []),
+  "addAdmin": Func(
+    [Principal2],
+    [Variant({ "ok": Null, "err": Text })],
+    []
+  ),
   "addInviteCode": Func([Text], [], []),
   "approveApplication": Func([ApplicationId], [], []),
   "assignCallerUserRole": Func([Principal2, UserRole], [], []),
+  "broadcastToApprovedGuests": Func(
+    [Text, Text],
+    [Variant({ "ok": Nat, "err": Text })],
+    []
+  ),
   "getAdminStats": Func([], [AdminStats], ["query"]),
   "getApplicationStatus": Func(
     [ApplicationId],
@@ -30268,12 +30279,23 @@ Service({
   "getQuizResultTypes": Func([], [Vec(QuizResult)], ["query"]),
   "isCallerAdmin": Func([], [Bool], ["query"]),
   "isCallerApproved": Func([], [Bool], ["query"]),
+  "listAdmins": Func([], [Vec(Principal2)], ["query"]),
   "listApplications": Func([], [Vec(ApplicationView)], ["query"]),
   "listApprovals": Func([], [Vec(UserApprovalInfo)], ["query"]),
   "listConfessions": Func([], [Vec(Confession)], ["query"]),
   "listInviteCodes": Func([], [Vec(Text)], ["query"]),
   "rejectApplication": Func([ApplicationId], [], []),
+  "removeAdmin": Func(
+    [Principal2],
+    [Variant({ "ok": Null, "err": Text })],
+    []
+  ),
   "requestApproval": Func([], [], []),
+  "resendApprovalEmail": Func(
+    [ApplicationId],
+    [Variant({ "ok": Null, "err": Text })],
+    []
+  ),
   "setApproval": Func([Principal2, ApprovalStatus], [], []),
   "submitApplication": Func([ApplicationInput], [ApplicationId], []),
   "submitConfession": Func([Text], [Nat], []),
@@ -30327,7 +30349,8 @@ const idlFactory = ({ IDL: IDL2 }) => {
   const ApplicationView2 = IDL2.Record({
     "id": IDL2.Nat,
     "status": ApplicationStatus2,
-    "plusOne": IDL2.Bool,
+    "plusOne": IDL2.Opt(IDL2.Bool),
+    "applicationId": IDL2.Text,
     "name": IDL2.Text,
     "instagramHandle": IDL2.Text,
     "submittedAt": IDL2.Int,
@@ -30352,7 +30375,7 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "text": IDL2.Text
   });
   const ApplicationInput2 = IDL2.Record({
-    "plusOne": IDL2.Bool,
+    "plusOne": IDL2.Opt(IDL2.Bool),
     "name": IDL2.Text,
     "instagramHandle": IDL2.Text,
     "email": IDL2.Text,
@@ -30388,9 +30411,19 @@ const idlFactory = ({ IDL: IDL2 }) => {
     ),
     "_immutableObjectStorageUpdateGatewayPrincipals": IDL2.Func([], [], []),
     "_initializeAccessControl": IDL2.Func([], [], []),
+    "addAdmin": IDL2.Func(
+      [IDL2.Principal],
+      [IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text })],
+      []
+    ),
     "addInviteCode": IDL2.Func([IDL2.Text], [], []),
     "approveApplication": IDL2.Func([ApplicationId2], [], []),
     "assignCallerUserRole": IDL2.Func([IDL2.Principal, UserRole2], [], []),
+    "broadcastToApprovedGuests": IDL2.Func(
+      [IDL2.Text, IDL2.Text],
+      [IDL2.Variant({ "ok": IDL2.Nat, "err": IDL2.Text })],
+      []
+    ),
     "getAdminStats": IDL2.Func([], [AdminStats2], ["query"]),
     "getApplicationStatus": IDL2.Func(
       [ApplicationId2],
@@ -30408,12 +30441,23 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "getQuizResultTypes": IDL2.Func([], [IDL2.Vec(QuizResult2)], ["query"]),
     "isCallerAdmin": IDL2.Func([], [IDL2.Bool], ["query"]),
     "isCallerApproved": IDL2.Func([], [IDL2.Bool], ["query"]),
+    "listAdmins": IDL2.Func([], [IDL2.Vec(IDL2.Principal)], ["query"]),
     "listApplications": IDL2.Func([], [IDL2.Vec(ApplicationView2)], ["query"]),
     "listApprovals": IDL2.Func([], [IDL2.Vec(UserApprovalInfo2)], ["query"]),
     "listConfessions": IDL2.Func([], [IDL2.Vec(Confession2)], ["query"]),
     "listInviteCodes": IDL2.Func([], [IDL2.Vec(IDL2.Text)], ["query"]),
     "rejectApplication": IDL2.Func([ApplicationId2], [], []),
+    "removeAdmin": IDL2.Func(
+      [IDL2.Principal],
+      [IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text })],
+      []
+    ),
     "requestApproval": IDL2.Func([], [], []),
+    "resendApprovalEmail": IDL2.Func(
+      [ApplicationId2],
+      [IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text })],
+      []
+    ),
     "setApproval": IDL2.Func([IDL2.Principal, ApprovalStatus2], [], []),
     "submitApplication": IDL2.Func([ApplicationInput2], [ApplicationId2], []),
     "submitConfession": IDL2.Func([IDL2.Text], [IDL2.Nat], []),
@@ -30574,6 +30618,20 @@ class Backend {
       return result;
     }
   }
+  async addAdmin(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.addAdmin(arg0);
+        return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.addAdmin(arg0);
+      return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+    }
+  }
   async addInviteCode(arg0) {
     if (this.processError) {
       try {
@@ -30605,15 +30663,29 @@ class Backend {
   async assignCallerUserRole(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n8(this._uploadFile, this._downloadFile, arg1));
+        const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n9(this._uploadFile, this._downloadFile, arg1));
         return result;
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n8(this._uploadFile, this._downloadFile, arg1));
+      const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n9(this._uploadFile, this._downloadFile, arg1));
       return result;
+    }
+  }
+  async broadcastToApprovedGuests(arg0, arg1) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.broadcastToApprovedGuests(arg0, arg1);
+        return from_candid_variant_n11(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.broadcastToApprovedGuests(arg0, arg1);
+      return from_candid_variant_n11(this._uploadFile, this._downloadFile, result);
     }
   }
   async getAdminStats() {
@@ -30634,56 +30706,56 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.getApplicationStatus(arg0);
-        return from_candid_opt_n10(this._uploadFile, this._downloadFile, result);
+        return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.getApplicationStatus(arg0);
-      return from_candid_opt_n10(this._uploadFile, this._downloadFile, result);
+      return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
     }
   }
   async getApprovedPhotos() {
     if (this.processError) {
       try {
         const result = await this.actor.getApprovedPhotos();
-        return from_candid_vec_n15(this._uploadFile, this._downloadFile, result);
+        return from_candid_vec_n17(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.getApprovedPhotos();
-      return from_candid_vec_n15(this._uploadFile, this._downloadFile, result);
+      return from_candid_vec_n17(this._uploadFile, this._downloadFile, result);
     }
   }
   async getCallerUserRole() {
     if (this.processError) {
       try {
         const result = await this.actor.getCallerUserRole();
-        return from_candid_UserRole_n17(this._uploadFile, this._downloadFile, result);
+        return from_candid_UserRole_n19(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.getCallerUserRole();
-      return from_candid_UserRole_n17(this._uploadFile, this._downloadFile, result);
+      return from_candid_UserRole_n19(this._uploadFile, this._downloadFile, result);
     }
   }
   async getMyQuizResult(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.getMyQuizResult(arg0);
-        return from_candid_opt_n19(this._uploadFile, this._downloadFile, result);
+        return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.getMyQuizResult(arg0);
-      return from_candid_opt_n19(this._uploadFile, this._downloadFile, result);
+      return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
     }
   }
   async getQuizQuestions() {
@@ -30742,32 +30814,46 @@ class Backend {
       return result;
     }
   }
+  async listAdmins() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.listAdmins();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.listAdmins();
+      return result;
+    }
+  }
   async listApplications() {
     if (this.processError) {
       try {
         const result = await this.actor.listApplications();
-        return from_candid_vec_n20(this._uploadFile, this._downloadFile, result);
+        return from_candid_vec_n22(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.listApplications();
-      return from_candid_vec_n20(this._uploadFile, this._downloadFile, result);
+      return from_candid_vec_n22(this._uploadFile, this._downloadFile, result);
     }
   }
   async listApprovals() {
     if (this.processError) {
       try {
         const result = await this.actor.listApprovals();
-        return from_candid_vec_n23(this._uploadFile, this._downloadFile, result);
+        return from_candid_vec_n25(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.listApprovals();
-      return from_candid_vec_n23(this._uploadFile, this._downloadFile, result);
+      return from_candid_vec_n25(this._uploadFile, this._downloadFile, result);
     }
   }
   async listConfessions() {
@@ -30812,6 +30898,20 @@ class Backend {
       return result;
     }
   }
+  async removeAdmin(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.removeAdmin(arg0);
+        return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.removeAdmin(arg0);
+      return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+    }
+  }
   async requestApproval() {
     if (this.processError) {
       try {
@@ -30826,31 +30926,45 @@ class Backend {
       return result;
     }
   }
+  async resendApprovalEmail(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.resendApprovalEmail(arg0);
+        return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.resendApprovalEmail(arg0);
+      return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+    }
+  }
   async setApproval(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n27(this._uploadFile, this._downloadFile, arg1));
+        const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n29(this._uploadFile, this._downloadFile, arg1));
         return result;
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n27(this._uploadFile, this._downloadFile, arg1));
+      const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n29(this._uploadFile, this._downloadFile, arg1));
       return result;
     }
   }
   async submitApplication(arg0) {
     if (this.processError) {
       try {
-        const result = await this.actor.submitApplication(await to_candid_ApplicationInput_n29(this._uploadFile, this._downloadFile, arg0));
+        const result = await this.actor.submitApplication(await to_candid_ApplicationInput_n31(this._uploadFile, this._downloadFile, arg0));
         return result;
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.submitApplication(await to_candid_ApplicationInput_n29(this._uploadFile, this._downloadFile, arg0));
+      const result = await this.actor.submitApplication(await to_candid_ApplicationInput_n31(this._uploadFile, this._downloadFile, arg0));
       return result;
     }
   }
@@ -30883,34 +30997,34 @@ class Backend {
     }
   }
 }
-function from_candid_ApplicationStatus_n12(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n13(_uploadFile, _downloadFile, value);
+function from_candid_ApplicationStatus_n14(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n15(_uploadFile, _downloadFile, value);
 }
-async function from_candid_ApplicationView_n21(_uploadFile, _downloadFile, value) {
-  return await from_candid_record_n22(_uploadFile, _downloadFile, value);
+async function from_candid_ApplicationView_n23(_uploadFile, _downloadFile, value) {
+  return await from_candid_record_n24(_uploadFile, _downloadFile, value);
 }
-function from_candid_ApprovalStatus_n26(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n13(_uploadFile, _downloadFile, value);
+function from_candid_ApprovalStatus_n28(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n15(_uploadFile, _downloadFile, value);
 }
-async function from_candid_ExternalBlob_n16(_uploadFile, _downloadFile, value) {
+async function from_candid_ExternalBlob_n18(_uploadFile, _downloadFile, value) {
   return await _downloadFile(value);
 }
-function from_candid_UserApprovalInfo_n24(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n25(_uploadFile, _downloadFile, value);
+function from_candid_UserApprovalInfo_n26(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n27(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n17(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n18(_uploadFile, _downloadFile, value);
+function from_candid_UserRole_n19(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n20(_uploadFile, _downloadFile, value);
 }
 function from_candid__ImmutableObjectStorageRefillResult_n4(_uploadFile, _downloadFile, value) {
   return from_candid_record_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n10(_uploadFile, _downloadFile, value) {
-  return value.length === 0 ? null : from_candid_tuple_n11(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n12(_uploadFile, _downloadFile, value) {
+  return value.length === 0 ? null : from_candid_tuple_n13(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n14(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n16(_uploadFile, _downloadFile, value) {
   return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n19(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n21(_uploadFile, _downloadFile, value) {
   return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n6(_uploadFile, _downloadFile, value) {
@@ -30919,24 +31033,25 @@ function from_candid_opt_n6(_uploadFile, _downloadFile, value) {
 function from_candid_opt_n7(_uploadFile, _downloadFile, value) {
   return value.length === 0 ? null : value[0];
 }
-async function from_candid_record_n22(_uploadFile, _downloadFile, value) {
+async function from_candid_record_n24(_uploadFile, _downloadFile, value) {
   return {
     id: value.id,
-    status: from_candid_ApplicationStatus_n12(_uploadFile, _downloadFile, value.status),
-    plusOne: value.plusOne,
+    status: from_candid_ApplicationStatus_n14(_uploadFile, _downloadFile, value.status),
+    plusOne: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.plusOne)),
+    applicationId: value.applicationId,
     name: value.name,
     instagramHandle: value.instagramHandle,
     submittedAt: value.submittedAt,
     email: value.email,
-    qrToken: record_opt_to_undefined(from_candid_opt_n14(_uploadFile, _downloadFile, value.qrToken)),
+    qrToken: record_opt_to_undefined(from_candid_opt_n16(_uploadFile, _downloadFile, value.qrToken)),
     inviteCode: value.inviteCode,
     phone: value.phone,
-    photos: await from_candid_vec_n15(_uploadFile, _downloadFile, value.photos)
+    photos: await from_candid_vec_n17(_uploadFile, _downloadFile, value.photos)
   };
 }
-function from_candid_record_n25(_uploadFile, _downloadFile, value) {
+function from_candid_record_n27(_uploadFile, _downloadFile, value) {
   return {
-    status: from_candid_ApprovalStatus_n26(_uploadFile, _downloadFile, value.status),
+    status: from_candid_ApprovalStatus_n28(_uploadFile, _downloadFile, value.status),
     principal: value.principal
   };
 }
@@ -30946,38 +31061,56 @@ function from_candid_record_n5(_uploadFile, _downloadFile, value) {
     topped_up_amount: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.topped_up_amount))
   };
 }
-function from_candid_tuple_n11(_uploadFile, _downloadFile, value) {
+function from_candid_tuple_n13(_uploadFile, _downloadFile, value) {
   return [
-    from_candid_ApplicationStatus_n12(_uploadFile, _downloadFile, value[0]),
-    from_candid_opt_n14(_uploadFile, _downloadFile, value[1])
+    from_candid_ApplicationStatus_n14(_uploadFile, _downloadFile, value[0]),
+    from_candid_opt_n16(_uploadFile, _downloadFile, value[1])
   ];
 }
-function from_candid_variant_n13(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n11(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: value.ok
+  } : "err" in value ? {
+    __kind__: "err",
+    err: value.err
+  } : value;
+}
+function from_candid_variant_n15(_uploadFile, _downloadFile, value) {
   return "pending" in value ? "pending" : "approved" in value ? "approved" : "rejected" in value ? "rejected" : value;
 }
-function from_candid_variant_n18(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n20(_uploadFile, _downloadFile, value) {
   return "admin" in value ? "admin" : "user" in value ? "user" : "guest" in value ? "guest" : value;
 }
-async function from_candid_vec_n15(_uploadFile, _downloadFile, value) {
-  return await Promise.all(value.map(async (x2) => await from_candid_ExternalBlob_n16(_uploadFile, _downloadFile, x2)));
+function from_candid_variant_n8(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: value.ok
+  } : "err" in value ? {
+    __kind__: "err",
+    err: value.err
+  } : value;
 }
-async function from_candid_vec_n20(_uploadFile, _downloadFile, value) {
-  return await Promise.all(value.map(async (x2) => await from_candid_ApplicationView_n21(_uploadFile, _downloadFile, x2)));
+async function from_candid_vec_n17(_uploadFile, _downloadFile, value) {
+  return await Promise.all(value.map(async (x2) => await from_candid_ExternalBlob_n18(_uploadFile, _downloadFile, x2)));
 }
-function from_candid_vec_n23(_uploadFile, _downloadFile, value) {
-  return value.map((x2) => from_candid_UserApprovalInfo_n24(_uploadFile, _downloadFile, x2));
+async function from_candid_vec_n22(_uploadFile, _downloadFile, value) {
+  return await Promise.all(value.map(async (x2) => await from_candid_ApplicationView_n23(_uploadFile, _downloadFile, x2)));
 }
-async function to_candid_ApplicationInput_n29(_uploadFile, _downloadFile, value) {
-  return await to_candid_record_n30(_uploadFile, _downloadFile, value);
+function from_candid_vec_n25(_uploadFile, _downloadFile, value) {
+  return value.map((x2) => from_candid_UserApprovalInfo_n26(_uploadFile, _downloadFile, x2));
 }
-function to_candid_ApprovalStatus_n27(_uploadFile, _downloadFile, value) {
-  return to_candid_variant_n28(_uploadFile, _downloadFile, value);
+async function to_candid_ApplicationInput_n31(_uploadFile, _downloadFile, value) {
+  return await to_candid_record_n32(_uploadFile, _downloadFile, value);
 }
-async function to_candid_ExternalBlob_n32(_uploadFile, _downloadFile, value) {
+function to_candid_ApprovalStatus_n29(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n30(_uploadFile, _downloadFile, value);
+}
+async function to_candid_ExternalBlob_n34(_uploadFile, _downloadFile, value) {
   return await _uploadFile(value);
 }
-function to_candid_UserRole_n8(_uploadFile, _downloadFile, value) {
-  return to_candid_variant_n9(_uploadFile, _downloadFile, value);
+function to_candid_UserRole_n9(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n10(_uploadFile, _downloadFile, value);
 }
 function to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _downloadFile, value) {
   return to_candid_record_n3(_uploadFile, _downloadFile, value);
@@ -30990,27 +31123,18 @@ function to_candid_record_n3(_uploadFile, _downloadFile, value) {
     proposed_top_up_amount: value.proposed_top_up_amount ? candid_some(value.proposed_top_up_amount) : candid_none()
   };
 }
-async function to_candid_record_n30(_uploadFile, _downloadFile, value) {
+async function to_candid_record_n32(_uploadFile, _downloadFile, value) {
   return {
-    plusOne: value.plusOne,
+    plusOne: value.plusOne ? candid_some(value.plusOne) : candid_none(),
     name: value.name,
     instagramHandle: value.instagramHandle,
     email: value.email,
     inviteCode: value.inviteCode,
     phone: value.phone,
-    photos: await to_candid_vec_n31(_uploadFile, _downloadFile, value.photos)
+    photos: await to_candid_vec_n33(_uploadFile, _downloadFile, value.photos)
   };
 }
-function to_candid_variant_n28(_uploadFile, _downloadFile, value) {
-  return value == "pending" ? {
-    pending: null
-  } : value == "approved" ? {
-    approved: null
-  } : value == "rejected" ? {
-    rejected: null
-  } : value;
-}
-function to_candid_variant_n9(_uploadFile, _downloadFile, value) {
+function to_candid_variant_n10(_uploadFile, _downloadFile, value) {
   return value == "admin" ? {
     admin: null
   } : value == "user" ? {
@@ -31019,8 +31143,17 @@ function to_candid_variant_n9(_uploadFile, _downloadFile, value) {
     guest: null
   } : value;
 }
-async function to_candid_vec_n31(_uploadFile, _downloadFile, value) {
-  return await Promise.all(value.map(async (x2) => await to_candid_ExternalBlob_n32(_uploadFile, _downloadFile, x2)));
+function to_candid_variant_n30(_uploadFile, _downloadFile, value) {
+  return value == "pending" ? {
+    pending: null
+  } : value == "approved" ? {
+    approved: null
+  } : value == "rejected" ? {
+    rejected: null
+  } : value;
+}
+async function to_candid_vec_n33(_uploadFile, _downloadFile, value) {
+  return await Promise.all(value.map(async (x2) => await to_candid_ExternalBlob_n34(_uploadFile, _downloadFile, x2)));
 }
 function createActor(canisterId, _uploadFile, _downloadFile, options = {}) {
   const agent = options.agent || HttpAgent.createSync({
@@ -31723,11 +31856,11 @@ function createRandomKey() {
 function last(arr) {
   return arr[arr.length - 1];
 }
-function isFunction$2(d2) {
+function isFunction$1(d2) {
   return typeof d2 === "function";
 }
 function functionalUpdate(updater, previous) {
-  if (isFunction$2(updater)) {
+  if (isFunction$1(updater)) {
     return updater(previous);
   }
   return updater;
@@ -35309,7 +35442,7 @@ function Navigate(props) {
   return null;
 }
 const useLayoutEffect = typeof window !== "undefined" ? reactExports.useLayoutEffect : reactExports.useEffect;
-function usePrevious$1(value) {
+function usePrevious(value) {
   const ref = reactExports.useRef({
     value,
     prev: null
@@ -35833,11 +35966,11 @@ function Transitioner() {
     }),
     structuralSharing: true
   });
-  const previousIsLoading = usePrevious$1(isLoading);
+  const previousIsLoading = usePrevious(isLoading);
   const isAnyPending = isLoading || isTransitioning || hasPendingMatches;
-  const previousIsAnyPending = usePrevious$1(isAnyPending);
+  const previousIsAnyPending = usePrevious(isAnyPending);
   const isPagePending = isLoading || hasPendingMatches;
-  const previousIsPagePending = usePrevious$1(isPagePending);
+  const previousIsPagePending = usePrevious(isPagePending);
   router2.startTransition = (fn) => {
     setIsTransitioning(true);
     reactExports.startTransition(() => {
@@ -36398,11 +36531,49 @@ const createLucideIcon = (iconName, iconNode) => {
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$l = [
+const __iconNode$p = [
   ["path", { d: "m12 19-7-7 7-7", key: "1l729n" }],
   ["path", { d: "M19 12H5", key: "x3x0zl" }]
 ];
-const ArrowLeft = createLucideIcon("arrow-left", __iconNode$l);
+const ArrowLeft = createLucideIcon("arrow-left", __iconNode$p);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$o = [
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
+];
+const ArrowRight = createLucideIcon("arrow-right", __iconNode$o);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$n = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+const ChevronDown = createLucideIcon("chevron-down", __iconNode$n);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$m = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
+const ChevronUp = createLucideIcon("chevron-up", __iconNode$m);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$l = [
+  ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
+  ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
+];
+const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$l);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36410,45 +36581,53 @@ const ArrowLeft = createLucideIcon("arrow-left", __iconNode$l);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$k = [
-  ["path", { d: "M5 12h14", key: "1ays0h" }],
-  ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
 ];
-const ArrowRight = createLucideIcon("arrow-right", __iconNode$k);
+const CircleCheck = createLucideIcon("circle-check", __iconNode$k);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$j = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-const Check = createLucideIcon("check", __iconNode$j);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$i = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-const ChevronDown = createLucideIcon("chevron-down", __iconNode$i);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$h = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
-const ChevronUp = createLucideIcon("chevron-up", __iconNode$h);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$g = [
-  ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
-  ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
+const __iconNode$j = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
+  ["path", { d: "m9 9 6 6", key: "z0biqf" }]
 ];
-const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$g);
+const CircleX = createLucideIcon("circle-x", __iconNode$j);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$i = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["polyline", { points: "12 6 12 12 16 14", key: "68esgv" }]
+];
+const Clock = createLucideIcon("clock", __iconNode$i);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$h = [
+  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
+  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
+  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
+];
+const Image = createLucideIcon("image", __iconNode$h);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$g = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+const LoaderCircle = createLucideIcon("loader-circle", __iconNode$g);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36456,10 +36635,10 @@ const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$g);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$f = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
+  ["path", { d: "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7", key: "132q7q" }],
+  ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }]
 ];
-const CircleCheck = createLucideIcon("circle-check", __iconNode$f);
+const Mail = createLucideIcon("mail", __iconNode$f);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36467,11 +36646,11 @@ const CircleCheck = createLucideIcon("circle-check", __iconNode$f);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$e = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
-  ["path", { d: "m9 9 6 6", key: "z0biqf" }]
+  ["path", { d: "M4 12h16", key: "1lakjw" }],
+  ["path", { d: "M4 18h16", key: "19g7jn" }],
+  ["path", { d: "M4 6h16", key: "1o0s65" }]
 ];
-const CircleX = createLucideIcon("circle-x", __iconNode$e);
+const Menu = createLucideIcon("menu", __iconNode$e);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36479,10 +36658,9 @@ const CircleX = createLucideIcon("circle-x", __iconNode$e);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$d = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["polyline", { points: "12 6 12 12 16 14", key: "68esgv" }]
+  ["path", { d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z", key: "1lielz" }]
 ];
-const Clock = createLucideIcon("clock", __iconNode$d);
+const MessageSquare = createLucideIcon("message-square", __iconNode$d);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36490,19 +36668,21 @@ const Clock = createLucideIcon("clock", __iconNode$d);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$c = [
-  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
-  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
-  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
+  ["circle", { cx: "8", cy: "18", r: "4", key: "1fc0mg" }],
+  ["path", { d: "M12 18V2l7 4", key: "g04rme" }]
 ];
-const Image = createLucideIcon("image", __iconNode$c);
+const Music2 = createLucideIcon("music-2", __iconNode$c);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$b = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-const LoaderCircle = createLucideIcon("loader-circle", __iconNode$b);
+const __iconNode$b = [
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "M12 5v14", key: "s699le" }]
+];
+const Plus = createLucideIcon("plus", __iconNode$b);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36510,29 +36690,6 @@ const LoaderCircle = createLucideIcon("loader-circle", __iconNode$b);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$a = [
-  ["path", { d: "M4 12h16", key: "1lakjw" }],
-  ["path", { d: "M4 18h16", key: "19g7jn" }],
-  ["path", { d: "M4 6h16", key: "1o0s65" }]
-];
-const Menu = createLucideIcon("menu", __iconNode$a);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$9 = [
-  ["path", { d: "M5 12h14", key: "1ays0h" }],
-  ["path", { d: "M12 5v14", key: "s699le" }]
-];
-const Plus = createLucideIcon("plus", __iconNode$9);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$8 = [
   ["rect", { width: "5", height: "5", x: "3", y: "3", rx: "1", key: "1tu5fj" }],
   ["rect", { width: "5", height: "5", x: "16", y: "3", rx: "1", key: "1v8r4q" }],
   ["rect", { width: "5", height: "5", x: "3", y: "16", rx: "1", key: "1x03jg" }],
@@ -36546,7 +36703,40 @@ const __iconNode$8 = [
   ["path", { d: "M21 12v.01", key: "1lwtk9" }],
   ["path", { d: "M12 21v-1", key: "1880an" }]
 ];
-const QrCode = createLucideIcon("qr-code", __iconNode$8);
+const QrCode = createLucideIcon("qr-code", __iconNode$a);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$9 = [
+  [
+    "path",
+    {
+      d: "M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z",
+      key: "1ffxy3"
+    }
+  ],
+  ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
+];
+const Send = createLucideIcon("send", __iconNode$9);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$8 = [
+  [
+    "path",
+    {
+      d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
+      key: "oel41y"
+    }
+  ]
+];
+const Shield = createLucideIcon("shield", __iconNode$8);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36554,11 +36744,13 @@ const QrCode = createLucideIcon("qr-code", __iconNode$8);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$7 = [
-  ["path", { d: "M12 3v12", key: "1x0j5s" }],
-  ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
-  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
+  ["path", { d: "M3 6h18", key: "d0wm0j" }],
+  ["path", { d: "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6", key: "4alrt4" }],
+  ["path", { d: "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2", key: "v07s0e" }],
+  ["line", { x1: "10", x2: "10", y1: "11", y2: "17", key: "1uufr5" }],
+  ["line", { x1: "14", x2: "14", y1: "11", y2: "17", key: "xtxkd" }]
 ];
-const Upload = createLucideIcon("upload", __iconNode$7);
+const Trash2 = createLucideIcon("trash-2", __iconNode$7);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36566,11 +36758,11 @@ const Upload = createLucideIcon("upload", __iconNode$7);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$6 = [
-  ["path", { d: "m16 11 2 2 4-4", key: "9rsbq5" }],
-  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
-  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
+  ["path", { d: "M12 3v12", key: "1x0j5s" }],
+  ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
+  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
 ];
-const UserCheck = createLucideIcon("user-check", __iconNode$6);
+const Upload = createLucideIcon("upload", __iconNode$6);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36578,12 +36770,11 @@ const UserCheck = createLucideIcon("user-check", __iconNode$6);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$5 = [
+  ["path", { d: "m16 11 2 2 4-4", key: "9rsbq5" }],
   ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
-  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }],
-  ["line", { x1: "17", x2: "22", y1: "8", y2: "13", key: "3nzzx3" }],
-  ["line", { x1: "22", x2: "17", y1: "8", y2: "13", key: "1swrse" }]
+  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
 ];
-const UserX = createLucideIcon("user-x", __iconNode$5);
+const UserCheck = createLucideIcon("user-check", __iconNode$5);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36592,11 +36783,11 @@ const UserX = createLucideIcon("user-x", __iconNode$5);
  */
 const __iconNode$4 = [
   ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
-  ["path", { d: "M16 3.128a4 4 0 0 1 0 7.744", key: "16gr8j" }],
-  ["path", { d: "M22 21v-2a4 4 0 0 0-3-3.87", key: "kshegd" }],
-  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
+  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }],
+  ["line", { x1: "17", x2: "22", y1: "8", y2: "13", key: "3nzzx3" }],
+  ["line", { x1: "22", x2: "17", y1: "8", y2: "13", key: "1swrse" }]
 ];
-const Users = createLucideIcon("users", __iconNode$4);
+const UserX = createLucideIcon("user-x", __iconNode$4);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36604,17 +36795,12 @@ const Users = createLucideIcon("users", __iconNode$4);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$3 = [
-  [
-    "path",
-    {
-      d: "M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z",
-      key: "uqj9uw"
-    }
-  ],
-  ["path", { d: "M16 9a5 5 0 0 1 0 6", key: "1q6k2b" }],
-  ["path", { d: "M19.364 18.364a9 9 0 0 0 0-12.728", key: "ijwkga" }]
+  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
+  ["path", { d: "M16 3.128a4 4 0 0 1 0 7.744", key: "16gr8j" }],
+  ["path", { d: "M22 21v-2a4 4 0 0 0-3-3.87", key: "kshegd" }],
+  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
 ];
-const Volume2 = createLucideIcon("volume-2", __iconNode$3);
+const Users = createLucideIcon("users", __iconNode$3);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36857,43 +37043,7 @@ function Layout({ children }) {
         ) })
       ] })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("main", { className: "relative z-10 flex-1", children }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("footer", { className: "relative z-10 border-t border-primary/20 bg-card/30 backdrop-blur-sm py-6 px-4", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-muted-foreground font-body", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Zap, { className: "w-3 h-3 text-primary", "aria-hidden": "true" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "span",
-          {
-            className: "font-display font-bold text-sm",
-            style: {
-              background: "linear-gradient(90deg, oklch(0.65 0.22 290), oklch(0.55 0.25 315))",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text"
-            },
-            children: "10s Only"
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground/60", children: "·" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Saturday, May 23, 2026" })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
-        "© ",
-        (/* @__PURE__ */ new Date()).getFullYear(),
-        ". Built with love using",
-        " ",
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "a",
-          {
-            href: `https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(typeof window !== "undefined" ? window.location.hostname : "")}`,
-            target: "_blank",
-            rel: "noopener noreferrer",
-            className: "text-primary hover:text-accent transition-colors duration-200",
-            children: "caffeine.ai"
-          }
-        )
-      ] })
-    ] }) })
+    /* @__PURE__ */ jsxRuntimeExports.jsx("main", { className: "relative z-10 flex-1", children })
   ] });
 }
 function ProtectedRoute({
@@ -37158,6 +37308,72 @@ function useAddInviteCode() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["inviteCodes"] });
+    }
+  });
+}
+function useListAdmins() {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["listAdmins"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.listAdmins();
+    },
+    enabled: !!actor && !isFetching
+  });
+}
+function useAddAdmin() {
+  const { actor } = useActor(createActor);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (principal) => {
+      if (!actor) throw new Error("No actor");
+      const result = await actor.addAdmin(principal);
+      if (result.__kind__ === "err") throw new Error(result.err);
+      return result;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["listAdmins"] });
+    }
+  });
+}
+function useRemoveAdmin() {
+  const { actor } = useActor(createActor);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (principal) => {
+      if (!actor) throw new Error("No actor");
+      const result = await actor.removeAdmin(principal);
+      if (result.__kind__ === "err") throw new Error(result.err);
+      return result;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["listAdmins"] });
+    }
+  });
+}
+function useResendApprovalEmail() {
+  const { actor } = useActor(createActor);
+  return useMutation({
+    mutationFn: async (id2) => {
+      if (!actor) throw new Error("No actor");
+      const result = await actor.resendApprovalEmail(id2);
+      if (result.__kind__ === "err") throw new Error(result.err);
+      return result;
+    }
+  });
+}
+function useBroadcastToApprovedGuests() {
+  const { actor } = useActor(createActor);
+  return useMutation({
+    mutationFn: async ({
+      subject,
+      message
+    }) => {
+      if (!actor) throw new Error("No actor");
+      const result = await actor.broadcastToApprovedGuests(subject, message);
+      if (result.__kind__ === "err") throw new Error(result.err);
+      return result.ok;
     }
   });
 }
@@ -45230,1348 +45446,6 @@ const featureBundle = {
   ...layout
 };
 const motion = /* @__PURE__ */ createMotionProxy(featureBundle, createDomVisualElement);
-function formatDate(ts) {
-  return new Date(Number(ts) / 1e6).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric"
-  });
-}
-function getStatus(app) {
-  if ("approved" in app.status) return "approved";
-  if ("rejected" in app.status) return "rejected";
-  return "pending";
-}
-function safeGetURL(photo) {
-  try {
-    if (!photo || typeof photo.getDirectURL !== "function")
-      return null;
-    const url = photo.getDirectURL();
-    return typeof url === "string" && url.length > 0 ? url : null;
-  } catch {
-    return null;
-  }
-}
-function StatCard({
-  label,
-  value,
-  icon,
-  glow,
-  glowColor,
-  ocid
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    NeonCard,
-    {
-      glow,
-      className: "p-4 flex items-center gap-4",
-      "data-ocid": ocid,
-      style: {
-        boxShadow: value !== void 0 ? `0 0 24px ${glowColor}` : void 0
-      },
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            className: "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
-            style: { background: `${glowColor}22` },
-            children: icon
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-xs uppercase tracking-widest font-mono", children: label }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground text-2xl font-display font-bold", children: value !== void 0 ? value.toString() : "—" })
-        ] })
-      ]
-    }
-  );
-}
-function StatusBadge({
-  status
-}) {
-  const map = {
-    pending: "border-yellow-400/50 text-yellow-300 bg-yellow-400/10",
-    approved: "border-emerald-400/50 text-emerald-300 bg-emerald-400/10",
-    rejected: "border-destructive/50 text-red-300 bg-destructive/10"
-  };
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    "span",
-    {
-      className: cn(
-        "inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-mono uppercase tracking-wider",
-        map[status]
-      ),
-      children: status
-    }
-  );
-}
-function QRModal({
-  token,
-  name,
-  onClose
-}) {
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(token)}&bgcolor=0a0a12&color=00fff0&qzone=2`;
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    motion.div,
-    {
-      className: "fixed inset-0 z-50 flex items-center justify-center p-4",
-      initial: { opacity: 0 },
-      animate: { opacity: 1 },
-      exit: { opacity: 0 },
-      "data-ocid": "admin.qr.dialog",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            className: "absolute inset-0 bg-background/80 backdrop-blur-md",
-            onClick: onClose,
-            onKeyDown: (e) => e.key === "Escape" && onClose(),
-            tabIndex: -1,
-            role: "presentation"
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          motion.div,
-          {
-            className: "relative z-10 w-full max-w-xs",
-            initial: { scale: 0.85, y: 20 },
-            animate: { scale: 1, y: 0 },
-            exit: { scale: 0.85, y: 20 },
-            transition: { type: "spring", stiffness: 300, damping: 25 },
-            children: /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonCard, { glow: "cyan", className: "p-6 text-center", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
-                {
-                  type: "button",
-                  className: "absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors",
-                  onClick: onClose,
-                  "aria-label": "Close QR modal",
-                  "data-ocid": "admin.qr.close_button",
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "w-4 h-4" })
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono uppercase tracking-widest mb-1", children: "Entry Pass" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground font-display font-bold mb-4 truncate", children: name }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "img",
-                {
-                  src: qrUrl,
-                  alt: `QR code for ${name}`,
-                  width: 250,
-                  height: 250,
-                  className: "rounded-lg border border-accent/30"
-                }
-              ) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-4 text-xs text-muted-foreground font-mono break-all", children: token })
-            ] })
-          }
-        )
-      ]
-    }
-  ) });
-}
-function ApplicationCard({
-  app,
-  index: index2
-}) {
-  const [expanded, setExpanded] = reactExports.useState(false);
-  const [qrTarget, setQrTarget] = reactExports.useState(null);
-  const approve = useApproveApplication();
-  const reject = useRejectApplication();
-  const status = getStatus(app);
-  const isPending = status === "pending";
-  const isApproved = status === "approved";
-  const approvingThis = approve.isPending;
-  const rejectingThis = reject.isPending;
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-    qrTarget && /* @__PURE__ */ jsxRuntimeExports.jsx(
-      QRModal,
-      {
-        token: qrTarget,
-        name: app.name,
-        onClose: () => setQrTarget(null)
-      }
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      motion.div,
-      {
-        initial: { opacity: 0, y: 10 },
-        animate: { opacity: 1, y: 0 },
-        transition: { delay: index2 * 0.05 },
-        "data-ocid": `admin.app.item.${index2 + 1}`,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          NeonCard,
-          {
-            glow: status === "approved" ? "cyan" : status === "rejected" ? "none" : "purple",
-            className: "overflow-hidden",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "button",
-                {
-                  type: "button",
-                  className: "w-full p-4 text-left flex items-start gap-3",
-                  onClick: () => setExpanded((p2) => !p2),
-                  "aria-expanded": expanded,
-                  "data-ocid": `admin.app.expand.${index2 + 1}`,
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center gap-2 mb-1", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display font-semibold text-foreground truncate", children: app.name }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status }),
-                        app.plusOne && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-mono text-accent border border-accent/30 rounded-full px-2 py-0.5 bg-accent/10", children: "+1" })
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground truncate", children: [
-                        "@",
-                        app.instagramHandle
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground mt-0.5 truncate", children: app.email })
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 shrink-0", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground font-mono hidden sm:block", children: formatDate(app.submittedAt) }),
-                      expanded ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronUp, { className: "w-4 h-4 text-muted-foreground" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDown, { className: "w-4 h-4 text-muted-foreground" })
-                    ] })
-                  ]
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: expanded && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                motion.div,
-                {
-                  initial: { height: 0, opacity: 0 },
-                  animate: { height: "auto", opacity: 1 },
-                  exit: { height: 0, opacity: 0 },
-                  transition: { duration: 0.25 },
-                  className: "overflow-hidden",
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-4 pb-4 border-t border-border/20 pt-3 space-y-3", children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-x-4 gap-y-2 text-sm", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono", children: "Phone" }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground", children: app.phone })
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono", children: "Invite Code" }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground font-mono", children: app.inviteCode })
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-2", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono mb-1", children: "Submitted" }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground", children: formatDate(app.submittedAt) })
-                      ] })
-                    ] }),
-                    (app.photos ?? []).length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground font-mono mb-2", children: [
-                        "Photos (",
-                        app.photos.length,
-                        ")"
-                      ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-wrap gap-2", children: (app.photos ?? []).map((photo, pi) => {
-                        const url = safeGetURL(photo);
-                        if (!url)
-                          return /* @__PURE__ */ jsxRuntimeExports.jsx(
-                            "div",
-                            {
-                              className: "w-16 h-16 rounded-lg border border-border/30 bg-muted/20 flex items-center justify-center",
-                              title: "Photo unavailable",
-                              children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground text-xs font-mono", children: "?" })
-                            },
-                            `${app.id}-broken-${pi}`
-                          );
-                        return /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          "a",
-                          {
-                            href: url,
-                            target: "_blank",
-                            rel: "noopener noreferrer",
-                            className: "block",
-                            children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                              "img",
-                              {
-                                src: url,
-                                alt: `Submission ${pi + 1}`,
-                                className: "w-16 h-16 object-cover rounded-lg border border-border/30 hover:border-accent/50 transition-colors",
-                                onError: (e) => {
-                                  e.currentTarget.style.display = "none";
-                                }
-                              }
-                            )
-                          },
-                          `${app.id}-photo-${url}`
-                        );
-                      }) })
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap gap-2 pt-1", children: [
-                      isPending && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                          Button,
-                          {
-                            type: "button",
-                            size: "sm",
-                            disabled: approvingThis || rejectingThis,
-                            onClick: () => approve.mutate(app.id),
-                            className: "bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 hover:bg-emerald-500/30 hover:border-emerald-400 transition-all",
-                            "data-ocid": `admin.app.approve_button.${index2 + 1}`,
-                            children: [
-                              approvingThis ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-3 h-3 animate-spin mr-1" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheckBig, { className: "w-3 h-3 mr-1" }),
-                              "Approve"
-                            ]
-                          }
-                        ),
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                          Button,
-                          {
-                            type: "button",
-                            size: "sm",
-                            variant: "destructive",
-                            disabled: approvingThis || rejectingThis,
-                            onClick: () => reject.mutate(app.id),
-                            className: "bg-red-500/20 border border-red-400/50 text-red-300 hover:bg-red-500/30 hover:border-red-400 transition-all",
-                            "data-ocid": `admin.app.reject_button.${index2 + 1}`,
-                            children: [
-                              rejectingThis ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-3 h-3 animate-spin mr-1" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(CircleX, { className: "w-3 h-3 mr-1" }),
-                              "Reject"
-                            ]
-                          }
-                        )
-                      ] }),
-                      isApproved && app.qrToken && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                        Button,
-                        {
-                          type: "button",
-                          size: "sm",
-                          onClick: () => setQrTarget(app.qrToken),
-                          className: "bg-accent/20 border border-accent/50 text-accent hover:bg-accent/30 hover:border-accent transition-all",
-                          "data-ocid": `admin.app.view_qr_button.${index2 + 1}`,
-                          children: [
-                            /* @__PURE__ */ jsxRuntimeExports.jsx(QrCode, { className: "w-3 h-3 mr-1" }),
-                            "View QR"
-                          ]
-                        }
-                      )
-                    ] })
-                  ] })
-                }
-              ) })
-            ]
-          }
-        )
-      }
-    )
-  ] });
-}
-function AppSkeleton() {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-3", "data-ocid": "admin.apps.loading_state", children: [1, 2, 3, 4].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx(NeonCard, { glow: "none", className: "p-4", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-3", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 space-y-2", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-5 w-32 bg-muted/40" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-5 w-16 rounded-full bg-muted/40" })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-4 w-24 bg-muted/30" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-4 w-40 bg-muted/20" })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-4 w-16 bg-muted/30" })
-  ] }) }, i)) });
-}
-function InviteCodesPanel() {
-  const { data: codes = [], isLoading } = useInviteCodes();
-  const addCode = useAddInviteCode();
-  const [newCode, setNewCode] = reactExports.useState("");
-  function handleSubmit(e) {
-    e.preventDefault();
-    const trimmed = newCode.trim();
-    if (!trimmed) return;
-    addCode.mutate(trimmed, {
-      onSuccess: () => setNewCode("")
-    });
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-6", "data-ocid": "admin.invite_codes.panel", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonCard, { glow: "purple", className: "p-4", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono uppercase tracking-widest mb-3", children: "Add New Code" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, className: "flex gap-2", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Input,
-          {
-            value: newCode,
-            onChange: (e) => setNewCode(e.target.value),
-            placeholder: "e.g. VIP2025",
-            className: "font-mono bg-background/40 border-border/40 text-foreground placeholder:text-muted-foreground/50 flex-1",
-            "aria-label": "New invite code",
-            "data-ocid": "admin.invite_codes.input"
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Button,
-          {
-            type: "submit",
-            disabled: !newCode.trim() || addCode.isPending,
-            className: "bg-primary/80 hover:bg-primary transition-all",
-            "data-ocid": "admin.invite_codes.add_button",
-            children: addCode.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-4 h-4 animate-spin" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { className: "w-4 h-4" })
-          }
-        )
-      ] })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground font-mono uppercase tracking-widest mb-3", children: [
-        "Active Codes (",
-        codes.length,
-        ")"
-      ] }),
-      isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-wrap gap-2", children: [1, 2, 3].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-8 w-24 rounded-full bg-muted/40" }, i)) }) : codes.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-        NeonCard,
-        {
-          glow: "none",
-          className: "p-6 text-center",
-          "data-ocid": "admin.invite_codes.empty_state",
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-sm", children: "No invite codes yet. Add the first one above." })
-        }
-      ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-wrap gap-2", children: codes.map((code, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-        motion.span,
-        {
-          initial: { opacity: 0, scale: 0.8 },
-          animate: { opacity: 1, scale: 1 },
-          transition: { delay: i * 0.04 },
-          "data-ocid": `admin.invite_codes.item.${i + 1}`,
-          className: "inline-flex items-center px-3 py-1.5 rounded-full font-mono text-sm bg-card/30 border border-primary/30 text-primary backdrop-blur-sm hover:border-primary/60 transition-colors",
-          children: code
-        },
-        code
-      )) })
-    ] })
-  ] });
-}
-function AdminPage() {
-  const navigate = useNavigate();
-  const { isConnected, isAdmin } = useAuth();
-  const { data: stats } = useAdminStats();
-  const {
-    data: applications = [],
-    isLoading: appsLoading,
-    error: appsError
-  } = useListApplications();
-  const [activeTab, setActiveTab] = reactExports.useState(
-    "applications"
-  );
-  if (!isConnected) {
-    navigate({ to: "/" });
-    return null;
-  }
-  if (!isAdmin) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-col items-center justify-center min-h-[60vh] px-4 text-center", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      NeonCard,
-      {
-        glow: "magenta",
-        className: "p-8 max-w-sm",
-        "data-ocid": "admin.access_denied",
-        children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(CircleX, { className: "w-10 h-10 text-secondary mx-auto mb-4" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display font-bold text-xl text-foreground mb-2", children: "Admin Access Required" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-sm", children: "You don't have permission to view this page." })
-        ]
-      }
-    ) });
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    "div",
-    {
-      className: "max-w-3xl mx-auto px-4 py-8 space-y-8",
-      "data-ocid": "admin.page",
-      children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono uppercase tracking-widest mb-1", children: "Control Room" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("h1", { className: "text-3xl font-display font-bold text-foreground", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-primary", children: "Admin" }),
-            " Dashboard"
-          ] })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            className: "grid grid-cols-2 sm:grid-cols-4 gap-3",
-            "data-ocid": "admin.stats.section",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                StatCard,
-                {
-                  label: "Total",
-                  value: stats == null ? void 0 : stats.total,
-                  icon: /* @__PURE__ */ jsxRuntimeExports.jsx(Users, { className: "w-5 h-5 text-primary" }),
-                  glow: "purple",
-                  glowColor: "rgba(104,0,255,0.4)",
-                  ocid: "admin.stats.total"
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                StatCard,
-                {
-                  label: "Approved",
-                  value: stats == null ? void 0 : stats.approved,
-                  icon: /* @__PURE__ */ jsxRuntimeExports.jsx(UserCheck, { className: "w-5 h-5 text-emerald-400" }),
-                  glow: "cyan",
-                  glowColor: "rgba(52,211,153,0.4)",
-                  ocid: "admin.stats.approved"
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                StatCard,
-                {
-                  label: "Pending",
-                  value: stats == null ? void 0 : stats.pending,
-                  icon: /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "w-5 h-5 text-yellow-400" }),
-                  glow: "none",
-                  glowColor: "rgba(251,191,36,0.4)",
-                  ocid: "admin.stats.pending"
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                StatCard,
-                {
-                  label: "Rejected",
-                  value: stats == null ? void 0 : stats.rejected,
-                  icon: /* @__PURE__ */ jsxRuntimeExports.jsx(UserX, { className: "w-5 h-5 text-red-400" }),
-                  glow: "magenta",
-                  glowColor: "rgba(239,68,68,0.4)",
-                  ocid: "admin.stats.rejected"
-                }
-              )
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            className: "flex gap-1 p-1 rounded-xl bg-card/20 backdrop-blur-sm border border-border/20",
-            "data-ocid": "admin.tabs",
-            children: ["applications", "invite-codes"].map((tab) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "button",
-              {
-                type: "button",
-                onClick: () => setActiveTab(tab),
-                "data-ocid": `admin.tab.${tab}`,
-                className: cn(
-                  "flex-1 py-2 px-3 rounded-lg text-sm font-mono uppercase tracking-wider transition-all duration-200",
-                  activeTab === tab ? "bg-primary/80 text-foreground shadow-[0_0_16px_rgba(104,0,255,0.5)]" : "text-muted-foreground hover:text-foreground"
-                ),
-                children: tab === "applications" ? "Applications" : "Invite Codes"
-              },
-              tab
-            ))
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { mode: "wait", children: activeTab === "applications" ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-          motion.div,
-          {
-            initial: { opacity: 0, y: 8 },
-            animate: { opacity: 1, y: 0 },
-            exit: { opacity: 0, y: -8 },
-            transition: { duration: 0.2 },
-            "data-ocid": "admin.apps.section",
-            children: appsLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx(AppSkeleton, {}) : appsError ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-              NeonCard,
-              {
-                glow: "none",
-                className: "p-6 text-center",
-                "data-ocid": "admin.apps.error_state",
-                children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-destructive-foreground text-sm", children: "Failed to load applications. Please refresh." })
-              }
-            ) : applications.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-              NeonCard,
-              {
-                glow: "none",
-                className: "p-8 text-center",
-                "data-ocid": "admin.apps.empty_state",
-                children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(Users, { className: "w-8 h-8 text-muted-foreground mx-auto mb-3" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground", children: "No applications yet." })
-                ]
-              }
-            ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-3", children: applications.map((app, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-              ApplicationCard,
-              {
-                app,
-                index: i
-              },
-              app.id.toString()
-            )) })
-          },
-          "applications"
-        ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-          motion.div,
-          {
-            initial: { opacity: 0, y: 8 },
-            animate: { opacity: 1, y: 0 },
-            exit: { opacity: 0, y: -8 },
-            transition: { duration: 0.2 },
-            children: /* @__PURE__ */ jsxRuntimeExports.jsx(InviteCodesPanel, {})
-          },
-          "invite-codes"
-        ) })
-      ]
-    }
-  );
-}
-function createContextScope(scopeName, createContextScopeDeps = []) {
-  let defaultContexts = [];
-  function createContext3(rootComponentName, defaultContext) {
-    const BaseContext = reactExports.createContext(defaultContext);
-    const index2 = defaultContexts.length;
-    defaultContexts = [...defaultContexts, defaultContext];
-    const Provider = (props) => {
-      var _a3;
-      const { scope, children, ...context } = props;
-      const Context = ((_a3 = scope == null ? void 0 : scope[scopeName]) == null ? void 0 : _a3[index2]) || BaseContext;
-      const value = reactExports.useMemo(() => context, Object.values(context));
-      return /* @__PURE__ */ jsxRuntimeExports.jsx(Context.Provider, { value, children });
-    };
-    Provider.displayName = rootComponentName + "Provider";
-    function useContext2(consumerName, scope) {
-      var _a3;
-      const Context = ((_a3 = scope == null ? void 0 : scope[scopeName]) == null ? void 0 : _a3[index2]) || BaseContext;
-      const context = reactExports.useContext(Context);
-      if (context) return context;
-      if (defaultContext !== void 0) return defaultContext;
-      throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
-    }
-    return [Provider, useContext2];
-  }
-  const createScope = () => {
-    const scopeContexts = defaultContexts.map((defaultContext) => {
-      return reactExports.createContext(defaultContext);
-    });
-    return function useScope(scope) {
-      const contexts = (scope == null ? void 0 : scope[scopeName]) || scopeContexts;
-      return reactExports.useMemo(
-        () => ({ [`__scope${scopeName}`]: { ...scope, [scopeName]: contexts } }),
-        [scope, contexts]
-      );
-    };
-  };
-  createScope.scopeName = scopeName;
-  return [createContext3, composeContextScopes(createScope, ...createContextScopeDeps)];
-}
-function composeContextScopes(...scopes) {
-  const baseScope = scopes[0];
-  if (scopes.length === 1) return baseScope;
-  const createScope = () => {
-    const scopeHooks = scopes.map((createScope2) => ({
-      useScope: createScope2(),
-      scopeName: createScope2.scopeName
-    }));
-    return function useComposedScopes(overrideScopes) {
-      const nextScopes = scopeHooks.reduce((nextScopes2, { useScope, scopeName }) => {
-        const scopeProps = useScope(overrideScopes);
-        const currentScope = scopeProps[`__scope${scopeName}`];
-        return { ...nextScopes2, ...currentScope };
-      }, {});
-      return reactExports.useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
-    };
-  };
-  createScope.scopeName = baseScope.scopeName;
-  return createScope;
-}
-function composeEventHandlers(originalEventHandler, ourEventHandler, { checkForDefaultPrevented = true } = {}) {
-  return function handleEvent(event) {
-    originalEventHandler == null ? void 0 : originalEventHandler(event);
-    if (checkForDefaultPrevented === false || !event.defaultPrevented) {
-      return ourEventHandler == null ? void 0 : ourEventHandler(event);
-    }
-  };
-}
-var useLayoutEffect2 = (globalThis == null ? void 0 : globalThis.document) ? reactExports.useLayoutEffect : () => {
-};
-var useInsertionEffect = React$4[" useInsertionEffect ".trim().toString()] || useLayoutEffect2;
-function useControllableState({
-  prop,
-  defaultProp,
-  onChange = () => {
-  },
-  caller
-}) {
-  const [uncontrolledProp, setUncontrolledProp, onChangeRef] = useUncontrolledState({
-    defaultProp,
-    onChange
-  });
-  const isControlled = prop !== void 0;
-  const value = isControlled ? prop : uncontrolledProp;
-  {
-    const isControlledRef = reactExports.useRef(prop !== void 0);
-    reactExports.useEffect(() => {
-      const wasControlled = isControlledRef.current;
-      if (wasControlled !== isControlled) {
-        const from = wasControlled ? "controlled" : "uncontrolled";
-        const to = isControlled ? "controlled" : "uncontrolled";
-        console.warn(
-          `${caller} is changing from ${from} to ${to}. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.`
-        );
-      }
-      isControlledRef.current = isControlled;
-    }, [isControlled, caller]);
-  }
-  const setValue = reactExports.useCallback(
-    (nextValue) => {
-      var _a3;
-      if (isControlled) {
-        const value2 = isFunction$1(nextValue) ? nextValue(prop) : nextValue;
-        if (value2 !== prop) {
-          (_a3 = onChangeRef.current) == null ? void 0 : _a3.call(onChangeRef, value2);
-        }
-      } else {
-        setUncontrolledProp(nextValue);
-      }
-    },
-    [isControlled, prop, setUncontrolledProp, onChangeRef]
-  );
-  return [value, setValue];
-}
-function useUncontrolledState({
-  defaultProp,
-  onChange
-}) {
-  const [value, setValue] = reactExports.useState(defaultProp);
-  const prevValueRef = reactExports.useRef(value);
-  const onChangeRef = reactExports.useRef(onChange);
-  useInsertionEffect(() => {
-    onChangeRef.current = onChange;
-  }, [onChange]);
-  reactExports.useEffect(() => {
-    var _a3;
-    if (prevValueRef.current !== value) {
-      (_a3 = onChangeRef.current) == null ? void 0 : _a3.call(onChangeRef, value);
-      prevValueRef.current = value;
-    }
-  }, [value, prevValueRef]);
-  return [value, setValue, onChangeRef];
-}
-function isFunction$1(value) {
-  return typeof value === "function";
-}
-function usePrevious(value) {
-  const ref = reactExports.useRef({ value, previous: value });
-  return reactExports.useMemo(() => {
-    if (ref.current.value !== value) {
-      ref.current.previous = ref.current.value;
-      ref.current.value = value;
-    }
-    return ref.current.previous;
-  }, [value]);
-}
-function useSize(element) {
-  const [size, setSize] = reactExports.useState(void 0);
-  useLayoutEffect2(() => {
-    if (element) {
-      setSize({ width: element.offsetWidth, height: element.offsetHeight });
-      const resizeObserver = new ResizeObserver((entries) => {
-        if (!Array.isArray(entries)) {
-          return;
-        }
-        if (!entries.length) {
-          return;
-        }
-        const entry = entries[0];
-        let width;
-        let height;
-        if ("borderBoxSize" in entry) {
-          const borderSizeEntry = entry["borderBoxSize"];
-          const borderSize = Array.isArray(borderSizeEntry) ? borderSizeEntry[0] : borderSizeEntry;
-          width = borderSize["inlineSize"];
-          height = borderSize["blockSize"];
-        } else {
-          width = element.offsetWidth;
-          height = element.offsetHeight;
-        }
-        setSize({ width, height });
-      });
-      resizeObserver.observe(element, { box: "border-box" });
-      return () => resizeObserver.unobserve(element);
-    } else {
-      setSize(void 0);
-    }
-  }, [element]);
-  return size;
-}
-function useStateMachine(initialState, machine) {
-  return reactExports.useReducer((state, event) => {
-    const nextState = machine[state][event];
-    return nextState ?? state;
-  }, initialState);
-}
-var Presence = (props) => {
-  const { present, children } = props;
-  const presence = usePresence(present);
-  const child = typeof children === "function" ? children({ present: presence.isPresent }) : reactExports.Children.only(children);
-  const ref = useComposedRefs$1(presence.ref, getElementRef$1(child));
-  const forceMount = typeof children === "function";
-  return forceMount || presence.isPresent ? reactExports.cloneElement(child, { ref }) : null;
-};
-Presence.displayName = "Presence";
-function usePresence(present) {
-  const [node, setNode] = reactExports.useState();
-  const stylesRef = reactExports.useRef(null);
-  const prevPresentRef = reactExports.useRef(present);
-  const prevAnimationNameRef = reactExports.useRef("none");
-  const initialState = present ? "mounted" : "unmounted";
-  const [state, send] = useStateMachine(initialState, {
-    mounted: {
-      UNMOUNT: "unmounted",
-      ANIMATION_OUT: "unmountSuspended"
-    },
-    unmountSuspended: {
-      MOUNT: "mounted",
-      ANIMATION_END: "unmounted"
-    },
-    unmounted: {
-      MOUNT: "mounted"
-    }
-  });
-  reactExports.useEffect(() => {
-    const currentAnimationName = getAnimationName(stylesRef.current);
-    prevAnimationNameRef.current = state === "mounted" ? currentAnimationName : "none";
-  }, [state]);
-  useLayoutEffect2(() => {
-    const styles = stylesRef.current;
-    const wasPresent = prevPresentRef.current;
-    const hasPresentChanged = wasPresent !== present;
-    if (hasPresentChanged) {
-      const prevAnimationName = prevAnimationNameRef.current;
-      const currentAnimationName = getAnimationName(styles);
-      if (present) {
-        send("MOUNT");
-      } else if (currentAnimationName === "none" || (styles == null ? void 0 : styles.display) === "none") {
-        send("UNMOUNT");
-      } else {
-        const isAnimating = prevAnimationName !== currentAnimationName;
-        if (wasPresent && isAnimating) {
-          send("ANIMATION_OUT");
-        } else {
-          send("UNMOUNT");
-        }
-      }
-      prevPresentRef.current = present;
-    }
-  }, [present, send]);
-  useLayoutEffect2(() => {
-    if (node) {
-      let timeoutId;
-      const ownerWindow = node.ownerDocument.defaultView ?? window;
-      const handleAnimationEnd = (event) => {
-        const currentAnimationName = getAnimationName(stylesRef.current);
-        const isCurrentAnimation = currentAnimationName.includes(CSS.escape(event.animationName));
-        if (event.target === node && isCurrentAnimation) {
-          send("ANIMATION_END");
-          if (!prevPresentRef.current) {
-            const currentFillMode = node.style.animationFillMode;
-            node.style.animationFillMode = "forwards";
-            timeoutId = ownerWindow.setTimeout(() => {
-              if (node.style.animationFillMode === "forwards") {
-                node.style.animationFillMode = currentFillMode;
-              }
-            });
-          }
-        }
-      };
-      const handleAnimationStart = (event) => {
-        if (event.target === node) {
-          prevAnimationNameRef.current = getAnimationName(stylesRef.current);
-        }
-      };
-      node.addEventListener("animationstart", handleAnimationStart);
-      node.addEventListener("animationcancel", handleAnimationEnd);
-      node.addEventListener("animationend", handleAnimationEnd);
-      return () => {
-        ownerWindow.clearTimeout(timeoutId);
-        node.removeEventListener("animationstart", handleAnimationStart);
-        node.removeEventListener("animationcancel", handleAnimationEnd);
-        node.removeEventListener("animationend", handleAnimationEnd);
-      };
-    } else {
-      send("ANIMATION_END");
-    }
-  }, [node, send]);
-  return {
-    isPresent: ["mounted", "unmountSuspended"].includes(state),
-    ref: reactExports.useCallback((node2) => {
-      stylesRef.current = node2 ? getComputedStyle(node2) : null;
-      setNode(node2);
-    }, [])
-  };
-}
-function getAnimationName(styles) {
-  return (styles == null ? void 0 : styles.animationName) || "none";
-}
-function getElementRef$1(element) {
-  var _a3, _b3;
-  let getter = (_a3 = Object.getOwnPropertyDescriptor(element.props, "ref")) == null ? void 0 : _a3.get;
-  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.ref;
-  }
-  getter = (_b3 = Object.getOwnPropertyDescriptor(element, "ref")) == null ? void 0 : _b3.get;
-  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.props.ref;
-  }
-  return element.props.ref || element.ref;
-}
-// @__NO_SIDE_EFFECTS__
-function createSlot(ownerName) {
-  const SlotClone = /* @__PURE__ */ createSlotClone(ownerName);
-  const Slot2 = reactExports.forwardRef((props, forwardedRef) => {
-    const { children, ...slotProps } = props;
-    const childrenArray = reactExports.Children.toArray(children);
-    const slottable = childrenArray.find(isSlottable);
-    if (slottable) {
-      const newElement = slottable.props.children;
-      const newChildren = childrenArray.map((child) => {
-        if (child === slottable) {
-          if (reactExports.Children.count(newElement) > 1) return reactExports.Children.only(null);
-          return reactExports.isValidElement(newElement) ? newElement.props.children : null;
-        } else {
-          return child;
-        }
-      });
-      return /* @__PURE__ */ jsxRuntimeExports.jsx(SlotClone, { ...slotProps, ref: forwardedRef, children: reactExports.isValidElement(newElement) ? reactExports.cloneElement(newElement, void 0, newChildren) : null });
-    }
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(SlotClone, { ...slotProps, ref: forwardedRef, children });
-  });
-  Slot2.displayName = `${ownerName}.Slot`;
-  return Slot2;
-}
-// @__NO_SIDE_EFFECTS__
-function createSlotClone(ownerName) {
-  const SlotClone = reactExports.forwardRef((props, forwardedRef) => {
-    const { children, ...slotProps } = props;
-    if (reactExports.isValidElement(children)) {
-      const childrenRef = getElementRef(children);
-      const props2 = mergeProps(slotProps, children.props);
-      if (children.type !== reactExports.Fragment) {
-        props2.ref = forwardedRef ? composeRefs$1(forwardedRef, childrenRef) : childrenRef;
-      }
-      return reactExports.cloneElement(children, props2);
-    }
-    return reactExports.Children.count(children) > 1 ? reactExports.Children.only(null) : null;
-  });
-  SlotClone.displayName = `${ownerName}.SlotClone`;
-  return SlotClone;
-}
-var SLOTTABLE_IDENTIFIER = Symbol("radix.slottable");
-function isSlottable(child) {
-  return reactExports.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
-}
-function mergeProps(slotProps, childProps) {
-  const overrideProps = { ...childProps };
-  for (const propName in childProps) {
-    const slotPropValue = slotProps[propName];
-    const childPropValue = childProps[propName];
-    const isHandler = /^on[A-Z]/.test(propName);
-    if (isHandler) {
-      if (slotPropValue && childPropValue) {
-        overrideProps[propName] = (...args) => {
-          const result = childPropValue(...args);
-          slotPropValue(...args);
-          return result;
-        };
-      } else if (slotPropValue) {
-        overrideProps[propName] = slotPropValue;
-      }
-    } else if (propName === "style") {
-      overrideProps[propName] = { ...slotPropValue, ...childPropValue };
-    } else if (propName === "className") {
-      overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
-    }
-  }
-  return { ...slotProps, ...overrideProps };
-}
-function getElementRef(element) {
-  var _a3, _b3;
-  let getter = (_a3 = Object.getOwnPropertyDescriptor(element.props, "ref")) == null ? void 0 : _a3.get;
-  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.ref;
-  }
-  getter = (_b3 = Object.getOwnPropertyDescriptor(element, "ref")) == null ? void 0 : _b3.get;
-  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.props.ref;
-  }
-  return element.props.ref || element.ref;
-}
-var NODES$1 = [
-  "a",
-  "button",
-  "div",
-  "form",
-  "h2",
-  "h3",
-  "img",
-  "input",
-  "label",
-  "li",
-  "nav",
-  "ol",
-  "p",
-  "select",
-  "span",
-  "svg",
-  "ul"
-];
-var Primitive$1 = NODES$1.reduce((primitive, node) => {
-  const Slot2 = /* @__PURE__ */ createSlot(`Primitive.${node}`);
-  const Node = reactExports.forwardRef((props, forwardedRef) => {
-    const { asChild, ...primitiveProps } = props;
-    const Comp = asChild ? Slot2 : node;
-    if (typeof window !== "undefined") {
-      window[Symbol.for("radix-ui")] = true;
-    }
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Comp, { ...primitiveProps, ref: forwardedRef });
-  });
-  Node.displayName = `Primitive.${node}`;
-  return { ...primitive, [node]: Node };
-}, {});
-var CHECKBOX_NAME = "Checkbox";
-var [createCheckboxContext] = createContextScope(CHECKBOX_NAME);
-var [CheckboxProviderImpl, useCheckboxContext] = createCheckboxContext(CHECKBOX_NAME);
-function CheckboxProvider(props) {
-  const {
-    __scopeCheckbox,
-    checked: checkedProp,
-    children,
-    defaultChecked,
-    disabled,
-    form,
-    name,
-    onCheckedChange,
-    required,
-    value = "on",
-    // @ts-expect-error
-    internal_do_not_use_render
-  } = props;
-  const [checked, setChecked] = useControllableState({
-    prop: checkedProp,
-    defaultProp: defaultChecked ?? false,
-    onChange: onCheckedChange,
-    caller: CHECKBOX_NAME
-  });
-  const [control, setControl] = reactExports.useState(null);
-  const [bubbleInput, setBubbleInput] = reactExports.useState(null);
-  const hasConsumerStoppedPropagationRef = reactExports.useRef(false);
-  const isFormControl = control ? !!form || !!control.closest("form") : (
-    // We set this to true by default so that events bubble to forms without JS (SSR)
-    true
-  );
-  const context = {
-    checked,
-    disabled,
-    setChecked,
-    control,
-    setControl,
-    name,
-    form,
-    value,
-    hasConsumerStoppedPropagationRef,
-    required,
-    defaultChecked: isIndeterminate(defaultChecked) ? false : defaultChecked,
-    isFormControl,
-    bubbleInput,
-    setBubbleInput
-  };
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    CheckboxProviderImpl,
-    {
-      scope: __scopeCheckbox,
-      ...context,
-      children: isFunction(internal_do_not_use_render) ? internal_do_not_use_render(context) : children
-    }
-  );
-}
-var TRIGGER_NAME$1 = "CheckboxTrigger";
-var CheckboxTrigger = reactExports.forwardRef(
-  ({ __scopeCheckbox, onKeyDown, onClick, ...checkboxProps }, forwardedRef) => {
-    const {
-      control,
-      value,
-      disabled,
-      checked,
-      required,
-      setControl,
-      setChecked,
-      hasConsumerStoppedPropagationRef,
-      isFormControl,
-      bubbleInput
-    } = useCheckboxContext(TRIGGER_NAME$1, __scopeCheckbox);
-    const composedRefs = useComposedRefs$1(forwardedRef, setControl);
-    const initialCheckedStateRef = reactExports.useRef(checked);
-    reactExports.useEffect(() => {
-      const form = control == null ? void 0 : control.form;
-      if (form) {
-        const reset = () => setChecked(initialCheckedStateRef.current);
-        form.addEventListener("reset", reset);
-        return () => form.removeEventListener("reset", reset);
-      }
-    }, [control, setChecked]);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive$1.button,
-      {
-        type: "button",
-        role: "checkbox",
-        "aria-checked": isIndeterminate(checked) ? "mixed" : checked,
-        "aria-required": required,
-        "data-state": getState(checked),
-        "data-disabled": disabled ? "" : void 0,
-        disabled,
-        value,
-        ...checkboxProps,
-        ref: composedRefs,
-        onKeyDown: composeEventHandlers(onKeyDown, (event) => {
-          if (event.key === "Enter") event.preventDefault();
-        }),
-        onClick: composeEventHandlers(onClick, (event) => {
-          setChecked((prevChecked) => isIndeterminate(prevChecked) ? true : !prevChecked);
-          if (bubbleInput && isFormControl) {
-            hasConsumerStoppedPropagationRef.current = event.isPropagationStopped();
-            if (!hasConsumerStoppedPropagationRef.current) event.stopPropagation();
-          }
-        })
-      }
-    );
-  }
-);
-CheckboxTrigger.displayName = TRIGGER_NAME$1;
-var Checkbox$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const {
-      __scopeCheckbox,
-      name,
-      checked,
-      defaultChecked,
-      required,
-      disabled,
-      value,
-      onCheckedChange,
-      form,
-      ...checkboxProps
-    } = props;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      CheckboxProvider,
-      {
-        __scopeCheckbox,
-        checked,
-        defaultChecked,
-        disabled,
-        required,
-        onCheckedChange,
-        name,
-        form,
-        value,
-        internal_do_not_use_render: ({ isFormControl }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            CheckboxTrigger,
-            {
-              ...checkboxProps,
-              ref: forwardedRef,
-              __scopeCheckbox
-            }
-          ),
-          isFormControl && /* @__PURE__ */ jsxRuntimeExports.jsx(
-            CheckboxBubbleInput,
-            {
-              __scopeCheckbox
-            }
-          )
-        ] })
-      }
-    );
-  }
-);
-Checkbox$1.displayName = CHECKBOX_NAME;
-var INDICATOR_NAME = "CheckboxIndicator";
-var CheckboxIndicator = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeCheckbox, forceMount, ...indicatorProps } = props;
-    const context = useCheckboxContext(INDICATOR_NAME, __scopeCheckbox);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Presence,
-      {
-        present: forceMount || isIndeterminate(context.checked) || context.checked === true,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Primitive$1.span,
-          {
-            "data-state": getState(context.checked),
-            "data-disabled": context.disabled ? "" : void 0,
-            ...indicatorProps,
-            ref: forwardedRef,
-            style: { pointerEvents: "none", ...props.style }
-          }
-        )
-      }
-    );
-  }
-);
-CheckboxIndicator.displayName = INDICATOR_NAME;
-var BUBBLE_INPUT_NAME = "CheckboxBubbleInput";
-var CheckboxBubbleInput = reactExports.forwardRef(
-  ({ __scopeCheckbox, ...props }, forwardedRef) => {
-    const {
-      control,
-      hasConsumerStoppedPropagationRef,
-      checked,
-      defaultChecked,
-      required,
-      disabled,
-      name,
-      value,
-      form,
-      bubbleInput,
-      setBubbleInput
-    } = useCheckboxContext(BUBBLE_INPUT_NAME, __scopeCheckbox);
-    const composedRefs = useComposedRefs$1(forwardedRef, setBubbleInput);
-    const prevChecked = usePrevious(checked);
-    const controlSize = useSize(control);
-    reactExports.useEffect(() => {
-      const input = bubbleInput;
-      if (!input) return;
-      const inputProto = window.HTMLInputElement.prototype;
-      const descriptor = Object.getOwnPropertyDescriptor(
-        inputProto,
-        "checked"
-      );
-      const setChecked = descriptor.set;
-      const bubbles = !hasConsumerStoppedPropagationRef.current;
-      if (prevChecked !== checked && setChecked) {
-        const event = new Event("click", { bubbles });
-        input.indeterminate = isIndeterminate(checked);
-        setChecked.call(input, isIndeterminate(checked) ? false : checked);
-        input.dispatchEvent(event);
-      }
-    }, [bubbleInput, prevChecked, checked, hasConsumerStoppedPropagationRef]);
-    const defaultCheckedRef = reactExports.useRef(isIndeterminate(checked) ? false : checked);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive$1.input,
-      {
-        type: "checkbox",
-        "aria-hidden": true,
-        defaultChecked: defaultChecked ?? defaultCheckedRef.current,
-        required,
-        disabled,
-        name,
-        value,
-        form,
-        ...props,
-        tabIndex: -1,
-        ref: composedRefs,
-        style: {
-          ...props.style,
-          ...controlSize,
-          position: "absolute",
-          pointerEvents: "none",
-          opacity: 0,
-          margin: 0,
-          // We transform because the input is absolutely positioned but we have
-          // rendered it **after** the button. This pulls it back to sit on top
-          // of the button.
-          transform: "translateX(-100%)"
-        }
-      }
-    );
-  }
-);
-CheckboxBubbleInput.displayName = BUBBLE_INPUT_NAME;
-function isFunction(value) {
-  return typeof value === "function";
-}
-function isIndeterminate(checked) {
-  return checked === "indeterminate";
-}
-function getState(checked) {
-  return isIndeterminate(checked) ? "indeterminate" : checked ? "checked" : "unchecked";
-}
-function Checkbox({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Checkbox$1,
-    {
-      "data-slot": "checkbox",
-      className: cn(
-        "peer border-input dark:bg-input/30 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:data-[state=checked]:bg-primary data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive size-4 shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      ),
-      ...props,
-      children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        CheckboxIndicator,
-        {
-          "data-slot": "checkbox-indicator",
-          className: "flex items-center justify-center text-current transition-none",
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "size-3.5" })
-        }
-      )
-    }
-  );
-}
-var NODES = [
-  "a",
-  "button",
-  "div",
-  "form",
-  "h2",
-  "h3",
-  "img",
-  "input",
-  "label",
-  "li",
-  "nav",
-  "ol",
-  "p",
-  "select",
-  "span",
-  "svg",
-  "ul"
-];
-var Primitive = NODES.reduce((primitive, node) => {
-  const Slot2 = /* @__PURE__ */ createSlot$1(`Primitive.${node}`);
-  const Node = reactExports.forwardRef((props, forwardedRef) => {
-    const { asChild, ...primitiveProps } = props;
-    const Comp = asChild ? Slot2 : node;
-    if (typeof window !== "undefined") {
-      window[Symbol.for("radix-ui")] = true;
-    }
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Comp, { ...primitiveProps, ref: forwardedRef });
-  });
-  Node.displayName = `Primitive.${node}`;
-  return { ...primitive, [node]: Node };
-}, {});
-var NAME = "Label";
-var Label$1 = reactExports.forwardRef((props, forwardedRef) => {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Primitive.label,
-    {
-      ...props,
-      ref: forwardedRef,
-      onMouseDown: (event) => {
-        var _a3;
-        const target = event.target;
-        if (target.closest("button, input, select, textarea")) return;
-        (_a3 = props.onMouseDown) == null ? void 0 : _a3.call(props, event);
-        if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
-      }
-    }
-  );
-});
-Label$1.displayName = NAME;
-var Root$1 = Label$1;
-function Label({
-  className,
-  ...props
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Root$1,
-    {
-      "data-slot": "label",
-      className: cn(
-        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
-        className
-      ),
-      ...props
-    }
-  );
-}
 var jt = (n) => {
   switch (n) {
     case "success":
@@ -46848,6 +45722,1084 @@ reactExports.forwardRef(function(e, t) {
     })) : null;
   }));
 });
+function formatDate(ts) {
+  return new Date(Number(ts) / 1e6).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+}
+function getStatus(app) {
+  const s2 = app.status;
+  if (typeof s2 === "string") {
+    if (s2 === "approved") return "approved";
+    if (s2 === "rejected") return "rejected";
+    return "pending";
+  }
+  if (typeof s2 === "object" && s2 !== null) {
+    if ("approved" in s2) return "approved";
+    if ("rejected" in s2) return "rejected";
+  }
+  return "pending";
+}
+function StatCard({
+  label,
+  value,
+  icon,
+  glow,
+  glowColor,
+  ocid
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    NeonCard,
+    {
+      glow,
+      className: "p-4 flex items-center gap-4",
+      "data-ocid": ocid,
+      style: {
+        boxShadow: value !== void 0 ? `0 0 24px ${glowColor}` : void 0
+      },
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            className: "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
+            style: { background: `${glowColor}22` },
+            children: icon
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-xs uppercase tracking-widest font-mono", children: label }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground text-2xl font-display font-bold", children: value !== void 0 ? value.toString() : "—" })
+        ] })
+      ]
+    }
+  );
+}
+function StatusBadge({
+  status
+}) {
+  const map = {
+    pending: "border-yellow-400/50 text-yellow-300 bg-yellow-400/10",
+    approved: "border-emerald-400/50 text-emerald-300 bg-emerald-400/10",
+    rejected: "border-destructive/50 text-red-300 bg-destructive/10"
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "span",
+    {
+      className: cn(
+        "inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-mono uppercase tracking-wider",
+        map[status]
+      ),
+      children: status
+    }
+  );
+}
+function QRModal({
+  token,
+  name,
+  onClose
+}) {
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(token)}&bgcolor=0a0a12&color=00fff0&qzone=2`;
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    motion.div,
+    {
+      className: "fixed inset-0 z-50 flex items-center justify-center p-4",
+      initial: { opacity: 0 },
+      animate: { opacity: 1 },
+      exit: { opacity: 0 },
+      "data-ocid": "admin.qr.dialog",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            className: "absolute inset-0 bg-background/80 backdrop-blur-md",
+            onClick: onClose,
+            onKeyDown: (e) => e.key === "Escape" && onClose(),
+            tabIndex: -1,
+            role: "presentation"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          motion.div,
+          {
+            className: "relative z-10 w-full max-w-xs",
+            initial: { scale: 0.85, y: 20 },
+            animate: { scale: 1, y: 0 },
+            exit: { scale: 0.85, y: 20 },
+            transition: { type: "spring", stiffness: 300, damping: 25 },
+            children: /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonCard, { glow: "cyan", className: "p-6 text-center", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "button",
+                  className: "absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors",
+                  onClick: onClose,
+                  "aria-label": "Close QR modal",
+                  "data-ocid": "admin.qr.close_button",
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "w-4 h-4" })
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono uppercase tracking-widest mb-1", children: "Entry Pass" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground font-display font-bold mb-4 truncate", children: name }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "img",
+                {
+                  src: qrUrl,
+                  alt: `QR code for ${name}`,
+                  width: 250,
+                  height: 250,
+                  className: "rounded-lg border border-accent/30"
+                }
+              ) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-4 text-xs text-muted-foreground font-mono break-all", children: token })
+            ] })
+          }
+        )
+      ]
+    }
+  ) });
+}
+function ApplicationCard({
+  app,
+  index: index2
+}) {
+  const [expanded, setExpanded] = reactExports.useState(false);
+  const [qrTarget, setQrTarget] = reactExports.useState(null);
+  const [resendMsg, setResendMsg] = reactExports.useState(null);
+  const approve = useApproveApplication();
+  const reject = useRejectApplication();
+  const resendEmail = useResendApprovalEmail();
+  const status = getStatus(app);
+  const isPending = status === "pending";
+  const isApproved = status === "approved";
+  const approvingThis = approve.isPending;
+  const rejectingThis = reject.isPending;
+  function handleResendEmail() {
+    setResendMsg(null);
+    resendEmail.mutate(app.id, {
+      onSuccess: () => {
+        setResendMsg("sent");
+        ue.success("Approval email resent!");
+        setTimeout(() => setResendMsg(null), 4e3);
+      },
+      onError: (err) => {
+        setResendMsg("error");
+        ue.error(
+          err instanceof Error ? err.message : "Failed to resend email"
+        );
+        setTimeout(() => setResendMsg(null), 4e3);
+      }
+    });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    qrTarget && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      QRModal,
+      {
+        token: qrTarget,
+        name: app.name,
+        onClose: () => setQrTarget(null)
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      motion.div,
+      {
+        initial: { opacity: 0, y: 10 },
+        animate: { opacity: 1, y: 0 },
+        transition: { delay: index2 * 0.05 },
+        "data-ocid": `admin.app.item.${index2 + 1}`,
+        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          NeonCard,
+          {
+            glow: status === "approved" ? "cyan" : status === "rejected" ? "none" : "purple",
+            className: "overflow-hidden",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "button",
+                {
+                  type: "button",
+                  className: "w-full p-4 text-left flex items-start gap-3",
+                  onClick: () => setExpanded((p2) => !p2),
+                  "aria-expanded": expanded,
+                  "data-ocid": `admin.app.expand.${index2 + 1}`,
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center gap-2 mb-1", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          "span",
+                          {
+                            className: "text-[11px] font-mono font-bold tracking-widest shrink-0",
+                            style: {
+                              color: "oklch(0.68 0.27 305)",
+                              textShadow: "0 0 10px oklch(0.68 0.27 305 / 0.5)"
+                            },
+                            "data-ocid": `admin.app.id.${index2 + 1}`,
+                            children: app.applicationId || `#${app.id.toString().padStart(6, "0")}`
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display font-semibold text-foreground truncate", children: app.name }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(StatusBadge, { status }),
+                        app.plusOne && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-mono text-accent border border-accent/30 rounded-full px-2 py-0.5 bg-accent/10", children: "+1" })
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground truncate", children: app.instagramHandle }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground mt-0.5 truncate", children: app.email })
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 shrink-0", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground font-mono hidden sm:block", children: formatDate(app.submittedAt) }),
+                      expanded ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronUp, { className: "w-4 h-4 text-muted-foreground" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDown, { className: "w-4 h-4 text-muted-foreground" })
+                    ] })
+                  ]
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: expanded && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                motion.div,
+                {
+                  initial: { height: 0, opacity: 0 },
+                  animate: { height: "auto", opacity: 1 },
+                  exit: { height: 0, opacity: 0 },
+                  transition: { duration: 0.25 },
+                  className: "overflow-hidden",
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-4 pb-4 border-t border-border/20 pt-3 space-y-3", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-x-4 gap-y-2 text-sm", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono", children: "Phone" }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground", children: app.phone })
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono", children: "Invite Code" }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground font-mono", children: app.inviteCode })
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-2", children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono mb-1", children: "Submitted" }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground", children: formatDate(app.submittedAt) })
+                      ] })
+                    ] }),
+                    app.photos.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground font-mono mb-2", children: [
+                        "Photos (",
+                        app.photos.length,
+                        ")"
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-wrap gap-2", children: app.photos.map((photo, pi) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "a",
+                        {
+                          href: photo.getDirectURL(),
+                          target: "_blank",
+                          rel: "noopener noreferrer",
+                          className: "block",
+                          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            "img",
+                            {
+                              src: photo.getDirectURL(),
+                              alt: `Submission ${pi + 1}`,
+                              className: "w-16 h-16 object-cover rounded-lg border border-border/30 hover:border-accent/50 transition-colors"
+                            }
+                          )
+                        },
+                        photo.getDirectURL()
+                      )) })
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap gap-2 pt-1", children: [
+                      isPending && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                          Button,
+                          {
+                            type: "button",
+                            size: "sm",
+                            disabled: approvingThis || rejectingThis,
+                            onClick: () => approve.mutate(app.id),
+                            className: "bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 hover:bg-emerald-500/30 hover:border-emerald-400 transition-all",
+                            "data-ocid": `admin.app.approve_button.${index2 + 1}`,
+                            children: [
+                              approvingThis ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-3 h-3 animate-spin mr-1" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheckBig, { className: "w-3 h-3 mr-1" }),
+                              "Approve"
+                            ]
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                          Button,
+                          {
+                            type: "button",
+                            size: "sm",
+                            variant: "destructive",
+                            disabled: approvingThis || rejectingThis,
+                            onClick: () => reject.mutate(app.id),
+                            className: "bg-red-500/20 border border-red-400/50 text-red-300 hover:bg-red-500/30 hover:border-red-400 transition-all",
+                            "data-ocid": `admin.app.reject_button.${index2 + 1}`,
+                            children: [
+                              rejectingThis ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-3 h-3 animate-spin mr-1" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(CircleX, { className: "w-3 h-3 mr-1" }),
+                              "Reject"
+                            ]
+                          }
+                        )
+                      ] }),
+                      isApproved && app.qrToken && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        Button,
+                        {
+                          type: "button",
+                          size: "sm",
+                          onClick: () => setQrTarget(app.qrToken),
+                          className: "bg-accent/20 border border-accent/50 text-accent hover:bg-accent/30 hover:border-accent transition-all",
+                          "data-ocid": `admin.app.view_qr_button.${index2 + 1}`,
+                          children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx(QrCode, { className: "w-3 h-3 mr-1" }),
+                            "View QR"
+                          ]
+                        }
+                      ),
+                      isApproved && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        Button,
+                        {
+                          type: "button",
+                          size: "sm",
+                          disabled: resendEmail.isPending,
+                          onClick: handleResendEmail,
+                          className: "bg-yellow-500/10 border border-yellow-400/40 text-yellow-300 hover:bg-yellow-500/20 hover:border-yellow-400/70 transition-all",
+                          "data-ocid": `admin.app.resend_email_button.${index2 + 1}`,
+                          children: [
+                            resendEmail.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-3 h-3 animate-spin mr-1" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Mail, { className: "w-3 h-3 mr-1" }),
+                            resendMsg === "sent" ? "Email sent!" : resendMsg === "error" ? "Failed" : "Resend Email"
+                          ]
+                        }
+                      )
+                    ] })
+                  ] })
+                }
+              ) })
+            ]
+          }
+        )
+      }
+    )
+  ] });
+}
+function AppSkeleton() {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-3", "data-ocid": "admin.apps.loading_state", children: [1, 2, 3, 4].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx(NeonCard, { glow: "none", className: "p-4", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-3", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 space-y-2", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-5 w-32 bg-muted/40" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-5 w-16 rounded-full bg-muted/40" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-4 w-24 bg-muted/30" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-4 w-40 bg-muted/20" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-4 w-16 bg-muted/30" })
+  ] }) }, i)) });
+}
+function InviteCodesPanel() {
+  const { data: codes = [], isLoading } = useInviteCodes();
+  const addCode = useAddInviteCode();
+  const [newCode, setNewCode] = reactExports.useState("");
+  function handleSubmit(e) {
+    e.preventDefault();
+    const trimmed = newCode.trim();
+    if (!trimmed) return;
+    addCode.mutate(trimmed, {
+      onSuccess: () => setNewCode("")
+    });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-6", "data-ocid": "admin.invite_codes.panel", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonCard, { glow: "purple", className: "p-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono uppercase tracking-widest mb-3", children: "Add New Invite Code" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, className: "flex gap-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            value: newCode,
+            onChange: (e) => setNewCode(e.target.value),
+            placeholder: "e.g. VIP2025",
+            className: "font-mono bg-background/40 border-border/40 text-foreground placeholder:text-muted-foreground/50 flex-1",
+            "aria-label": "New invite code",
+            "data-ocid": "admin.invite_codes.input"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Button,
+          {
+            type: "submit",
+            disabled: !newCode.trim() || addCode.isPending,
+            className: "bg-primary/80 hover:bg-primary transition-all",
+            "data-ocid": "admin.invite_codes.add_button",
+            children: addCode.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-4 h-4 animate-spin" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { className: "w-4 h-4" })
+          }
+        )
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground font-mono uppercase tracking-widest mb-3", children: [
+        "Active Invite Codes (",
+        codes.length,
+        ")"
+      ] }),
+      isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-wrap gap-2", children: [1, 2, 3].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-8 w-24 rounded-full bg-muted/40" }, i)) }) : codes.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+        NeonCard,
+        {
+          glow: "none",
+          className: "p-6 text-center",
+          "data-ocid": "admin.invite_codes.empty_state",
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-sm", children: "No invite codes yet. Create your first code above." })
+        }
+      ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-wrap gap-2", children: codes.map((code, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        motion.span,
+        {
+          initial: { opacity: 0, scale: 0.8 },
+          animate: { opacity: 1, scale: 1 },
+          transition: { delay: i * 0.04 },
+          "data-ocid": `admin.invite_codes.item.${i + 1}`,
+          className: "inline-flex items-center px-3 py-1.5 rounded-full font-mono text-sm bg-card/30 border border-primary/30 text-primary backdrop-blur-sm hover:border-primary/60 transition-colors",
+          children: code
+        },
+        code
+      )) })
+    ] })
+  ] });
+}
+function AdminsPanel({
+  currentPrincipal
+}) {
+  const { data: admins = [], isLoading, error } = useListAdmins();
+  const addAdmin = useAddAdmin();
+  const removeAdmin = useRemoveAdmin();
+  const [newPrincipal, setNewPrincipal] = reactExports.useState("");
+  const [addError, setAddError] = reactExports.useState("");
+  function handleAdd(e) {
+    e.preventDefault();
+    const trimmed = newPrincipal.trim();
+    if (!trimmed) return;
+    setAddError("");
+    let principal;
+    try {
+      principal = Principal$1.fromText(trimmed);
+    } catch {
+      setAddError("Invalid principal ID format.");
+      return;
+    }
+    addAdmin.mutate(principal, {
+      onSuccess: () => setNewPrincipal(""),
+      onError: (err) => setAddError(err instanceof Error ? err.message : "Failed to add admin")
+    });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-6", "data-ocid": "admin.admins.panel", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonCard, { glow: "cyan", className: "p-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono uppercase tracking-widest mb-3", children: "Add New Admin" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleAdd, className: "flex gap-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            value: newPrincipal,
+            onChange: (e) => {
+              setNewPrincipal(e.target.value);
+              setAddError("");
+            },
+            placeholder: "Paste principal ID (e.g. aaaaa-aa)",
+            className: "font-mono text-xs bg-background/40 border-border/40 text-foreground placeholder:text-muted-foreground/50 flex-1",
+            "aria-label": "New admin principal",
+            "data-ocid": "admin.admins.input"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Button,
+          {
+            type: "submit",
+            disabled: !newPrincipal.trim() || addAdmin.isPending,
+            className: "bg-accent/80 hover:bg-accent transition-all border border-accent/40",
+            "data-ocid": "admin.admins.add_button",
+            children: addAdmin.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-4 h-4 animate-spin" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { className: "w-4 h-4" })
+          }
+        )
+      ] }),
+      addError && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "p",
+        {
+          className: "text-destructive text-xs font-mono mt-2",
+          "data-ocid": "admin.admins.error_state",
+          children: addError
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground font-mono uppercase tracking-widest mb-3", children: [
+        "Current Admins (",
+        isLoading ? "…" : admins.length,
+        ")"
+      ] }),
+      isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-2", "data-ocid": "admin.admins.loading_state", children: [1, 2].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx(NeonCard, { glow: "none", className: "p-3", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "w-8 h-8 rounded-lg bg-muted/40" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-4 flex-1 bg-muted/30" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-8 w-16 rounded-lg bg-muted/20" })
+      ] }) }, i)) }) : error ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+        NeonCard,
+        {
+          glow: "none",
+          className: "p-6 text-center",
+          "data-ocid": "admin.admins.error_state",
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-destructive text-sm", children: "Failed to load admins." })
+        }
+      ) : admins.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+        NeonCard,
+        {
+          glow: "none",
+          className: "p-6 text-center",
+          "data-ocid": "admin.admins.empty_state",
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-sm", children: "No admins found." })
+        }
+      ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-2", children: admins.map((admin, i) => {
+        const isSelf = currentPrincipal !== null && admin.toString() === currentPrincipal.toString();
+        return /* @__PURE__ */ jsxRuntimeExports.jsx(
+          motion.div,
+          {
+            initial: { opacity: 0, x: -8 },
+            animate: { opacity: 1, x: 0 },
+            transition: { delay: i * 0.05 },
+            "data-ocid": `admin.admins.item.${i + 1}`,
+            children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              NeonCard,
+              {
+                glow: isSelf ? "cyan" : "none",
+                className: "p-3 flex items-center gap-3",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "div",
+                    {
+                      className: "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                      style: {
+                        background: isSelf ? "oklch(0.7 0.2 200 / 0.15)" : "oklch(0.68 0.27 305 / 0.1)"
+                      },
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        Shield,
+                        {
+                          className: "w-4 h-4",
+                          style: {
+                            color: isSelf ? "oklch(0.7 0.2 200)" : "oklch(0.68 0.27 305)"
+                          }
+                        }
+                      )
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-mono text-xs text-foreground truncate", children: admin.toString() }),
+                    isSelf && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "p",
+                      {
+                        className: "text-[10px] font-mono tracking-widest",
+                        style: { color: "oklch(0.7 0.2 200)" },
+                        children: "YOU"
+                      }
+                    )
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Button,
+                    {
+                      type: "button",
+                      size: "sm",
+                      variant: "ghost",
+                      disabled: isSelf || removeAdmin.isPending,
+                      onClick: () => removeAdmin.mutate(admin),
+                      title: isSelf ? "Cannot remove yourself" : "Remove admin",
+                      className: cn(
+                        "shrink-0 transition-all",
+                        isSelf ? "opacity-30 cursor-not-allowed" : "text-red-400 hover:text-red-300 hover:bg-red-400/10 border border-red-400/20 hover:border-red-400/40"
+                      ),
+                      "data-ocid": `admin.admins.delete_button.${i + 1}`,
+                      children: removeAdmin.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-3 h-3 animate-spin" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "w-3 h-3" })
+                    }
+                  )
+                ]
+              }
+            )
+          },
+          admin.toString()
+        );
+      }) })
+    ] })
+  ] });
+}
+function BroadcastPanel({ approvedCount }) {
+  const broadcast = useBroadcastToApprovedGuests();
+  const [subject, setSubject] = reactExports.useState("");
+  const [message, setMessage] = reactExports.useState("");
+  const [sentCount, setSentCount] = reactExports.useState(null);
+  const [broadcastError, setBroadcastError] = reactExports.useState("");
+  function handleSend(e) {
+    e.preventDefault();
+    setBroadcastError("");
+    setSentCount(null);
+    const trimSubject = subject.trim();
+    const trimMessage = message.trim();
+    if (!trimSubject || !trimMessage) {
+      setBroadcastError("Subject and message are required.");
+      return;
+    }
+    broadcast.mutate(
+      { subject: trimSubject, message: trimMessage },
+      {
+        onSuccess: (count2) => {
+          setSentCount(count2);
+          setSubject("");
+          setMessage("");
+          ue.success(`Message sent to ${count2.toString()} approved guests!`);
+        },
+        onError: (err) => {
+          setBroadcastError(
+            err instanceof Error ? err.message : "Failed to broadcast message."
+          );
+        }
+      }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-6", "data-ocid": "admin.broadcast.panel", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonCard, { glow: "cyan", className: "p-5", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 mb-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "div",
+        {
+          className: "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+          style: { background: "oklch(0.7 0.2 200 / 0.15)" },
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            MessageSquare,
+            {
+              className: "w-4 h-4",
+              style: { color: "oklch(0.7 0.2 200)" }
+            }
+          )
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono uppercase tracking-widest", children: "Broadcast Message" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground/60 font-body", children: [
+          "Send to all",
+          " ",
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-emerald-300 font-mono", children: approvedCount !== void 0 ? approvedCount.toString() : "–" }),
+          " ",
+          "approved guests"
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSend, className: "space-y-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1.5", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "label",
+          {
+            htmlFor: "broadcast-subject",
+            className: "text-xs font-mono uppercase tracking-widest text-muted-foreground",
+            children: "Subject"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "input",
+          {
+            id: "broadcast-subject",
+            value: subject,
+            onChange: (e) => {
+              setSubject(e.target.value);
+              setBroadcastError("");
+            },
+            placeholder: "e.g. Event Night — Final Details",
+            className: "w-full h-10 px-3 rounded-lg bg-background/40 border border-border/40 text-foreground placeholder:text-muted-foreground/40 font-body text-sm focus:outline-none focus:border-accent/60 transition-colors",
+            "data-ocid": "admin.broadcast.subject_input"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1.5", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "label",
+          {
+            htmlFor: "broadcast-message",
+            className: "text-xs font-mono uppercase tracking-widest text-muted-foreground",
+            children: "Message"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "textarea",
+          {
+            id: "broadcast-message",
+            value: message,
+            onChange: (e) => {
+              setMessage(e.target.value);
+              setBroadcastError("");
+            },
+            placeholder: "Write your message here…",
+            rows: 5,
+            className: "w-full px-3 py-2 rounded-lg bg-background/40 border border-border/40 text-foreground placeholder:text-muted-foreground/40 font-body text-sm leading-relaxed focus:outline-none focus:border-accent/60 transition-colors resize-none",
+            "data-ocid": "admin.broadcast.textarea"
+          }
+        )
+      ] }),
+      broadcastError && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "p",
+        {
+          className: "text-xs text-destructive font-mono",
+          "data-ocid": "admin.broadcast.error_state",
+          children: broadcastError
+        }
+      ),
+      sentCount !== null && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        motion.p,
+        {
+          initial: { opacity: 0, y: 4 },
+          animate: { opacity: 1, y: 0 },
+          className: "text-xs font-mono text-emerald-300 flex items-center gap-1.5",
+          "data-ocid": "admin.broadcast.success_state",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheckBig, { className: "w-3 h-3" }),
+            "Sent to ",
+            sentCount.toString(),
+            " guests"
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Button,
+        {
+          type: "submit",
+          disabled: broadcast.isPending || !subject.trim() || !message.trim(),
+          className: "w-full font-display font-bold tracking-wide text-sm",
+          style: {
+            background: "linear-gradient(135deg, oklch(0.7 0.2 200), oklch(0.65 0.22 225))",
+            boxShadow: "0 0 16px oklch(0.7 0.2 200 / 0.3)"
+          },
+          "data-ocid": "admin.broadcast.submit_button",
+          children: broadcast.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-4 h-4 animate-spin mr-2" }),
+            "Sending…"
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Send, { className: "w-4 h-4 mr-2" }),
+            "Send to All Approved Guests"
+          ] })
+        }
+      )
+    ] })
+  ] }) });
+}
+function AdminPage() {
+  const navigate = useNavigate();
+  const { isConnected, isAdmin, identity } = useAuth();
+  const { data: stats } = useAdminStats();
+  const {
+    data: applications = [],
+    isLoading: appsLoading,
+    error: appsError
+  } = useListApplications();
+  const [activeTab, setActiveTab] = reactExports.useState("applications");
+  const [statusFilter, setStatusFilter] = reactExports.useState("pending");
+  if (!isConnected) {
+    navigate({ to: "/" });
+    return null;
+  }
+  if (!isAdmin) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-col items-center justify-center min-h-[60vh] px-4 text-center", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      NeonCard,
+      {
+        glow: "magenta",
+        className: "p-8 max-w-sm",
+        "data-ocid": "admin.access_denied",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(CircleX, { className: "w-10 h-10 text-secondary mx-auto mb-4" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display font-bold text-xl text-foreground mb-2", children: "Admin Access Required" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-sm", children: "You don't have permission to access this page." })
+        ]
+      }
+    ) });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "div",
+    {
+      className: "max-w-3xl mx-auto px-4 py-8 space-y-8",
+      "data-ocid": "admin.page",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono uppercase tracking-widest mb-1", children: "Control Room" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("h1", { className: "text-3xl font-display font-bold text-foreground", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-primary", children: "Admin" }),
+            " Dashboard"
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "grid grid-cols-2 sm:grid-cols-4 gap-3",
+            "data-ocid": "admin.stats.section",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                StatCard,
+                {
+                  label: "Total",
+                  value: stats == null ? void 0 : stats.total,
+                  icon: /* @__PURE__ */ jsxRuntimeExports.jsx(Users, { className: "w-5 h-5 text-primary" }),
+                  glow: "purple",
+                  glowColor: "rgba(104,0,255,0.4)",
+                  ocid: "admin.stats.total"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                StatCard,
+                {
+                  label: "Approved",
+                  value: stats == null ? void 0 : stats.approved,
+                  icon: /* @__PURE__ */ jsxRuntimeExports.jsx(UserCheck, { className: "w-5 h-5 text-emerald-400" }),
+                  glow: "cyan",
+                  glowColor: "rgba(52,211,153,0.4)",
+                  ocid: "admin.stats.approved"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                StatCard,
+                {
+                  label: "Pending",
+                  value: stats == null ? void 0 : stats.pending,
+                  icon: /* @__PURE__ */ jsxRuntimeExports.jsx(Clock, { className: "w-5 h-5 text-yellow-400" }),
+                  glow: "none",
+                  glowColor: "rgba(251,191,36,0.4)",
+                  ocid: "admin.stats.pending"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                StatCard,
+                {
+                  label: "Rejected",
+                  value: stats == null ? void 0 : stats.rejected,
+                  icon: /* @__PURE__ */ jsxRuntimeExports.jsx(UserX, { className: "w-5 h-5 text-red-400" }),
+                  glow: "magenta",
+                  glowColor: "rgba(239,68,68,0.4)",
+                  ocid: "admin.stats.rejected"
+                }
+              )
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            className: "flex gap-1 p-1 rounded-xl bg-card/20 backdrop-blur-sm border border-border/20",
+            "data-ocid": "admin.tabs",
+            children: [
+              { key: "applications", label: "Applications" },
+              { key: "broadcast", label: "Broadcast" },
+              { key: "invite-codes", label: "Invite Codes" },
+              { key: "admins", label: "Admins" }
+            ].map(({ key, label }) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => setActiveTab(key),
+                "data-ocid": `admin.tab.${key}`,
+                className: cn(
+                  "flex-1 py-2 px-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all duration-200",
+                  activeTab === key ? "bg-primary/80 text-foreground shadow-[0_0_16px_rgba(104,0,255,0.5)]" : "text-muted-foreground hover:text-foreground"
+                ),
+                children: label
+              },
+              key
+            ))
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { mode: "wait", children: activeTab === "broadcast" ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+          motion.div,
+          {
+            initial: { opacity: 0, y: 8 },
+            animate: { opacity: 1, y: 0 },
+            exit: { opacity: 0, y: -8 },
+            transition: { duration: 0.2 },
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(BroadcastPanel, { approvedCount: stats == null ? void 0 : stats.approved })
+          },
+          "broadcast"
+        ) : activeTab === "admins" ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+          motion.div,
+          {
+            initial: { opacity: 0, y: 8 },
+            animate: { opacity: 1, y: 0 },
+            exit: { opacity: 0, y: -8 },
+            transition: { duration: 0.2 },
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              AdminsPanel,
+              {
+                currentPrincipal: isConnected ? (identity == null ? void 0 : identity.getPrincipal()) ?? null : null
+              }
+            )
+          },
+          "admins"
+        ) : activeTab === "applications" ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          motion.div,
+          {
+            initial: { opacity: 0, y: 8 },
+            animate: { opacity: 1, y: 0 },
+            exit: { opacity: 0, y: -8 },
+            transition: { duration: 0.2 },
+            "data-ocid": "admin.apps.section",
+            children: [
+              !appsLoading && !appsError && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "div",
+                {
+                  className: "flex gap-1 p-1 rounded-xl bg-card/20 backdrop-blur-sm border border-border/20 mb-4",
+                  "data-ocid": "admin.apps.filter.tabs",
+                  children: [
+                    {
+                      key: "pending",
+                      label: "Pending",
+                      color: "text-yellow-300"
+                    },
+                    {
+                      key: "approved",
+                      label: "Approved",
+                      color: "text-emerald-300"
+                    },
+                    {
+                      key: "rejected",
+                      label: "Rejected",
+                      color: "text-red-300"
+                    },
+                    { key: "all", label: "All", color: "text-foreground" }
+                  ].map(({ key, label, color: color2 }) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: () => setStatusFilter(key),
+                      "data-ocid": `admin.apps.filter.${key}`,
+                      className: cn(
+                        "flex-1 py-1.5 px-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all duration-200",
+                        statusFilter === key ? cn(
+                          "bg-card/60 border border-border/40 shadow-[0_0_10px_rgba(104,0,255,0.3)]",
+                          color2
+                        ) : "text-muted-foreground hover:text-foreground"
+                      ),
+                      children: label
+                    },
+                    key
+                  ))
+                }
+              ),
+              (() => {
+                const filtered = statusFilter === "all" ? applications : applications.filter(
+                  (app) => getStatus(app) === statusFilter
+                );
+                return appsLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx(AppSkeleton, {}) : appsError ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  NeonCard,
+                  {
+                    glow: "none",
+                    className: "p-6 text-center",
+                    "data-ocid": "admin.apps.error_state",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-destructive text-sm", children: "Failed to load applications. Please refresh the page." })
+                  }
+                ) : applications.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  NeonCard,
+                  {
+                    glow: "none",
+                    className: "p-8 text-center",
+                    "data-ocid": "admin.apps.empty_state",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Users, { className: "w-8 h-8 text-muted-foreground mx-auto mb-3" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-sm", children: "No applications yet — share your invite codes to get started." })
+                    ]
+                  }
+                ) : filtered.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  NeonCard,
+                  {
+                    glow: "none",
+                    className: "p-8 text-center",
+                    "data-ocid": "admin.apps.filter.empty_state",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Users, { className: "w-8 h-8 text-muted-foreground mx-auto mb-3" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-muted-foreground text-sm", children: [
+                        "No ",
+                        statusFilter !== "all" ? statusFilter : "",
+                        " ",
+                        "applications."
+                      ] })
+                    ]
+                  }
+                ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-3", children: filtered.map((app, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  ApplicationCard,
+                  {
+                    app,
+                    index: i
+                  },
+                  app.id.toString()
+                )) });
+              })()
+            ]
+          },
+          "applications"
+        ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+          motion.div,
+          {
+            initial: { opacity: 0, y: 8 },
+            animate: { opacity: 1, y: 0 },
+            exit: { opacity: 0, y: -8 },
+            transition: { duration: 0.2 },
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(InviteCodesPanel, {})
+          },
+          "invite-codes"
+        ) })
+      ]
+    }
+  );
+}
+var NODES$1 = [
+  "a",
+  "button",
+  "div",
+  "form",
+  "h2",
+  "h3",
+  "img",
+  "input",
+  "label",
+  "li",
+  "nav",
+  "ol",
+  "p",
+  "select",
+  "span",
+  "svg",
+  "ul"
+];
+var Primitive$1 = NODES$1.reduce((primitive, node) => {
+  const Slot2 = /* @__PURE__ */ createSlot$1(`Primitive.${node}`);
+  const Node = reactExports.forwardRef((props, forwardedRef) => {
+    const { asChild, ...primitiveProps } = props;
+    const Comp = asChild ? Slot2 : node;
+    if (typeof window !== "undefined") {
+      window[Symbol.for("radix-ui")] = true;
+    }
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Comp, { ...primitiveProps, ref: forwardedRef });
+  });
+  Node.displayName = `Primitive.${node}`;
+  return { ...primitive, [node]: Node };
+}, {});
+var NAME = "Label";
+var Label$1 = reactExports.forwardRef((props, forwardedRef) => {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Primitive$1.label,
+    {
+      ...props,
+      ref: forwardedRef,
+      onMouseDown: (event) => {
+        var _a3;
+        const target = event.target;
+        if (target.closest("button, input, select, textarea")) return;
+        (_a3 = props.onMouseDown) == null ? void 0 : _a3.call(props, event);
+        if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
+      }
+    }
+  );
+});
+Label$1.displayName = NAME;
+var Root$1 = Label$1;
+function Label({
+  className,
+  ...props
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Root$1,
+    {
+      "data-slot": "label",
+      className: cn(
+        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+        className
+      ),
+      ...props
+    }
+  );
+}
 const STEPS = ["Your Details", "Your Vibe", "Final Step"];
 function validateEmail(v2) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v2);
@@ -47078,9 +47030,9 @@ function ExclusivityQuote({ text }) {
   );
 }
 function ApplyPage() {
-  const navigate = useNavigate();
   const submitMutation = useSubmitApplication();
   const [step, setStep] = reactExports.useState(0);
+  const [successId, setSuccessId] = reactExports.useState(null);
   const [step1, setStep1] = reactExports.useState({
     name: "",
     instagram: "",
@@ -47088,9 +47040,7 @@ function ApplyPage() {
     phone: ""
   });
   const [step2, setStep2] = reactExports.useState({
-    inviteCode: "",
-    plusOne: false,
-    partnerName: ""
+    inviteCode: ""
   });
   const [photos, setPhotos] = reactExports.useState([]);
   const [errors, setErrors] = reactExports.useState({});
@@ -47104,11 +47054,7 @@ function ApplyPage() {
     return e;
   }
   function validateStep2() {
-    const e = {};
-    if (!step2.inviteCode.trim()) e.inviteCode = "Invite code is required";
-    if (step2.plusOne && !step2.partnerName.trim())
-      e.partnerName = "Partner’s name is required";
-    return e;
+    return {};
   }
   const handleAddPhotos = reactExports.useCallback(
     async (files) => {
@@ -47185,7 +47131,7 @@ function ApplyPage() {
   async function handleSubmit() {
     const readyPhotos = photos.filter((p2) => p2.done && p2.blob);
     if (readyPhotos.length < 3) {
-      ue.error("Upload at least 3 photos to proceed");
+      ue.error("Please upload at least 3 photos to continue");
       return;
     }
     if (photos.some((p2) => p2.uploading)) {
@@ -47200,10 +47146,10 @@ function ApplyPage() {
         email: step1.email.trim(),
         phone: step1.phone.trim(),
         inviteCode: step2.inviteCode.trim(),
-        plusOne: step2.plusOne,
+        plusOne: false,
         photos: blobs
       });
-      navigate({ to: "/status", search: { id: id2.toString() } });
+      setSuccessId(id2);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Submission failed";
       if (msg.toLowerCase().includes("invite")) {
@@ -47216,11 +47162,162 @@ function ApplyPage() {
   }
   const readyCount = photos.filter((p2) => p2.done).length;
   const uploadingCount = photos.filter((p2) => p2.uploading).length;
+  if (successId !== null) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-h-screen bg-background relative overflow-hidden flex items-center justify-center px-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { "aria-hidden": true, className: "pointer-events-none fixed inset-0 z-0", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-[-20%] left-[10%] w-[40vw] h-[40vw] rounded-full bg-primary/8 blur-[120px]" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute bottom-[-10%] right-[5%] w-[35vw] h-[35vw] rounded-full bg-secondary/6 blur-[100px]" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        motion.div,
+        {
+          initial: { opacity: 0, scale: 0.9, y: 20 },
+          animate: { opacity: 1, scale: 1, y: 0 },
+          transition: { duration: 0.6, type: "spring" },
+          className: "relative z-10 w-full max-w-md",
+          "data-ocid": "apply.success_state",
+          children: /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonCard, { glow: "cyan", className: "p-8 text-center space-y-6", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              motion.div,
+              {
+                initial: { scale: 0 },
+                animate: { scale: 1 },
+                transition: { type: "spring", stiffness: 200, delay: 0.2 },
+                className: "text-6xl",
+                children: "🎉"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-display tracking-[0.35em] uppercase text-primary/60", children: "Application Received" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "h2",
+                {
+                  className: "text-3xl font-display font-black tracking-tight",
+                  style: { textShadow: "0 0 30px oklch(0.68 0.27 305 / 0.6)" },
+                  children: "You're In The Queue"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground font-body leading-relaxed", children: [
+                "Your application has been submitted. The committee reviews every submission personally — you'll be notified at",
+                " ",
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-foreground font-semibold", children: step1.email }),
+                " ",
+                "once a decision is made."
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "border-t border-border/30" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-display tracking-widest text-muted-foreground uppercase", children: "Your Application ID:" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "p",
+                {
+                  className: "text-2xl font-mono font-bold tracking-widest",
+                  style: {
+                    color: "oklch(0.68 0.27 305)",
+                    textShadow: "0 0 16px oklch(0.68 0.27 305 / 0.5)"
+                  },
+                  "data-ocid": "apply.success_app_id",
+                  children: [
+                    "#",
+                    successId.toString().padStart(6, "0")
+                  ]
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "button",
+                {
+                  type: "button",
+                  onClick: () => {
+                    navigator.clipboard.writeText(successId.toString());
+                    ue.success("Application ID copied!");
+                  },
+                  className: "mt-1 flex items-center gap-1.5 mx-auto text-xs text-muted-foreground hover:text-foreground transition-colors font-body",
+                  "data-ocid": "apply.copy_id_button",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      "svg",
+                      {
+                        xmlns: "http://www.w3.org/2000/svg",
+                        width: "12",
+                        height: "12",
+                        viewBox: "0 0 24 24",
+                        fill: "none",
+                        stroke: "currentColor",
+                        strokeWidth: "2",
+                        strokeLinecap: "round",
+                        strokeLinejoin: "round",
+                        "aria-label": "Copy",
+                        role: "img",
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2" }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" })
+                        ]
+                      }
+                    ),
+                    "Tap to copy ID"
+                  ]
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground font-body mt-2", children: [
+                "Save this ID — visit",
+                " ",
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-mono text-foreground/70", children: "/status" }),
+                " ",
+                "anytime to check your application status"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "border-t border-border/30" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Button,
+              {
+                type: "button",
+                asChild: true,
+                className: "w-full font-display font-bold tracking-wide text-sm",
+                style: {
+                  background: "linear-gradient(135deg, oklch(0.65 0.22 290), oklch(0.55 0.25 315))",
+                  boxShadow: "0 0 20px oklch(0.65 0.22 290 / 0.4)"
+                },
+                "data-ocid": "apply.check_status_button",
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: `/status?id=${successId.toString()}`, children: "Check My Application Status" })
+              }
+            )
+          ] })
+        }
+      )
+    ] });
+  }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-h-screen bg-background relative overflow-hidden", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { "aria-hidden": true, className: "pointer-events-none fixed inset-0 z-0", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-[-20%] left-[10%] w-[40vw] h-[40vw] rounded-full bg-primary/8 blur-[120px]" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute bottom-[-10%] right-[5%] w-[35vw] h-[35vw] rounded-full bg-secondary/6 blur-[100px]" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-[40%] left-[-5%] w-[25vw] h-[25vw] rounded-full bg-accent/5 blur-[80px]" })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-[40%] left-[-5%] w-[25vw] h-[25vw] rounded-full bg-accent/5 blur-[80px]" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "div",
+        {
+          className: "party-blob-1 absolute top-1/4 left-1/3 w-80 h-80 rounded-full opacity-20 blur-3xl pointer-events-none",
+          style: {
+            background: "radial-gradient(circle, oklch(0.65 0.25 15), oklch(0.55 0.22 340))"
+          }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "div",
+        {
+          className: "party-blob-2 absolute bottom-1/4 right-1/4 w-72 h-72 rounded-full opacity-15 blur-3xl pointer-events-none",
+          style: {
+            background: "radial-gradient(circle, oklch(0.75 0.18 80), oklch(0.60 0.20 45))"
+          }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "div",
+        {
+          className: "party-blob-3 absolute top-3/4 left-1/4 w-64 h-64 rounded-full opacity-20 blur-3xl pointer-events-none",
+          style: {
+            background: "radial-gradient(circle, oklch(0.70 0.22 320), oklch(0.60 0.18 290))"
+          }
+        }
+      )
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative z-10 max-w-lg mx-auto px-4 py-12 pb-20", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -47271,8 +47368,8 @@ function ApplyPage() {
                   className: "p-6",
                   "data-ocid": "apply.step1_card",
                   children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-lg font-display font-bold tracking-wide uppercase mb-1", children: "Who are you?" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground/60 font-body mb-6", children: "We check every single handle. Make it real." }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-lg font-display font-bold tracking-wide uppercase mb-1", children: "Who Are You?" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground/60 font-body mb-6", children: "We verify every handle. Make it real." }),
                     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsx(
                         NeonInput,
@@ -47409,84 +47506,28 @@ function ApplyPage() {
                   className: "p-6",
                   "data-ocid": "apply.step2_card",
                   children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-lg font-display font-bold tracking-wide uppercase mb-1", children: "Prove your access" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground/60 font-body mb-6", children: "No code? No entry. It\\u2019s that simple." }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-5", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        NeonInput,
-                        {
-                          id: "inviteCode",
-                          label: "Invite Code",
-                          placeholder: "Enter your code",
-                          value: step2.inviteCode,
-                          onChange: (e) => {
-                            setStep2((s2) => ({
-                              ...s2,
-                              inviteCode: e.target.value.toUpperCase()
-                            }));
-                            if (inviteError) setInviteError("");
-                          },
-                          error: errors.inviteCode ?? inviteError,
-                          "data-ocid": "apply.invite_code_input",
-                          autoComplete: "off",
-                          spellCheck: false
-                        }
-                      ),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-3", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3 py-3 px-4 rounded-lg bg-card/20 border border-border/30", children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsx(
-                            Checkbox,
-                            {
-                              id: "plusOne",
-                              checked: step2.plusOne,
-                              onCheckedChange: (checked) => setStep2((s2) => ({
-                                ...s2,
-                                plusOne: !!checked,
-                                partnerName: checked ? s2.partnerName : ""
-                              })),
-                              className: "border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary",
-                              "data-ocid": "apply.plus_one_checkbox"
-                            }
-                          ),
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                            Label,
-                            {
-                              htmlFor: "plusOne",
-                              className: "text-sm font-body text-foreground/80 cursor-pointer",
-                              children: [
-                                "I\\u2019m bringing someone special",
-                                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "block text-[11px] text-muted-foreground/50 mt-0.5", children: "Plus-ones are subject to separate review" })
-                              ]
-                            }
-                          )
-                        ] }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: step2.plusOne && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                          motion.div,
-                          {
-                            initial: { opacity: 0, height: 0 },
-                            animate: { opacity: 1, height: "auto" },
-                            exit: { opacity: 0, height: 0 },
-                            transition: { duration: 0.2 },
-                            className: "overflow-hidden",
-                            children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                              NeonInput,
-                              {
-                                id: "partnerName",
-                                label: "Partner\\u2019s Name",
-                                placeholder: "Their full name",
-                                value: step2.partnerName,
-                                onChange: (e) => setStep2((s2) => ({
-                                  ...s2,
-                                  partnerName: e.target.value
-                                })),
-                                error: errors.partnerName,
-                                "data-ocid": "apply.partner_name_input"
-                              }
-                            )
-                          }
-                        ) })
-                      ] })
-                    ] })
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-lg font-display font-bold tracking-wide uppercase mb-1", children: "Prove Your Access" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground/60 font-body mb-6", children: "Got an invite code? Enter it below — otherwise just continue." }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-5", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      NeonInput,
+                      {
+                        id: "inviteCode",
+                        label: "Invite Code (Optional)",
+                        placeholder: "Enter your code if you have one",
+                        value: step2.inviteCode,
+                        onChange: (e) => {
+                          setStep2((s2) => ({
+                            ...s2,
+                            inviteCode: e.target.value.toUpperCase()
+                          }));
+                          if (inviteError) setInviteError("");
+                        },
+                        error: errors.inviteCode ?? inviteError,
+                        "data-ocid": "apply.invite_code_input",
+                        autoComplete: "off",
+                        spellCheck: false
+                      }
+                    ) })
                   ]
                 }
               ),
@@ -47495,63 +47536,50 @@ function ApplyPage() {
           },
           "step2"
         ),
-        step === 2 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        step === 2 && /* @__PURE__ */ jsxRuntimeExports.jsx(
           motion.div,
           {
             initial: { opacity: 0, x: 40 },
             animate: { opacity: 1, x: 0 },
             exit: { opacity: 0, x: -40 },
             transition: { duration: 0.35, ease: "easeInOut" },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                NeonCard,
-                {
-                  glow: "cyan",
-                  className: "p-6",
-                  "data-ocid": "apply.step3_card",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-lg font-display font-bold tracking-wide uppercase mb-1", children: "Show us your world" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground/60 font-body mb-2", children: "3\\u20135 photos. Real ones only. We see everything." }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 mb-5", children: [
-                      [1, 2, 3, 4, 5].map((n) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        "div",
-                        {
-                          className: cn(
-                            "h-1 flex-1 rounded-full transition-all duration-300",
-                            n <= readyCount ? "bg-primary shadow-[0_0_6px_oklch(var(--primary)/0.6)]" : n === readyCount + 1 && uploadingCount > 0 ? "bg-accent/50 animate-pulse" : "bg-border/30"
-                          )
-                        },
-                        n
-                      )),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs font-display text-muted-foreground ml-1", children: [
-                        readyCount,
-                        "/5"
-                      ] })
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      PhotoUpload,
+            children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              NeonCard,
+              {
+                glow: "cyan",
+                className: "p-6",
+                "data-ocid": "apply.step3_card",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-lg font-display font-bold tracking-wide uppercase mb-1", children: "Show Us Your World" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground/60 font-body mb-2", children: "3–5 photos, real ones only" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 mb-5", children: [
+                    [1, 2, 3, 4, 5].map((n) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "div",
                       {
-                        photos,
-                        onAdd: handleAddPhotos,
-                        onRemove: handleRemovePhoto
-                      }
-                    ),
-                    readyCount < 3 && photos.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-3 text-xs text-muted-foreground/50 text-center font-body", children: "Start uploading to submit your application" }),
-                    readyCount >= 3 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      motion.p,
-                      {
-                        initial: { opacity: 0 },
-                        animate: { opacity: 1 },
-                        className: "mt-3 text-xs text-primary text-center font-display tracking-wider",
-                        style: { textShadow: "0 0 10px oklch(var(--primary)/0.5)" },
-                        children: "\\u2726 Looking good. Ready to submit."
-                      }
-                    )
-                  ]
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(ExclusivityQuote, { text: "The door opens for a reason. Don\\u2019t waste your shot." })
-            ]
+                        className: cn(
+                          "h-1 flex-1 rounded-full transition-all duration-300",
+                          n <= readyCount ? "bg-primary shadow-[0_0_6px_oklch(var(--primary)/0.6)]" : n === readyCount + 1 && uploadingCount > 0 ? "bg-accent/50 animate-pulse" : "bg-border/30"
+                        )
+                      },
+                      n
+                    )),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs font-display text-muted-foreground ml-1", children: [
+                      readyCount,
+                      "/5"
+                    ] })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    PhotoUpload,
+                    {
+                      photos,
+                      onAdd: handleAddPhotos,
+                      onRemove: handleRemovePhoto
+                    }
+                  ),
+                  readyCount < 3 && photos.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-3 text-xs text-muted-foreground/50 text-center font-body", children: "Start uploading to submit your application" })
+                ]
+              }
+            )
           },
           "step3"
         )
@@ -47761,8 +47789,11 @@ function HomePage() {
       {
         ref: audioRef,
         loop: true,
-        src: "/assets/audio/ambient.mp3",
-        preload: "none"
+        src: "https://iriefm.fast.idealsolutions.media/iriefm",
+        preload: "none",
+        onCanPlay: (e) => {
+          e.currentTarget.volume = 0.08;
+        }
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -47847,7 +47878,7 @@ function HomePage() {
                 className: "px-6 py-5 sm:px-10 sm:py-7",
                 "data-ocid": "hero.countdown",
                 children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[0.6rem] tracking-[0.3em] uppercase text-muted-foreground mb-3 font-mono", children: "Time remaining" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[0.6rem] tracking-[0.3em] uppercase text-muted-foreground mb-3 font-mono", children: "Time Remaining" }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx(CountdownTimer, {})
                 ]
               }
@@ -47867,7 +47898,7 @@ function HomePage() {
                   children: /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: "/apply", children: "✦ Apply Now ✦" })
                 }
               ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground tracking-widest uppercase font-mono", children: "Only the chosen few make the list" })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground tracking-widest uppercase font-mono", children: "Only the chosen few make the cut" })
             ] }) })
           ] }),
           showScroll && /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -48013,7 +48044,7 @@ function HomePage() {
               c2.text
             )) }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-12 text-center flex flex-col items-center gap-4", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-muted-foreground text-sm max-w-sm", children: "Think you've got what it takes? Applications are reviewed personally." }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-muted-foreground text-sm max-w-sm", children: "Think you have what it takes? Every application is reviewed personally." }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(
                 Button,
                 {
@@ -48078,7 +48109,7 @@ function HomePage() {
                   ]
                 }
               ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-4 text-sm text-muted-foreground max-w-md mx-auto leading-relaxed", children: "Spots are extremely limited. Applications close when we're full — and we fill fast. Every hour you wait is an hour closer to being too late." })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-4 text-sm text-muted-foreground max-w-md mx-auto leading-relaxed", children: "Spots are extremely limited. Applications close when we're full — Every hour you wait is an hour closer to missing out." })
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs(
               NeonCard,
@@ -48122,21 +48153,33 @@ function HomePage() {
         ]
       }
     ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "button",
       {
         type: "button",
         onClick: toggleMusic,
-        "aria-label": musicPlaying ? "Mute background music" : "Unmute background music",
+        "aria-label": musicPlaying ? "Mute background music" : "Play background music",
         "data-ocid": "music.toggle",
-        className: "fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full flex items-center justify-center transition-smooth hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+        className: "fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 h-10 rounded-full transition-smooth hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
         style: {
-          background: "oklch(0.12 0.02 270 / 0.85)",
-          border: "1px solid oklch(0.65 0.22 290 / 0.4)",
-          backdropFilter: "blur(12px)",
-          boxShadow: musicPlaying ? "0 0 16px oklch(0.65 0.22 290 / 0.6), 0 0 32px oklch(0.55 0.25 315 / 0.3)" : "0 0 8px oklch(0.65 0.22 290 / 0.2)"
+          background: "oklch(0.12 0.02 270 / 0.88)",
+          border: `1px solid ${musicPlaying ? "oklch(0.65 0.22 290 / 0.7)" : "oklch(0.65 0.22 290 / 0.3)"}`,
+          backdropFilter: "blur(14px)",
+          boxShadow: musicPlaying ? "0 0 18px oklch(0.65 0.22 290 / 0.55), 0 0 36px oklch(0.55 0.25 315 / 0.25)" : "0 0 8px oklch(0.65 0.22 290 / 0.15)"
         },
-        children: musicPlaying ? /* @__PURE__ */ jsxRuntimeExports.jsx(Volume2, { size: 18, style: { color: "oklch(0.68 0.27 305)" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx(VolumeX, { size: 18, className: "text-muted-foreground" })
+        children: [
+          musicPlaying ? /* @__PURE__ */ jsxRuntimeExports.jsx(Music2, { size: 15, style: { color: "oklch(0.68 0.27 305)" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx(VolumeX, { size: 15, className: "text-muted-foreground" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "span",
+            {
+              className: "text-[0.6rem] font-mono tracking-[0.25em] uppercase select-none",
+              style: {
+                color: musicPlaying ? "oklch(0.68 0.27 305)" : "oklch(0.55 0.15 270)"
+              },
+              children: "IRIE FM"
+            }
+          )
+        ]
       }
     )
   ] });
@@ -48172,6 +48215,156 @@ function Badge({
       ...props
     }
   );
+}
+function composeEventHandlers(originalEventHandler, ourEventHandler, { checkForDefaultPrevented = true } = {}) {
+  return function handleEvent(event) {
+    originalEventHandler == null ? void 0 : originalEventHandler(event);
+    if (checkForDefaultPrevented === false || !event.defaultPrevented) {
+      return ourEventHandler == null ? void 0 : ourEventHandler(event);
+    }
+  };
+}
+function createContextScope(scopeName, createContextScopeDeps = []) {
+  let defaultContexts = [];
+  function createContext3(rootComponentName, defaultContext) {
+    const BaseContext = reactExports.createContext(defaultContext);
+    const index2 = defaultContexts.length;
+    defaultContexts = [...defaultContexts, defaultContext];
+    const Provider = (props) => {
+      var _a3;
+      const { scope, children, ...context } = props;
+      const Context = ((_a3 = scope == null ? void 0 : scope[scopeName]) == null ? void 0 : _a3[index2]) || BaseContext;
+      const value = reactExports.useMemo(() => context, Object.values(context));
+      return /* @__PURE__ */ jsxRuntimeExports.jsx(Context.Provider, { value, children });
+    };
+    Provider.displayName = rootComponentName + "Provider";
+    function useContext2(consumerName, scope) {
+      var _a3;
+      const Context = ((_a3 = scope == null ? void 0 : scope[scopeName]) == null ? void 0 : _a3[index2]) || BaseContext;
+      const context = reactExports.useContext(Context);
+      if (context) return context;
+      if (defaultContext !== void 0) return defaultContext;
+      throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
+    }
+    return [Provider, useContext2];
+  }
+  const createScope = () => {
+    const scopeContexts = defaultContexts.map((defaultContext) => {
+      return reactExports.createContext(defaultContext);
+    });
+    return function useScope(scope) {
+      const contexts = (scope == null ? void 0 : scope[scopeName]) || scopeContexts;
+      return reactExports.useMemo(
+        () => ({ [`__scope${scopeName}`]: { ...scope, [scopeName]: contexts } }),
+        [scope, contexts]
+      );
+    };
+  };
+  createScope.scopeName = scopeName;
+  return [createContext3, composeContextScopes(createScope, ...createContextScopeDeps)];
+}
+function composeContextScopes(...scopes) {
+  const baseScope = scopes[0];
+  if (scopes.length === 1) return baseScope;
+  const createScope = () => {
+    const scopeHooks = scopes.map((createScope2) => ({
+      useScope: createScope2(),
+      scopeName: createScope2.scopeName
+    }));
+    return function useComposedScopes(overrideScopes) {
+      const nextScopes = scopeHooks.reduce((nextScopes2, { useScope, scopeName }) => {
+        const scopeProps = useScope(overrideScopes);
+        const currentScope = scopeProps[`__scope${scopeName}`];
+        return { ...nextScopes2, ...currentScope };
+      }, {});
+      return reactExports.useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
+    };
+  };
+  createScope.scopeName = baseScope.scopeName;
+  return createScope;
+}
+// @__NO_SIDE_EFFECTS__
+function createSlot(ownerName) {
+  const SlotClone = /* @__PURE__ */ createSlotClone(ownerName);
+  const Slot2 = reactExports.forwardRef((props, forwardedRef) => {
+    const { children, ...slotProps } = props;
+    const childrenArray = reactExports.Children.toArray(children);
+    const slottable = childrenArray.find(isSlottable);
+    if (slottable) {
+      const newElement = slottable.props.children;
+      const newChildren = childrenArray.map((child) => {
+        if (child === slottable) {
+          if (reactExports.Children.count(newElement) > 1) return reactExports.Children.only(null);
+          return reactExports.isValidElement(newElement) ? newElement.props.children : null;
+        } else {
+          return child;
+        }
+      });
+      return /* @__PURE__ */ jsxRuntimeExports.jsx(SlotClone, { ...slotProps, ref: forwardedRef, children: reactExports.isValidElement(newElement) ? reactExports.cloneElement(newElement, void 0, newChildren) : null });
+    }
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(SlotClone, { ...slotProps, ref: forwardedRef, children });
+  });
+  Slot2.displayName = `${ownerName}.Slot`;
+  return Slot2;
+}
+// @__NO_SIDE_EFFECTS__
+function createSlotClone(ownerName) {
+  const SlotClone = reactExports.forwardRef((props, forwardedRef) => {
+    const { children, ...slotProps } = props;
+    if (reactExports.isValidElement(children)) {
+      const childrenRef = getElementRef$1(children);
+      const props2 = mergeProps(slotProps, children.props);
+      if (children.type !== reactExports.Fragment) {
+        props2.ref = forwardedRef ? composeRefs$1(forwardedRef, childrenRef) : childrenRef;
+      }
+      return reactExports.cloneElement(children, props2);
+    }
+    return reactExports.Children.count(children) > 1 ? reactExports.Children.only(null) : null;
+  });
+  SlotClone.displayName = `${ownerName}.SlotClone`;
+  return SlotClone;
+}
+var SLOTTABLE_IDENTIFIER = Symbol("radix.slottable");
+function isSlottable(child) {
+  return reactExports.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
+}
+function mergeProps(slotProps, childProps) {
+  const overrideProps = { ...childProps };
+  for (const propName in childProps) {
+    const slotPropValue = slotProps[propName];
+    const childPropValue = childProps[propName];
+    const isHandler = /^on[A-Z]/.test(propName);
+    if (isHandler) {
+      if (slotPropValue && childPropValue) {
+        overrideProps[propName] = (...args) => {
+          const result = childPropValue(...args);
+          slotPropValue(...args);
+          return result;
+        };
+      } else if (slotPropValue) {
+        overrideProps[propName] = slotPropValue;
+      }
+    } else if (propName === "style") {
+      overrideProps[propName] = { ...slotPropValue, ...childPropValue };
+    } else if (propName === "className") {
+      overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
+    }
+  }
+  return { ...slotProps, ...overrideProps };
+}
+function getElementRef$1(element) {
+  var _a3, _b3;
+  let getter = (_a3 = Object.getOwnPropertyDescriptor(element.props, "ref")) == null ? void 0 : _a3.get;
+  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.ref;
+  }
+  getter = (_b3 = Object.getOwnPropertyDescriptor(element, "ref")) == null ? void 0 : _b3.get;
+  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.props.ref;
+  }
+  return element.props.ref || element.ref;
 }
 function createCollection(name) {
   const PROVIDER_NAME = name + "CollectionProvider";
@@ -48235,6 +48428,8 @@ function createCollection(name) {
     createCollectionScope2
   ];
 }
+var useLayoutEffect2 = (globalThis == null ? void 0 : globalThis.document) ? reactExports.useLayoutEffect : () => {
+};
 var useReactId = React$4[" useId ".trim().toString()] || (() => void 0);
 var count = 0;
 function useId(deterministicId) {
@@ -48244,6 +48439,38 @@ function useId(deterministicId) {
   }, [deterministicId]);
   return deterministicId || (id2 ? `radix-${id2}` : "");
 }
+var NODES = [
+  "a",
+  "button",
+  "div",
+  "form",
+  "h2",
+  "h3",
+  "img",
+  "input",
+  "label",
+  "li",
+  "nav",
+  "ol",
+  "p",
+  "select",
+  "span",
+  "svg",
+  "ul"
+];
+var Primitive = NODES.reduce((primitive, node) => {
+  const Slot2 = /* @__PURE__ */ createSlot(`Primitive.${node}`);
+  const Node = reactExports.forwardRef((props, forwardedRef) => {
+    const { asChild, ...primitiveProps } = props;
+    const Comp = asChild ? Slot2 : node;
+    if (typeof window !== "undefined") {
+      window[Symbol.for("radix-ui")] = true;
+    }
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Comp, { ...primitiveProps, ref: forwardedRef });
+  });
+  Node.displayName = `Primitive.${node}`;
+  return { ...primitive, [node]: Node };
+}, {});
 function useCallbackRef(callback) {
   const callbackRef = reactExports.useRef(callback);
   reactExports.useEffect(() => {
@@ -48253,6 +48480,72 @@ function useCallbackRef(callback) {
     var _a3;
     return (_a3 = callbackRef.current) == null ? void 0 : _a3.call(callbackRef, ...args);
   }, []);
+}
+var useInsertionEffect = React$4[" useInsertionEffect ".trim().toString()] || useLayoutEffect2;
+function useControllableState({
+  prop,
+  defaultProp,
+  onChange = () => {
+  },
+  caller
+}) {
+  const [uncontrolledProp, setUncontrolledProp, onChangeRef] = useUncontrolledState({
+    defaultProp,
+    onChange
+  });
+  const isControlled = prop !== void 0;
+  const value = isControlled ? prop : uncontrolledProp;
+  {
+    const isControlledRef = reactExports.useRef(prop !== void 0);
+    reactExports.useEffect(() => {
+      const wasControlled = isControlledRef.current;
+      if (wasControlled !== isControlled) {
+        const from = wasControlled ? "controlled" : "uncontrolled";
+        const to = isControlled ? "controlled" : "uncontrolled";
+        console.warn(
+          `${caller} is changing from ${from} to ${to}. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.`
+        );
+      }
+      isControlledRef.current = isControlled;
+    }, [isControlled, caller]);
+  }
+  const setValue = reactExports.useCallback(
+    (nextValue) => {
+      var _a3;
+      if (isControlled) {
+        const value2 = isFunction(nextValue) ? nextValue(prop) : nextValue;
+        if (value2 !== prop) {
+          (_a3 = onChangeRef.current) == null ? void 0 : _a3.call(onChangeRef, value2);
+        }
+      } else {
+        setUncontrolledProp(nextValue);
+      }
+    },
+    [isControlled, prop, setUncontrolledProp, onChangeRef]
+  );
+  return [value, setValue];
+}
+function useUncontrolledState({
+  defaultProp,
+  onChange
+}) {
+  const [value, setValue] = reactExports.useState(defaultProp);
+  const prevValueRef = reactExports.useRef(value);
+  const onChangeRef = reactExports.useRef(onChange);
+  useInsertionEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+  reactExports.useEffect(() => {
+    var _a3;
+    if (prevValueRef.current !== value) {
+      (_a3 = onChangeRef.current) == null ? void 0 : _a3.call(onChangeRef, value);
+      prevValueRef.current = value;
+    }
+  }, [value, prevValueRef]);
+  return [value, setValue, onChangeRef];
+}
+function isFunction(value) {
+  return typeof value === "function";
 }
 var DirectionContext = reactExports.createContext(void 0);
 function useDirection(localDir) {
@@ -48330,7 +48623,7 @@ var RovingFocusGroupImpl = reactExports.forwardRef((props, forwardedRef) => {
         []
       ),
       children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        Primitive$1.div,
+        Primitive.div,
         {
           tabIndex: isTabbingBackOut || focusableItemsCount === 0 ? -1 : 0,
           "data-orientation": orientation,
@@ -48395,7 +48688,7 @@ var RovingFocusGroupItem = reactExports.forwardRef(
         focusable,
         active,
         children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Primitive$1.span,
+          Primitive.span,
           {
             tabIndex: isCurrentTabStop ? 0 : -1,
             "data-orientation": context.orientation,
@@ -48468,6 +48761,129 @@ function wrapArray(array, startIndex) {
 }
 var Root = RovingFocusGroup;
 var Item = RovingFocusGroupItem;
+function useStateMachine(initialState, machine) {
+  return reactExports.useReducer((state, event) => {
+    const nextState = machine[state][event];
+    return nextState ?? state;
+  }, initialState);
+}
+var Presence = (props) => {
+  const { present, children } = props;
+  const presence = usePresence(present);
+  const child = typeof children === "function" ? children({ present: presence.isPresent }) : reactExports.Children.only(children);
+  const ref = useComposedRefs$1(presence.ref, getElementRef(child));
+  const forceMount = typeof children === "function";
+  return forceMount || presence.isPresent ? reactExports.cloneElement(child, { ref }) : null;
+};
+Presence.displayName = "Presence";
+function usePresence(present) {
+  const [node, setNode] = reactExports.useState();
+  const stylesRef = reactExports.useRef(null);
+  const prevPresentRef = reactExports.useRef(present);
+  const prevAnimationNameRef = reactExports.useRef("none");
+  const initialState = present ? "mounted" : "unmounted";
+  const [state, send] = useStateMachine(initialState, {
+    mounted: {
+      UNMOUNT: "unmounted",
+      ANIMATION_OUT: "unmountSuspended"
+    },
+    unmountSuspended: {
+      MOUNT: "mounted",
+      ANIMATION_END: "unmounted"
+    },
+    unmounted: {
+      MOUNT: "mounted"
+    }
+  });
+  reactExports.useEffect(() => {
+    const currentAnimationName = getAnimationName(stylesRef.current);
+    prevAnimationNameRef.current = state === "mounted" ? currentAnimationName : "none";
+  }, [state]);
+  useLayoutEffect2(() => {
+    const styles = stylesRef.current;
+    const wasPresent = prevPresentRef.current;
+    const hasPresentChanged = wasPresent !== present;
+    if (hasPresentChanged) {
+      const prevAnimationName = prevAnimationNameRef.current;
+      const currentAnimationName = getAnimationName(styles);
+      if (present) {
+        send("MOUNT");
+      } else if (currentAnimationName === "none" || (styles == null ? void 0 : styles.display) === "none") {
+        send("UNMOUNT");
+      } else {
+        const isAnimating = prevAnimationName !== currentAnimationName;
+        if (wasPresent && isAnimating) {
+          send("ANIMATION_OUT");
+        } else {
+          send("UNMOUNT");
+        }
+      }
+      prevPresentRef.current = present;
+    }
+  }, [present, send]);
+  useLayoutEffect2(() => {
+    if (node) {
+      let timeoutId;
+      const ownerWindow = node.ownerDocument.defaultView ?? window;
+      const handleAnimationEnd = (event) => {
+        const currentAnimationName = getAnimationName(stylesRef.current);
+        const isCurrentAnimation = currentAnimationName.includes(CSS.escape(event.animationName));
+        if (event.target === node && isCurrentAnimation) {
+          send("ANIMATION_END");
+          if (!prevPresentRef.current) {
+            const currentFillMode = node.style.animationFillMode;
+            node.style.animationFillMode = "forwards";
+            timeoutId = ownerWindow.setTimeout(() => {
+              if (node.style.animationFillMode === "forwards") {
+                node.style.animationFillMode = currentFillMode;
+              }
+            });
+          }
+        }
+      };
+      const handleAnimationStart = (event) => {
+        if (event.target === node) {
+          prevAnimationNameRef.current = getAnimationName(stylesRef.current);
+        }
+      };
+      node.addEventListener("animationstart", handleAnimationStart);
+      node.addEventListener("animationcancel", handleAnimationEnd);
+      node.addEventListener("animationend", handleAnimationEnd);
+      return () => {
+        ownerWindow.clearTimeout(timeoutId);
+        node.removeEventListener("animationstart", handleAnimationStart);
+        node.removeEventListener("animationcancel", handleAnimationEnd);
+        node.removeEventListener("animationend", handleAnimationEnd);
+      };
+    } else {
+      send("ANIMATION_END");
+    }
+  }, [node, send]);
+  return {
+    isPresent: ["mounted", "unmountSuspended"].includes(state),
+    ref: reactExports.useCallback((node2) => {
+      stylesRef.current = node2 ? getComputedStyle(node2) : null;
+      setNode(node2);
+    }, [])
+  };
+}
+function getAnimationName(styles) {
+  return (styles == null ? void 0 : styles.animationName) || "none";
+}
+function getElementRef(element) {
+  var _a3, _b3;
+  let getter = (_a3 = Object.getOwnPropertyDescriptor(element.props, "ref")) == null ? void 0 : _a3.get;
+  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.ref;
+  }
+  getter = (_b3 = Object.getOwnPropertyDescriptor(element, "ref")) == null ? void 0 : _b3.get;
+  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.props.ref;
+  }
+  return element.props.ref || element.ref;
+}
 var TABS_NAME = "Tabs";
 var [createTabsContext] = createContextScope(TABS_NAME, [
   createRovingFocusGroupScope
@@ -48504,7 +48920,7 @@ var Tabs$1 = reactExports.forwardRef(
         dir: direction,
         activationMode,
         children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Primitive$1.div,
+          Primitive.div,
           {
             dir: direction,
             "data-orientation": orientation,
@@ -48532,7 +48948,7 @@ var TabsList$1 = reactExports.forwardRef(
         dir: context.dir,
         loop,
         children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Primitive$1.div,
+          Primitive.div,
           {
             role: "tablist",
             "aria-orientation": context.orientation,
@@ -48562,7 +48978,7 @@ var TabsTrigger$1 = reactExports.forwardRef(
         focusable: !disabled,
         active: isSelected,
         children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Primitive$1.button,
+          Primitive.button,
           {
             type: "button",
             role: "tab",
@@ -48611,7 +49027,7 @@ var TabsContent$1 = reactExports.forwardRef(
       return () => cancelAnimationFrame(rAF);
     }, []);
     return /* @__PURE__ */ jsxRuntimeExports.jsx(Presence, { present: forceMount || isSelected, children: ({ present }) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive$1.div,
+      Primitive.div,
       {
         "data-state": isSelected ? "active" : "inactive",
         "data-orientation": context.orientation,
@@ -48759,9 +49175,42 @@ function QRTicket({ qrToken, plusOne }) {
     }
   }, [qrToken]);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonCard, { glow: "cyan", className: "max-w-xs mx-auto p-6 text-center", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-display tracking-[0.3em] uppercase text-muted-foreground mb-4", children: "YOUR ENTRY TICKET" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mx-auto w-fit rounded-lg p-3 bg-white mb-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx("canvas", { ref: canvasRef, className: "w-[120px] h-[120px]" }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-mono text-xs text-muted-foreground truncate mb-2", children: qrToken }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "p",
+      {
+        className: "text-[0.6rem] font-mono tracking-[0.35em] uppercase mb-1",
+        style: { color: "oklch(0.65 0.22 290 / 0.7)" },
+        children: "✦ EXCLUSIVE ACCESS ✦"
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "p",
+      {
+        className: "text-base font-display font-black tracking-[0.25em] uppercase mb-4",
+        style: {
+          background: "linear-gradient(90deg, oklch(0.72 0.25 200), oklch(0.65 0.22 290))",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+          filter: "drop-shadow(0 0 10px oklch(0.65 0.22 290 / 0.5))"
+        },
+        children: "YOUR ENTRY TICKET"
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mx-auto w-fit rounded-lg p-3 bg-white mb-4 shadow-[0_0_24px_oklch(0.65_0.22_290/0.3)]", children: /* @__PURE__ */ jsxRuntimeExports.jsx("canvas", { ref: canvasRef, className: "w-[120px] h-[120px]" }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-mono text-xs text-muted-foreground truncate mb-3", children: qrToken }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "p",
+      {
+        className: "text-[0.65rem] font-body leading-relaxed mb-3",
+        style: { color: "oklch(0.60 0.15 290 / 0.8)" },
+        children: [
+          "Present this QR code at the door for entry.",
+          /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+          "Screenshot and save it."
+        ]
+      }
+    ),
     plusOne && /* @__PURE__ */ jsxRuntimeExports.jsx(
       Badge,
       {
@@ -48998,7 +49447,7 @@ function PersonalityQuiz({ appId }) {
         ]
       },
       currentQ
-    ) : /* @__PURE__ */ jsxRuntimeExports.jsx(NeonCard, { glow: "none", className: "p-8 text-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground font-display", children: "No questions available yet. Check back soon." }) }) })
+    ) : /* @__PURE__ */ jsxRuntimeExports.jsx(NeonCard, { glow: "none", className: "p-8 text-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground font-display", children: "No questions available yet — check back soon." }) }) })
   ] });
 }
 const MAX_CHARS = 200;
@@ -49160,7 +49609,7 @@ function GalleryTab() {
           "data-ocid": "gallery.empty_state",
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-4xl mb-3", children: "📷" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display font-semibold text-foreground mb-1", children: "The night hasn't happened yet." }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display font-semibold text-foreground mb-1", children: "The night hasn't started yet." }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground font-body", children: "Photos will appear here after the event." })
           ]
         }
@@ -49276,7 +49725,7 @@ function PortalPage() {
         "data-ocid": "portal.loading_state",
         children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4 text-center", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-16 h-16 mx-auto rounded-full border-2 border-primary/40 border-t-primary animate-spin" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground font-display text-sm tracking-widest", children: "ACCESSING VAULT…" })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground font-display text-sm tracking-widest", children: "LOADING YOUR PORTAL…" })
         ] })
       }
     );
@@ -49296,8 +49745,9 @@ function PortalPage() {
               /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-4xl", children: "🚫" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display font-bold text-xl text-foreground", children: "Access Restricted" }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-sm text-muted-foreground font-body", children: [
-                "Your application is ",
-                appStatus ?? "pending review",
+                "Your application is currently",
+                " ",
+                appStatus === "rejected" ? "not approved for this event" : "pending review",
                 ". The portal unlocks once you're approved."
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -49319,15 +49769,35 @@ function PortalPage() {
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-h-screen pb-16", "data-ocid": "portal.page", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: "relative py-12 px-4 text-center overflow-hidden", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { "aria-hidden": true, className: "pointer-events-none absolute inset-0", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "div",
-        {
-          className: "absolute inset-0",
-          style: {
-            background: "radial-gradient(ellipse 80% 60% at 50% 0%, oklch(0.65 0.22 290 / 0.15) 0%, transparent 70%)"
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { "aria-hidden": true, className: "pointer-events-none absolute inset-0", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            className: "absolute inset-0",
+            style: {
+              background: "radial-gradient(ellipse 80% 60% at 50% 0%, oklch(0.65 0.22 290 / 0.15) 0%, transparent 70%)"
+            }
           }
-        }
-      ) }),
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            className: "party-blob-1 absolute top-1/3 left-1/4 w-96 h-96 rounded-full opacity-15 blur-3xl pointer-events-none",
+            style: {
+              background: "radial-gradient(circle, oklch(0.65 0.25 15), oklch(0.55 0.22 340))"
+            }
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            className: "party-blob-2 absolute bottom-1/3 right-1/3 w-80 h-80 rounded-full opacity-[0.12] blur-3xl pointer-events-none",
+            style: {
+              background: "radial-gradient(circle, oklch(0.75 0.18 80), oklch(0.60 0.20 45))"
+            }
+          }
+        )
+      ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         motion.div,
         {
@@ -49336,7 +49806,7 @@ function PortalPage() {
           transition: { duration: 0.6 },
           className: "relative z-10",
           children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-display tracking-[0.4em] text-muted-foreground uppercase mb-3", children: "exclusive access granted" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-display tracking-[0.4em] text-muted-foreground uppercase mb-3", children: "Exclusive Access Granted" }),
             /* @__PURE__ */ jsxRuntimeExports.jsx(
               "h1",
               {
@@ -49351,7 +49821,7 @@ function PortalPage() {
                 children: "YOU ARE ON THE LIST"
               }
             ),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground font-body", children: "Saturday, May 23rd · The most exclusive night of the year" })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground font-body", children: "Saturday, 23rd May 2026 · The most exclusive night of the year" })
           ]
         }
       )
@@ -49368,10 +49838,60 @@ function PortalPage() {
             animate: { opacity: 1, scale: 1 },
             transition: { duration: 0.5, delay: 0.2 },
             children: qrToken ? /* @__PURE__ */ jsxRuntimeExports.jsx(QRTicket, { qrToken, plusOne }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonCard, { glow: "cyan", className: "p-6 text-center", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-display tracking-widest text-muted-foreground mb-4", children: "YOUR ENTRY TICKET" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-display tracking-widest text-muted-foreground mb-4", children: "YOUR ENTRY TICKET — PRESENT AT THE DOOR" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-[120px] h-[120px] mx-auto rounded-lg bg-muted/30 flex items-center justify-center mb-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "w-full h-full rounded-lg" }) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-body", children: "Ticket generating…" })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-body", children: "Your ticket is being generated…" })
             ] })
+          }
+        )
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "section",
+      {
+        className: "px-4 max-w-sm mx-auto mb-10",
+        "data-ocid": "portal.location_section",
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          motion.div,
+          {
+            initial: { opacity: 0, y: 16 },
+            animate: { opacity: 1, y: 0 },
+            transition: { duration: 0.5, delay: 0.35 },
+            children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              NeonCard,
+              {
+                glow: "magenta",
+                className: "p-6 text-center",
+                style: {
+                  boxShadow: "0 0 28px oklch(0.55 0.25 315 / 0.25), 0 0 60px oklch(0.55 0.25 315 / 0.1), inset 0 1px 0 oklch(1 0 0 / 0.06)"
+                },
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "p",
+                    {
+                      className: "text-[0.6rem] font-mono tracking-[0.35em] uppercase mb-1",
+                      style: { color: "oklch(0.55 0.25 315 / 0.7)" },
+                      children: "✦ DETAILS ✦"
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "h3",
+                    {
+                      className: "text-sm font-display font-black tracking-[0.25em] uppercase mb-4",
+                      style: {
+                        background: "linear-gradient(90deg, oklch(0.68 0.27 305), oklch(0.55 0.25 315))",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        backgroundClip: "text",
+                        filter: "drop-shadow(0 0 10px oklch(0.55 0.25 315 / 0.5))"
+                      },
+                      children: "EVENT LOCATION"
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-body leading-relaxed text-muted-foreground", children: "The exact address will be disclosed soon on your WhatsApp number. Make sure your number is saved and stay ready." })
+                ]
+              }
+            )
           }
         )
       }
@@ -49418,14 +49938,14 @@ const STATUS_CONFIG = {
     emoji: "⏳",
     glow: "purple",
     color: "oklch(0.65 0.22 290)",
-    message: "Your application is in the queue. The committee reviews applications manually. Stay close — decisions are made fast."
+    message: "Your application is in the queue. The committee reviews every application personally — stay close, decisions are made quickly."
   },
   approved: {
     label: "APPROVED",
     emoji: "✅",
     glow: "cyan",
     color: "oklch(0.75 0.30 145)",
-    message: "You're officially on the list. Access your exclusive portal, your entry ticket, and everything that comes with it."
+    message: "You're officially on the list. Head to your exclusive portal to access your entry ticket and everything that comes with it."
   },
   rejected: {
     label: "NOT THIS TIME",
@@ -49439,6 +49959,8 @@ function StatusPage() {
   const navigate = useNavigate();
   const [appId, setAppId] = reactExports.useState(null);
   const [resolved, setResolved] = reactExports.useState(false);
+  const [lookupValue, setLookupValue] = reactExports.useState("");
+  const [lookupError, setLookupError] = reactExports.useState("");
   reactExports.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const paramId = params.get("id");
@@ -49455,7 +49977,25 @@ function StatusPage() {
   const { data: statusData, isLoading } = useApplicationStatus(appId);
   const statusKey = statusData == null ? void 0 : statusData[0];
   const config = statusKey ? STATUS_CONFIG[statusKey] : null;
-  if (!resolved || isLoading) {
+  function handleLookup(e) {
+    e.preventDefault();
+    const val = lookupValue.trim();
+    if (!val) {
+      setLookupError("Enter your application ID to check status");
+      return;
+    }
+    const numeric = val.replace(/^#/, "");
+    try {
+      const parsed = BigInt(numeric);
+      setLookupError("");
+      setAppId(parsed);
+    } catch {
+      setLookupError(
+        "Invalid application ID — enter the number from your confirmation"
+      );
+    }
+  }
+  if (!resolved || appId !== null && isLoading) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {
@@ -49469,37 +50009,105 @@ function StatusPage() {
     );
   }
   if (!appId) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "div",
       {
-        className: "min-h-screen flex items-center justify-center px-4",
+        className: "min-h-screen flex items-center justify-center px-4 py-16",
         "data-ocid": "status.page",
-        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          NeonCard,
-          {
-            glow: "purple",
-            className: "max-w-sm w-full p-8 text-center space-y-5",
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-4xl", children: "🎟️" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display font-bold text-xl text-foreground", children: "No Application Found" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground font-body leading-relaxed", children: "We couldn't find an application ID. Apply now to get on the list." }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                Button,
-                {
-                  type: "button",
-                  asChild: true,
-                  "data-ocid": "status.apply_button",
-                  className: "w-full font-display font-bold tracking-wide",
-                  style: {
-                    background: "linear-gradient(135deg, oklch(0.65 0.22 290), oklch(0.55 0.25 315))",
-                    boxShadow: "0 0 16px oklch(0.65 0.22 290 / 0.3)"
-                  },
-                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: "/apply", children: "APPLY NOW" })
-                }
-              )
-            ]
-          }
-        )
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              "aria-hidden": true,
+              className: "pointer-events-none fixed inset-0 overflow-hidden",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-[-20%] left-[10%] w-[40vw] h-[40vw] rounded-full bg-primary/8 blur-[120px]" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute bottom-[-10%] right-[5%] w-[35vw] h-[35vw] rounded-full bg-secondary/6 blur-[100px]" })
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            motion.div,
+            {
+              initial: { opacity: 0, y: 30 },
+              animate: { opacity: 1, y: 0 },
+              transition: { duration: 0.6, type: "spring" },
+              className: "w-full max-w-sm space-y-5",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonCard, { glow: "purple", className: "p-8 space-y-6", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center space-y-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-4xl", children: "🎟️" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display font-bold text-xl text-foreground", children: "Check Your Status" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground font-body leading-relaxed", children: "Enter the application ID from your confirmation to see your status." })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleLookup, className: "space-y-4", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1.5", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      Label,
+                      {
+                        htmlFor: "lookup-id",
+                        className: "text-xs font-display tracking-[0.15em] uppercase text-muted-foreground",
+                        children: "Application ID"
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      Input,
+                      {
+                        id: "lookup-id",
+                        value: lookupValue,
+                        onChange: (e) => {
+                          setLookupValue(e.target.value);
+                          if (lookupError) setLookupError("");
+                        },
+                        placeholder: "e.g. 000042",
+                        className: "bg-card/20 border-border/40 text-foreground placeholder:text-muted-foreground/40 h-12 font-mono text-base",
+                        autoComplete: "off",
+                        "data-ocid": "status.lookup_input"
+                      }
+                    ),
+                    lookupError && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      "p",
+                      {
+                        className: "text-xs text-destructive font-body flex items-center gap-1.5",
+                        "data-ocid": "status.lookup_field_error",
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "inline-block w-1.5 h-1.5 rounded-full bg-destructive shrink-0" }),
+                          lookupError
+                        ]
+                      }
+                    )
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Button,
+                    {
+                      type: "submit",
+                      className: "w-full font-display font-bold tracking-wide text-sm",
+                      style: {
+                        background: "linear-gradient(135deg, oklch(0.65 0.22 290), oklch(0.55 0.25 315))",
+                        boxShadow: "0 0 16px oklch(0.65 0.22 290 / 0.3)"
+                      },
+                      "data-ocid": "status.lookup_submit_button",
+                      children: "Check Status"
+                    }
+                  )
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "border-t border-border/30 pt-4 text-center", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-body mb-3", children: "Don't have an application yet?" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Button,
+                    {
+                      type: "button",
+                      variant: "outline",
+                      asChild: true,
+                      className: "w-full border-border/40 text-muted-foreground hover:border-primary/40 font-display text-sm",
+                      "data-ocid": "status.apply_button",
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/apply", children: "APPLY NOW" })
+                    }
+                  )
+                ] })
+              ] })
+            }
+          )
+        ]
       }
     );
   }
@@ -49590,8 +50198,149 @@ function StatusPage() {
                   initial: { opacity: 0, y: 10 },
                   animate: { opacity: 1, y: 0 },
                   transition: { delay: 0.6 },
-                  className: "space-y-3",
+                  className: "space-y-5",
                   children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      "div",
+                      {
+                        className: "rounded-2xl overflow-hidden border border-accent/30",
+                        style: {
+                          background: "linear-gradient(160deg, oklch(0.12 0.04 200 / 0.95), oklch(0.08 0.02 220 / 0.98))",
+                          boxShadow: "0 0 40px oklch(0.7 0.2 200 / 0.15), inset 0 0 60px oklch(0.7 0.2 200 / 0.04)"
+                        },
+                        "data-ocid": "status.entry_ticket",
+                        children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                            "div",
+                            {
+                              className: "px-5 pt-5 pb-3 border-b",
+                              style: {
+                                borderColor: "oklch(0.7 0.2 200 / 0.2)",
+                                background: "linear-gradient(90deg, oklch(0.7 0.2 200 / 0.08), transparent)"
+                              },
+                              children: [
+                                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                  "p",
+                                  {
+                                    className: "text-xs font-mono uppercase tracking-[0.4em] mb-0.5",
+                                    style: { color: "oklch(0.7 0.2 200 / 0.7)" },
+                                    children: "10s Only"
+                                  }
+                                ),
+                                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                  "h2",
+                                  {
+                                    className: "font-display font-black text-2xl tracking-tight",
+                                    style: {
+                                      color: "oklch(0.85 0.18 70)",
+                                      textShadow: "0 0 20px oklch(0.85 0.18 70 / 0.5)"
+                                    },
+                                    children: "YOUR ENTRY TICKET"
+                                  }
+                                ),
+                                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                  "p",
+                                  {
+                                    className: "text-xs font-body mt-1",
+                                    style: { color: "oklch(0.7 0.2 200 / 0.6)" },
+                                    children: "Saturday · 23 May 2026"
+                                  }
+                                )
+                              ]
+                            }
+                          ),
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-5 py-5 flex flex-col items-center gap-4", children: [
+                            (statusData == null ? void 0 : statusData[1]) ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              "div",
+                              {
+                                className: "rounded-xl overflow-hidden p-2",
+                                style: {
+                                  background: "oklch(0.96 0 0)",
+                                  boxShadow: "0 0 32px oklch(0.7 0.2 200 / 0.3)"
+                                },
+                                children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                  "img",
+                                  {
+                                    src: `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(statusData[1])}&bgcolor=f5f5f5&color=0a0a12&qzone=2`,
+                                    alt: "Entry QR code",
+                                    width: 220,
+                                    height: 220,
+                                    className: "block rounded-lg",
+                                    "data-ocid": "status.entry_qr"
+                                  }
+                                )
+                              }
+                            ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              "div",
+                              {
+                                className: "w-[220px] h-[220px] rounded-xl flex items-center justify-center",
+                                style: { background: "oklch(0.7 0.2 200 / 0.08)" },
+                                children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-xs font-mono", children: "QR generating…" })
+                              }
+                            ),
+                            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                              "div",
+                              {
+                                className: "w-full rounded-xl px-4 py-3 text-center border",
+                                style: {
+                                  background: "oklch(0.85 0.18 70 / 0.06)",
+                                  borderColor: "oklch(0.85 0.18 70 / 0.25)"
+                                },
+                                children: [
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                    "p",
+                                    {
+                                      className: "text-xs font-display font-semibold tracking-wide",
+                                      style: { color: "oklch(0.85 0.18 70)" },
+                                      children: "📸 Screenshot & save this ticket"
+                                    }
+                                  ),
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                    "p",
+                                    {
+                                      className: "text-[11px] font-body mt-0.5",
+                                      style: { color: "oklch(0.85 0.18 70 / 0.65)" },
+                                      children: "You'll need it at the door — don't lose it"
+                                    }
+                                  )
+                                ]
+                              }
+                            ),
+                            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                              "div",
+                              {
+                                className: "w-full rounded-xl px-4 py-3 flex items-start gap-3 border",
+                                style: {
+                                  background: "oklch(0.7 0.2 200 / 0.06)",
+                                  borderColor: "oklch(0.7 0.2 200 / 0.2)"
+                                },
+                                children: [
+                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-lg shrink-0 mt-0.5", children: "📍" }),
+                                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                      "p",
+                                      {
+                                        className: "text-xs font-display font-bold tracking-wide",
+                                        style: { color: "oklch(0.7 0.2 200)" },
+                                        children: "Location"
+                                      }
+                                    ),
+                                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                      "p",
+                                      {
+                                        className: "text-[12px] font-body mt-0.5 leading-relaxed",
+                                        style: { color: "oklch(0.7 0.15 200 / 0.8)" },
+                                        children: "The exact address will be disclosed on your WhatsApp number closer to the event."
+                                      }
+                                    )
+                                  ] })
+                                ]
+                              }
+                            )
+                          ] })
+                        ]
+                      }
+                    ),
                     /* @__PURE__ */ jsxRuntimeExports.jsx(
                       Button,
                       {
@@ -49606,7 +50355,7 @@ function StatusPage() {
                         children: "🎉 ENTER THE PORTAL"
                       }
                     ),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-body", children: "Your exclusive ticket and event access awaits" })
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-body text-center", children: "Access quiz, confessions, gallery and more" })
                   ]
                 }
               ) : statusKey === "pending" ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
@@ -49626,7 +50375,7 @@ function StatusPage() {
                     asChild: true,
                     "data-ocid": "status.home_button",
                     className: "w-full border-border/40 text-muted-foreground hover:border-primary/40 font-display text-sm",
-                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: "/", children: "BACK TO HOME" })
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/", children: "BACK TO HOME" })
                   }
                 )
               ] })

@@ -59,6 +59,7 @@ type ApprovalStatus =
  };
 type ApplicationView = 
  record {
+   applicationId: text;
    email: text;
    id: nat;
    instagramHandle: text;
@@ -66,7 +67,7 @@ type ApplicationView =
    name: text;
    phone: text;
    photos: vec ExternalBlob;
-   plusOne: bool;
+   plusOne: opt bool;
    qrToken: opt text;
    status: ApplicationStatus;
    submittedAt: int;
@@ -85,7 +86,7 @@ type ApplicationInput =
    name: text;
    phone: text;
    photos: vec ExternalBlob;
-   plusOne: bool;
+   plusOne: opt bool;
  };
 type ApplicationId = nat;
 type AdminStats = 
@@ -106,9 +107,18 @@ service : {
    (_ImmutableObjectStorageRefillResult);
   _immutableObjectStorageUpdateGatewayPrincipals: () -> ();
   _initializeAccessControl: () -> ();
+  addAdmin: ("principal": principal) -> (variant {
+                                           err: text;
+                                           ok;
+                                         });
   addInviteCode: (code: text) -> ();
   approveApplication: (id: ApplicationId) -> ();
   assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  broadcastToApprovedGuests: (subject: text, message: text) ->
+   (variant {
+      err: text;
+      ok: nat;
+    });
   getAdminStats: () -> (AdminStats) query;
   getApplicationStatus: (id: ApplicationId) ->
    (opt record {
@@ -123,12 +133,21 @@ service : {
   getQuizResultTypes: () -> (vec QuizResult) query;
   isCallerAdmin: () -> (bool) query;
   isCallerApproved: () -> (bool) query;
+  listAdmins: () -> (vec principal) query;
   listApplications: () -> (vec ApplicationView) query;
   listApprovals: () -> (vec UserApprovalInfo) query;
   listConfessions: () -> (vec Confession) query;
   listInviteCodes: () -> (vec text) query;
   rejectApplication: (id: ApplicationId) -> ();
+  removeAdmin: ("principal": principal) -> (variant {
+                                              err: text;
+                                              ok;
+                                            });
   requestApproval: () -> ();
+  resendApprovalEmail: (id: ApplicationId) -> (variant {
+                                                 err: text;
+                                                 ok;
+                                               });
   setApproval: (user: principal, status: ApprovalStatus) -> ();
   submitApplication: (input: ApplicationInput) -> (ApplicationId);
   submitConfession: ("text": text) -> (nat);

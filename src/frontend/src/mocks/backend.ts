@@ -69,6 +69,7 @@ export const mockBackend: backendInterface = {
   listApplications: async () => [
     {
       id: BigInt(1),
+      applicationId: "APP-7X4K2M",
       status: ApprovalStatus.approved,
       plusOne: true,
       name: "Zara Neon",
@@ -82,6 +83,7 @@ export const mockBackend: backendInterface = {
     },
     {
       id: BigInt(2),
+      applicationId: "APP-3R9P5N",
       status: ApprovalStatus.pending,
       plusOne: false,
       name: "Kai Mirrorball",
@@ -95,6 +97,7 @@ export const mockBackend: backendInterface = {
     },
     {
       id: BigInt(3),
+      applicationId: "APP-8Q1L6W",
       status: ApprovalStatus.rejected,
       plusOne: false,
       name: "Sam Static",
@@ -137,4 +140,9 @@ export const mockBackend: backendInterface = {
   submitApplication: async (_input: any) => BigInt(99),
   submitConfession: async (_text: string) => BigInt(5),
   submitQuizResult: async (_applicationId: bigint, _resultType: string) => undefined,
+  addAdmin: async (_principal: import("@dfinity/principal").Principal) => ({ __kind__: "ok" as const, ok: null }),
+  listAdmins: async () => [],
+  removeAdmin: async (_principal: import("@dfinity/principal").Principal) => ({ __kind__: "ok" as const, ok: null }),
+  broadcastToApprovedGuests: async (_subject: string, _message: string) => ({ __kind__: "ok" as const, ok: BigInt(0) }),
+  resendApprovalEmail: async (_id: bigint) => ({ __kind__: "ok" as const, ok: null }),
 };

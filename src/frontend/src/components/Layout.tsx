@@ -218,40 +218,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <main className="relative z-10 flex-1">{children}</main>
-
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-primary/20 bg-card/30 backdrop-blur-sm py-6 px-4">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-muted-foreground font-body">
-          <div className="flex items-center gap-2">
-            <Zap className="w-3 h-3 text-primary" aria-hidden="true" />
-            <span
-              className="font-display font-bold text-sm"
-              style={{
-                background:
-                  "linear-gradient(90deg, oklch(0.65 0.22 290), oklch(0.55 0.25 315))",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              10s Only
-            </span>
-            <span className="text-muted-foreground/60">·</span>
-            <span>Saturday, May 23, 2026</span>
-          </div>
-          <span>
-            © {new Date().getFullYear()}. Built with love using{" "}
-            <a
-              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(typeof window !== "undefined" ? window.location.hostname : "")}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:text-accent transition-colors duration-200"
-            >
-              caffeine.ai
-            </a>
-          </span>
-        </div>
-      </footer>
     </div>
   );
 }
