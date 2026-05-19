@@ -45242,6 +45242,16 @@ function getStatus(app) {
   if ("rejected" in app.status) return "rejected";
   return "pending";
 }
+function safeGetURL(photo) {
+  try {
+    if (!photo || typeof photo.getDirectURL !== "function")
+      return null;
+    const url = photo.getDirectURL();
+    return typeof url === "string" && url.length > 0 ? url : null;
+  } catch {
+    return null;
+  }
+}
 function StatCard({
   label,
   value,
@@ -45446,30 +45456,46 @@ function ApplicationCard({
                         /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground", children: formatDate(app.submittedAt) })
                       ] })
                     ] }),
-                    app.photos.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                    (app.photos ?? []).length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground font-mono mb-2", children: [
                         "Photos (",
                         app.photos.length,
                         ")"
                       ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-wrap gap-2", children: app.photos.map((photo, pi) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-                        "a",
-                        {
-                          href: photo.getDirectURL(),
-                          target: "_blank",
-                          rel: "noopener noreferrer",
-                          className: "block",
-                          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                            "img",
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-wrap gap-2", children: (app.photos ?? []).map((photo, pi) => {
+                        const url = safeGetURL(photo);
+                        if (!url)
+                          return /* @__PURE__ */ jsxRuntimeExports.jsx(
+                            "div",
                             {
-                              src: photo.getDirectURL(),
-                              alt: `Submission ${pi + 1}`,
-                              className: "w-16 h-16 object-cover rounded-lg border border-border/30 hover:border-accent/50 transition-colors"
-                            }
-                          )
-                        },
-                        photo.getDirectURL()
-                      )) })
+                              className: "w-16 h-16 rounded-lg border border-border/30 bg-muted/20 flex items-center justify-center",
+                              title: "Photo unavailable",
+                              children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground text-xs font-mono", children: "?" })
+                            },
+                            `${app.id}-broken-${pi}`
+                          );
+                        return /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          "a",
+                          {
+                            href: url,
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                            className: "block",
+                            children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                              "img",
+                              {
+                                src: url,
+                                alt: `Submission ${pi + 1}`,
+                                className: "w-16 h-16 object-cover rounded-lg border border-border/30 hover:border-accent/50 transition-colors",
+                                onError: (e) => {
+                                  e.currentTarget.style.display = "none";
+                                }
+                              }
+                            )
+                          },
+                          `${app.id}-photo-${url}`
+                        );
+                      }) })
                     ] }),
                     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap gap-2 pt-1", children: [
                       isPending && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [

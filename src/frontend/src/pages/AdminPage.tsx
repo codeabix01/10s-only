@@ -47,6 +47,21 @@ function getStatus(app: ApplicationView): "pending" | "approved" | "rejected" {
   return "pending";
 }
 
+// ── safe URL helper ──────────────────────────────────────────────────────────
+function safeGetURL(photo: unknown): string | null {
+  try {
+    if (
+      !photo ||
+      typeof (photo as { getDirectURL?: unknown }).getDirectURL !== "function"
+    )
+      return null;
+    const url = (photo as { getDirectURL: () => string }).getDirectURL();
+    return typeof url === "string" && url.length > 0 ? url : null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Stat Card ─────────────────────────────────────────────────────────────────
 interface StatCardProps {
   label: string;
@@ -300,27 +315,47 @@ function ApplicationCard({
                   </div>
 
                   {/* photos */}
-                  {app.photos.length > 0 && (
+                  {(app.photos ?? []).length > 0 && (
                     <div>
                       <p className="text-xs text-muted-foreground font-mono mb-2">
                         Photos ({app.photos.length})
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {app.photos.map((photo, pi) => (
-                          <a
-                            key={photo.getDirectURL()}
-                            href={photo.getDirectURL()}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block"
-                          >
-                            <img
-                              src={photo.getDirectURL()}
-                              alt={`Submission ${pi + 1}`}
-                              className="w-16 h-16 object-cover rounded-lg border border-border/30 hover:border-accent/50 transition-colors"
-                            />
-                          </a>
-                        ))}
+                        {(app.photos ?? []).map((photo, pi) => {
+                          const url = safeGetURL(photo);
+                          if (!url)
+                            return (
+                              <div
+                                key={`${app.id}-broken-${pi}`}
+                                className="w-16 h-16 rounded-lg border border-border/30 bg-muted/20 flex items-center justify-center"
+                                title="Photo unavailable"
+                              >
+                                <span className="text-muted-foreground text-xs font-mono">
+                                  ?
+                                </span>
+                              </div>
+                            );
+                          return (
+                            <a
+                              key={`${app.id}-photo-${url}`}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block"
+                            >
+                              <img
+                                src={url}
+                                alt={`Submission ${pi + 1}`}
+                                className="w-16 h-16 object-cover rounded-lg border border-border/30 hover:border-accent/50 transition-colors"
+                                onError={(e) => {
+                                  (
+                                    e.currentTarget as HTMLImageElement
+                                  ).style.display = "none";
+                                }}
+                              />
+                            </a>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
