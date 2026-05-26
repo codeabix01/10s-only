@@ -3,7 +3,9 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import AdminPage from "@/pages/AdminPage";
 import ApplyPage from "@/pages/ApplyPage";
 import HomePage from "@/pages/HomePage";
+import LoginPage from "@/pages/LoginPage";
 import PortalPage from "@/pages/PortalPage";
+import ProfileSetupPage from "@/pages/ProfileSetupPage";
 import StatusPage from "@/pages/StatusPage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -64,12 +66,30 @@ const adminRoute = createRoute({
   ),
 });
 
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login",
+  component: LoginPage,
+});
+
+const profileSetupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/profile-setup",
+  component: () => (
+    <ProtectedRoute>
+      <ProfileSetupPage />
+    </ProtectedRoute>
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   applyRoute,
   statusRoute,
   portalRoute,
   adminRoute,
+  loginRoute,
+  profileSetupRoute,
 ]);
 
 const router = createRouter({ routeTree });

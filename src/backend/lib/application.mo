@@ -10,10 +10,12 @@ import Common "../types/common";
 import Storage "mo:caffeineai-object-storage/Storage";
 import Email "mo:caffeineai-email/emailClient";
 import Debug "mo:core/Debug";
+import Principal "mo:core/Principal";
+import UserApproval "mo:caffeineai-user-approval/approval";
 
 module {
   func toView(app : Types.Application) : Types.ApplicationView {
-    { app with id = app.id; applicationId = app.applicationId };
+    { app with id = app.id };
   };
 
   public func submitApplication(
@@ -21,6 +23,7 @@ module {
     inviteCodes : Map.Map<Text, Bool>,
     state : { var nextAppId : Nat },
     input : Types.ApplicationInput,
+    caller : Principal,
   ) : Common.ApplicationId {
     if (input.inviteCode != "" and not validateInviteCode(inviteCodes, input.inviteCode)) {
       Runtime.trap("Invalid invite code");
@@ -34,9 +37,12 @@ module {
     };
     let id : Common.ApplicationId = Int.abs(Time.now()) % 9000000 + 1000000;
     state.nextAppId += 1;
+    // Store the applicant's principal so we can sync UserApproval on approval.
+    // Anonymous principal (2vxsx-fae) is stored as null to avoid false positives.
+    let anonPrincipal = Principal.fromText("2vxsx-fae");
+    let maybePrincipal : ?Principal = if (caller == anonPrincipal) null else ?caller;
     let application : Types.Application = {
       id;
-      applicationId = "#" # id.toText();
       name = input.name;
       instagramHandle = input.instagramHandle;
       email = input.email;
@@ -47,6 +53,7 @@ module {
       status = #pending;
       submittedAt = Time.now();
       qrToken = null;
+      applicantPrincipal = maybePrincipal;
     };
     applications.add(id, application);
     id;
@@ -64,6 +71,7 @@ module {
 
   public func approveApplication<system>(
     applications : Map.Map<Common.ApplicationId, Types.Application>,
+    approvalState : UserApproval.UserApprovalState,
     id : Common.ApplicationId,
   ) : async () {
     switch (applications.get(id)) {
@@ -71,6 +79,11 @@ module {
       case (?app) {
         let token = generateQrToken(id);
         applications.add(id, { app with status = #approved; qrToken = ?token });
+        // Sync the UserApproval state so the gallery gate passes for this user.
+        switch (app.applicantPrincipal) {
+          case (?p) { UserApproval.setApproval(approvalState, p, #approved) };
+          case null {};
+        };
         let qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" # token;
         let appIdFormatted = "#" # id.toText();
         let htmlBody = "<html><body style='font-family:sans-serif;background:#0a0a0a;color:#fff;padding:32px'>"
@@ -117,7 +130,8 @@ module {
     switch (applications.get(id)) {
       case null { Runtime.trap("Application not found") };
       case (?app) {
-        applications.add(id, { app with status = #rejected });
+        // Allow rejection regardless of current status (pending or approved)
+        applications.add(id, { app with status = #rejected; qrToken = null });
       };
     };
   };
@@ -183,11 +197,7 @@ module {
         };
         let token = switch (app.qrToken) {
           case (?t) t;
-          case null {
-            let t = generateQrToken(id);
-            applications.add(id, { app with qrToken = ?t });
-            t;
-          };
+          case null { generateQrToken(id) };
         };
         let qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" # token;
         let appIdFormatted = "#" # id.toText();
@@ -218,22 +228,21 @@ module {
     subject : Text,
     message : Text,
   ) : async { #ok : Nat; #err : Text } {
+    var count = 0;
     let htmlBody = "<html><body style='font-family:sans-serif;background:#0a0a0a;color:#fff;padding:32px'>"
       # "<h1 style='color:#d4af37'>10s Only</h1>"
       # "<div style='font-size:16px;line-height:1.7;'>" # message # "</div>"
       # "<p style='margin-top:32px;color:#aaa;font-size:14px;'>&#8212; The 10s Only Team</p>"
       # "</body></html>";
-    let approvedApps = applications.values().filter(func(a : Types.Application) : Bool { a.status == #approved }).toArray(
-      
-    );
-    var count = 0;
-    for (app in approvedApps.vals()) {
-      let result = await Email.sendServiceEmail("", [app.email], subject, htmlBody);
-      switch (result) {
-        case (#err(e)) {
-          Debug.print("[Email] Broadcast failed for app " # app.id.toText() # ": " # e);
+    for (app in applications.values()) {
+      if (app.status == #approved) {
+        let result = await Email.sendServiceEmail("", [app.email], subject, htmlBody);
+        switch (result) {
+          case (#err(e)) {
+            Debug.print("[Email] Broadcast failed for app " # app.id.toText() # ": " # e);
+          };
+          case (#ok) { count += 1 };
         };
-        case (#ok) { count += 1 };
       };
     };
     #ok(count);

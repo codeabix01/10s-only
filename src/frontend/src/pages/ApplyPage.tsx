@@ -565,27 +565,6 @@ export default function ApplyPage() {
         <div className="absolute top-[-20%] left-[10%] w-[40vw] h-[40vw] rounded-full bg-primary/8 blur-[120px]" />
         <div className="absolute bottom-[-10%] right-[5%] w-[35vw] h-[35vw] rounded-full bg-secondary/6 blur-[100px]" />
         <div className="absolute top-[40%] left-[-5%] w-[25vw] h-[25vw] rounded-full bg-accent/5 blur-[80px]" />
-        <div
-          className="party-blob-1 absolute top-1/4 left-1/3 w-80 h-80 rounded-full opacity-20 blur-3xl pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(circle, oklch(0.65 0.25 15), oklch(0.55 0.22 340))",
-          }}
-        />
-        <div
-          className="party-blob-2 absolute bottom-1/4 right-1/4 w-72 h-72 rounded-full opacity-15 blur-3xl pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(circle, oklch(0.75 0.18 80), oklch(0.60 0.20 45))",
-          }}
-        />
-        <div
-          className="party-blob-3 absolute top-3/4 left-1/4 w-64 h-64 rounded-full opacity-20 blur-3xl pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(circle, oklch(0.70 0.22 320), oklch(0.60 0.18 290))",
-          }}
-        />
       </div>
 
       <div className="relative z-10 max-w-lg mx-auto px-4 py-12 pb-20">

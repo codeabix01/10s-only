@@ -3,18 +3,22 @@ import type {
   ApplicationId,
   ApplicationInput,
   ApplicationView,
-  Confession,
+  ConfessionView,
+  Gender,
   GuestQuizResult,
   QuizQuestion,
   QuizResult,
+  UpdateProfileInput,
   UserApprovalInfo,
+  UserProfile,
 } from "@/backend";
 
 export type ApplicationStatus = "pending" | "approved" | "rejected";
 
 export type {
   ApplicationView,
-  Confession,
+  ConfessionView,
+  Gender,
   GuestQuizResult,
   QuizQuestion,
   QuizResult,
@@ -22,6 +26,8 @@ export type {
   UserApprovalInfo,
   ApplicationId,
   ApplicationInput,
+  UpdateProfileInput,
+  UserProfile,
 };
 
 export interface NavItem {

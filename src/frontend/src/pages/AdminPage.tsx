@@ -1,3 +1,5 @@
+import { Gender, createActor } from "@/backend";
+import type { UserProfile } from "@/backend";
 import { NeonCard } from "@/components/NeonCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,36 +9,50 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   useAddAdmin,
   useAddInviteCode,
+  useAdminGalleryPhotos,
+  useAdminListConfessions,
   useAdminStats,
   useApproveApplication,
   useBroadcastToApprovedGuests,
+  useDeleteUser,
+  useGetRegisteredUsers,
   useInviteCodes,
   useListAdmins,
   useListApplications,
   useRejectApplication,
   useRemoveAdmin,
   useResendApprovalEmail,
+  useTotalUserCount,
 } from "@/hooks/useBackend";
 import { cn } from "@/lib/utils";
 import type { ApplicationView } from "@/types";
+import { useActor } from "@caffeineai/core-infrastructure";
 import { Principal } from "@icp-sdk/core/principal";
 import { useNavigate } from "@tanstack/react-router";
 import {
+  BarChart2,
   CheckCircle,
   ChevronDown,
   ChevronUp,
   Clock,
+  Image,
+  Key,
   Loader2,
   Mail,
+  MessageCircle,
   MessageSquare,
   Plus,
   QrCode,
+  Radio,
   Send,
   Shield,
+  ShieldCheck,
   Trash2,
+  User,
   UserCheck,
   UserX,
   Users,
+  UsersRound,
   X,
   XCircle,
 } from "lucide-react";
@@ -83,34 +99,34 @@ function StatCard({
   label,
   value,
   icon,
-  glow,
+  glow: _glow,
   glowColor,
   ocid,
 }: StatCardProps) {
+  const borderColorMap: Record<string, string> = {
+    "rgba(104,0,255,0.4)": "border-l-violet-500",
+    "rgba(52,211,153,0.4)": "border-l-emerald-400",
+    "rgba(251,191,36,0.4)": "border-l-yellow-400",
+    "rgba(239,68,68,0.4)": "border-l-red-400",
+    "rgba(96,165,250,0.4)": "border-l-blue-400",
+  };
+  const borderClass = borderColorMap[glowColor] ?? "border-l-primary";
   return (
-    <NeonCard
-      glow={glow}
-      className="p-4 flex items-center gap-4"
+    <div
+      className={cn(
+        "relative bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all duration-200 border-l-4",
+        borderClass,
+      )}
       data-ocid={ocid}
-      style={{
-        boxShadow: value !== undefined ? `0 0 24px ${glowColor}` : undefined,
-      }}
     >
-      <div
-        className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-        style={{ background: `${glowColor}22` }}
-      >
-        {icon}
-      </div>
-      <div>
-        <p className="text-muted-foreground text-xs uppercase tracking-widest font-mono">
-          {label}
-        </p>
-        <p className="text-foreground text-2xl font-display font-bold">
-          {value !== undefined ? value.toString() : "—"}
-        </p>
-      </div>
-    </NeonCard>
+      <div className="absolute top-3 right-3 opacity-40">{icon}</div>
+      <p className="text-3xl font-display font-bold text-foreground leading-none mb-1.5">
+        {value !== undefined ? value.toString() : "—"}
+      </p>
+      <p className="text-xs text-zinc-400 font-mono uppercase tracking-widest">
+        {label}
+      </p>
+    </div>
   );
 }
 
@@ -201,6 +217,289 @@ function QRModal({
   );
 }
 
+// ── Gender Badge ─────────────────────────────────────────────────────────────
+function GenderBadge({ gender }: { gender?: Gender }) {
+  if (!gender) return null;
+  const map: Record<Gender, { label: string; style: string }> = {
+    [Gender.male]: {
+      label: "Male",
+      style: "border-cyan-400/50 text-cyan-300 bg-cyan-400/10",
+    },
+    [Gender.female]: {
+      label: "Female",
+      style: "border-fuchsia-400/50 text-fuchsia-300 bg-fuchsia-400/10",
+    },
+    [Gender.other]: {
+      label: "Other",
+      style: "border-violet-400/50 text-violet-300 bg-violet-400/10",
+    },
+  };
+  const entry = map[gender];
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-mono uppercase tracking-wider",
+        entry.style,
+      )}
+    >
+      {entry.label}
+    </span>
+  );
+}
+
+// ── User Card ─────────────────────────────────────────────────────────────────
+function UserCard({
+  user,
+  index,
+  onRefetch,
+}: {
+  user: UserProfile;
+  index: number;
+  onRefetch?: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const deleteUserMutation = useDeleteUser();
+  const initials = user.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04 }}
+      data-ocid={`admin.user.item.${index + 1}`}
+    >
+      <NeonCard glow="purple" className="overflow-hidden">
+        <button
+          type="button"
+          className="w-full p-4 text-left flex items-center gap-3"
+          onClick={() => setExpanded((p) => !p)}
+          aria-expanded={expanded}
+          data-ocid={`admin.user.expand.${index + 1}`}
+        >
+          {user.profilePhoto ? (
+            <img
+              src={user.profilePhoto}
+              alt={user.name}
+              className="w-10 h-10 rounded-full object-cover border border-primary/30 shrink-0"
+            />
+          ) : (
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm font-display font-bold"
+              style={{
+                background: "oklch(0.65 0.22 290 / 0.3)",
+                border: "1px solid oklch(0.65 0.22 290 / 0.4)",
+                color: "oklch(0.9 0.1 290)",
+              }}
+            >
+              {initials}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-0.5">
+              <span className="font-display font-semibold text-foreground truncate">
+                {user.name}
+              </span>
+              <GenderBadge gender={user.gender} />
+            </div>
+            <p className="text-sm text-muted-foreground truncate">
+              {user.instagramHandle
+                ? `@${user.instagramHandle}`
+                : user.emailOrPhone}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs text-muted-foreground font-mono hidden sm:block">
+              {formatDate(user.createdAt)}
+            </span>
+            {expanded ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            )}
+          </div>
+        </button>
+        <AnimatePresence>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.22 }}
+              className="overflow-hidden"
+            >
+              <div className="px-4 pb-4 border-t border-border/20 pt-3 space-y-2">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      Email / Phone
+                    </p>
+                    <p className="text-foreground truncate">
+                      {user.emailOrPhone}
+                    </p>
+                  </div>
+                  {user.city && (
+                    <div>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        City
+                      </p>
+                      <p className="text-foreground">{user.city}</p>
+                    </div>
+                  )}
+                  {user.bio && (
+                    <div className="col-span-2">
+                      <p className="text-xs text-muted-foreground font-mono mb-1">
+                        Bio
+                      </p>
+                      <p className="text-foreground text-sm">{user.bio}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      Joined
+                    </p>
+                    <p className="text-foreground">
+                      {formatDate(user.createdAt)}
+                    </p>
+                  </div>
+                  {user.linkedApplicationId && (
+                    <div>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        Application ID
+                      </p>
+                      <p className="text-foreground font-mono text-xs">
+                        {user.linkedApplicationId}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={deleteUserMutation.isPending}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "Delete this user? This cannot be undone.",
+                        )
+                      ) {
+                        deleteUserMutation.mutate(user.emailOrPhone, {
+                          onSuccess: () => {
+                            toast.success("User deleted.");
+                            onRefetch?.();
+                          },
+                          onError: (err) => {
+                            toast.error(
+                              err instanceof Error
+                                ? err.message
+                                : "Failed to delete user",
+                            );
+                          },
+                        });
+                      }
+                    }}
+                    className="bg-red-500/20 border border-red-400/50 text-red-300 hover:bg-red-500/30 hover:border-red-400 transition-all"
+                    data-ocid={`admin.user.delete_button.${index + 1}`}
+                  >
+                    {deleteUserMutation.isPending ? (
+                      <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                    ) : (
+                      <Trash2 className="w-3 h-3 mr-1" />
+                    )}
+                    Delete User
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </NeonCard>
+    </motion.div>
+  );
+}
+
+// ── Users Panel ───────────────────────────────────────────────────────────────
+function UsersPanel() {
+  const { data: users = [], isLoading } = useGetRegisteredUsers();
+  const [genderFilter, setGenderFilter] = useState<"all" | Gender>("all");
+
+  const filtered =
+    genderFilter === "all"
+      ? users
+      : users.filter((u) => u.gender === genderFilter);
+
+  return (
+    <div className="space-y-4" data-ocid="admin.users.section">
+      {/* gender filter */}
+      <div
+        className="flex gap-1 p-1 rounded-xl bg-card/20 backdrop-blur-sm border border-border/20"
+        data-ocid="admin.users.gender_filter"
+      >
+        {(["all", Gender.male, Gender.female, Gender.other] as const).map(
+          (g) => (
+            <button
+              key={g}
+              type="button"
+              onClick={() => setGenderFilter(g)}
+              data-ocid={`admin.users.filter.${g}`}
+              className={cn(
+                "flex-1 py-1.5 px-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all duration-200 capitalize",
+                genderFilter === g
+                  ? "bg-primary/80 text-foreground shadow-[0_0_16px_rgba(104,0,255,0.5)]"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {g}
+            </button>
+          ),
+        )}
+      </div>
+
+      <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest">
+        {filtered.length} registered member{filtered.length !== 1 ? "s" : ""}
+      </p>
+
+      {isLoading ? (
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <Skeleton
+              key={`skeleton-user-${i}`}
+              className="h-16 w-full rounded-xl"
+            />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <NeonCard
+          glow="none"
+          className="p-8 text-center"
+          data-ocid="admin.users.empty_state"
+        >
+          <Users className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground text-sm">
+            No registered members yet.
+          </p>
+        </NeonCard>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((u, i) => (
+            <UserCard
+              key={u.id.toString()}
+              user={u}
+              index={i}
+              onRefetch={() => {}}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Application Card ──────────────────────────────────────────────────────────
 function ApplicationCard({
   app,
@@ -283,8 +582,7 @@ function ApplicationCard({
                   }}
                   data-ocid={`admin.app.id.${index + 1}`}
                 >
-                  {app.applicationId ||
-                    `#${app.id.toString().padStart(6, "0")}`}
+                  #{app.id.toString().padStart(6, "0")}
                 </span>
                 <span className="font-display font-semibold text-foreground truncate">
                   {app.name}
@@ -381,39 +679,39 @@ function ApplicationCard({
                   {/* actions */}
                   <div className="flex flex-wrap gap-2 pt-1">
                     {isPending && (
-                      <>
-                        <Button
-                          type="button"
-                          size="sm"
-                          disabled={approvingThis || rejectingThis}
-                          onClick={() => approve.mutate(app.id)}
-                          className="bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 hover:bg-emerald-500/30 hover:border-emerald-400 transition-all"
-                          data-ocid={`admin.app.approve_button.${index + 1}`}
-                        >
-                          {approvingThis ? (
-                            <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                          ) : (
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                          )}
-                          Approve
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="destructive"
-                          disabled={approvingThis || rejectingThis}
-                          onClick={() => reject.mutate(app.id)}
-                          className="bg-red-500/20 border border-red-400/50 text-red-300 hover:bg-red-500/30 hover:border-red-400 transition-all"
-                          data-ocid={`admin.app.reject_button.${index + 1}`}
-                        >
-                          {rejectingThis ? (
-                            <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                          ) : (
-                            <XCircle className="w-3 h-3 mr-1" />
-                          )}
-                          Reject
-                        </Button>
-                      </>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={approvingThis || rejectingThis}
+                        onClick={() => approve.mutate(app.id)}
+                        className="bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 hover:bg-emerald-500/30 hover:border-emerald-400 transition-all"
+                        data-ocid={`admin.app.approve_button.${index + 1}`}
+                      >
+                        {approvingThis ? (
+                          <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                        ) : (
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                        )}
+                        Approve
+                      </Button>
+                    )}
+                    {(isPending || isApproved) && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        disabled={approvingThis || rejectingThis}
+                        onClick={() => reject.mutate(app.id)}
+                        className="bg-red-500/20 border border-red-400/50 text-red-300 hover:bg-red-500/30 hover:border-red-400 transition-all"
+                        data-ocid={`admin.app.reject_button.${index + 1}`}
+                      >
+                        {rejectingThis ? (
+                          <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                        ) : (
+                          <XCircle className="w-3 h-3 mr-1" />
+                        )}
+                        {isApproved ? "Revoke" : "Reject"}
+                      </Button>
                     )}
                     {isApproved && app.qrToken && (
                       <Button
@@ -464,7 +762,7 @@ function AppSkeleton() {
   return (
     <div className="space-y-3" data-ocid="admin.apps.loading_state">
       {[1, 2, 3, 4].map((i) => (
-        <NeonCard key={i} glow="none" className="p-4">
+        <NeonCard key={`skeleton-app-${i}`} glow="none" className="p-4">
           <div className="flex items-start gap-3">
             <div className="flex-1 space-y-2">
               <div className="flex gap-2">
@@ -908,18 +1206,322 @@ function BroadcastPanel({ approvedCount }: { approvedCount?: bigint }) {
   );
 }
 
+// ── Gallery Panel ──────────────────────────────────────────────────────────────
+function GalleryPanel() {
+  const { actor } = useActor(createActor);
+  const { photos, loading, refetch } = useAdminGalleryPhotos();
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const getPhotoUrl = (
+    photo: { getDirectURL?: () => string } | null | undefined,
+  ): string => {
+    return photo?.getDirectURL?.() ?? "";
+  };
+
+  const approve = async (id: string) => {
+    if (!actor) return;
+    setActionLoading(`${id}-approve`);
+    await (actor as any).adminApproveGalleryPhoto(id);
+    setActionLoading(null);
+    refetch();
+  };
+
+  const reject = async (id: string) => {
+    if (!actor) return;
+    setActionLoading(`${id}-reject`);
+    await (actor as any).adminRejectGalleryPhoto(id);
+    setActionLoading(null);
+    refetch();
+  };
+
+  const pending = photos.filter((p: any) => !p.approved);
+  const approved = photos.filter((p: any) => p.approved);
+
+  if (loading)
+    return (
+      <div className="text-white/40 text-center py-12">Loading gallery...</div>
+    );
+
+  return (
+    <div className="space-y-8" data-ocid="admin.gallery.section">
+      <div>
+        <h3 className="text-lg font-semibold text-foreground mb-4">
+          Pending Approval ({pending.length})
+        </h3>
+        {pending.length === 0 ? (
+          <p
+            className="text-muted-foreground text-sm"
+            data-ocid="admin.gallery.pending.empty_state"
+          >
+            No photos pending approval.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {pending.map((photo: any, i: number) => (
+              <div
+                key={photo.id}
+                className="bg-white/5 backdrop-blur border border-white/10 rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-200"
+              >
+                <div className="aspect-square overflow-hidden">
+                  <img
+                    src={getPhotoUrl(photo.photo)}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="p-3 space-y-2">
+                  {photo.caption?.[0] && (
+                    <p className="text-muted-foreground text-xs truncate">
+                      {photo.caption[0]}
+                    </p>
+                  )}
+                  <p className="text-muted-foreground/50 text-xs">
+                    {photo.uploaderPrincipal?.toString?.()?.slice(0, 12)}...
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => approve(photo.id)}
+                      disabled={actionLoading === `${photo.id}-approve`}
+                      className="flex-1 py-1.5 text-xs font-medium bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/20 rounded-lg transition-colors disabled:opacity-40"
+                      data-ocid={`admin.gallery.approve_button.${i + 1}`}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => reject(photo.id)}
+                      disabled={actionLoading === `${photo.id}-reject`}
+                      className="flex-1 py-1.5 text-xs font-medium bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/20 rounded-lg transition-colors disabled:opacity-40"
+                      data-ocid={`admin.gallery.reject_button.${i + 1}`}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold text-foreground mb-4">
+          Live Gallery ({approved.length})
+        </h3>
+        {approved.length === 0 ? (
+          <p
+            className="text-muted-foreground text-sm"
+            data-ocid="admin.gallery.approved.empty_state"
+          >
+            No approved photos yet.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {approved.map((photo: any, i: number) => (
+              <div
+                key={photo.id}
+                className="bg-white/5 backdrop-blur border border-white/10 rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-200"
+              >
+                <div className="aspect-square overflow-hidden">
+                  <img
+                    src={getPhotoUrl(photo.photo)}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="p-3 space-y-2">
+                  {photo.caption?.[0] && (
+                    <p className="text-muted-foreground text-xs truncate">
+                      {photo.caption[0]}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => reject(photo.id)}
+                    disabled={actionLoading === `${photo.id}-reject`}
+                    className="w-full py-1.5 text-xs font-medium bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/20 rounded-lg transition-colors disabled:opacity-40"
+                    data-ocid={`admin.gallery.remove_button.${i + 1}`}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Admin Confessions Panel ──────────────────────────────────────────────────
+function AdminConfessionsPanel() {
+  const { actor } = useActor(createActor);
+  const { confessions, loading, refetch } = useAdminListConfessions();
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [approvingId, setApprovingId] = useState<number | null>(null);
+
+  async function handleApprove(id: number) {
+    if (!actor) return;
+    setApprovingId(id);
+    try {
+      await (
+        actor as unknown as Record<string, (id: bigint) => Promise<unknown>>
+      ).adminApproveConfession(BigInt(id));
+      toast.success("Confession approved.");
+      refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to approve");
+    } finally {
+      setApprovingId(null);
+    }
+  }
+
+  async function handleDelete(id: number) {
+    if (!actor) return;
+    if (!window.confirm("Delete this confession? This cannot be undone."))
+      return;
+    setDeletingId(id);
+    try {
+      await (
+        actor as unknown as Record<string, (id: bigint) => Promise<unknown>>
+      ).adminDeleteConfession(BigInt(id));
+      toast.success("Confession deleted.");
+      refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  if (loading)
+    return (
+      <div className="space-y-3" data-ocid="admin.confessions.loading_state">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={`skel-conf-${i}`} className="h-20 w-full rounded-xl" />
+        ))}
+      </div>
+    );
+
+  if (confessions.length === 0)
+    return (
+      <NeonCard
+        glow="none"
+        className="p-8 text-center"
+        data-ocid="admin.confessions.empty_state"
+      >
+        <MessageSquare className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+        <p className="text-muted-foreground text-sm">No confessions yet.</p>
+      </NeonCard>
+    );
+
+  return (
+    <div className="space-y-3" data-ocid="admin.confessions.section">
+      <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest">
+        {confessions.length} confession{confessions.length !== 1 ? "s" : ""}
+      </p>
+      {confessions.map(
+        (
+          c: {
+            id: number;
+            text: string;
+            approved: boolean;
+            submittedAt?: bigint;
+            createdAt?: bigint;
+          },
+          i: number,
+        ) => (
+          <motion.div
+            key={c.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.04 }}
+            data-ocid={`admin.confessions.item.${i + 1}`}
+          >
+            <NeonCard
+              glow={c.approved ? "cyan" : "none"}
+              className="p-4 space-y-3"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-foreground text-sm leading-relaxed flex-1">
+                  {c.text}
+                </p>
+                <span
+                  className={cn(
+                    "inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-mono uppercase tracking-wider shrink-0",
+                    c.approved
+                      ? "border-emerald-400/50 text-emerald-300 bg-emerald-400/10"
+                      : "border-yellow-400/50 text-yellow-300 bg-yellow-400/10",
+                  )}
+                >
+                  {c.approved ? "Approved" : "Pending"}
+                </span>
+              </div>
+              {(c.submittedAt ?? c.createdAt) && (
+                <p className="text-xs text-muted-foreground font-mono">
+                  {formatDate((c.submittedAt ?? c.createdAt) as bigint)}
+                </p>
+              )}
+              <div className="flex gap-2">
+                {!c.approved && (
+                  <button
+                    type="button"
+                    onClick={() => handleApprove(c.id)}
+                    disabled={approvingId === c.id}
+                    className="flex-1 py-1.5 text-xs font-medium bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/20 rounded-lg transition-colors disabled:opacity-40"
+                    data-ocid={`admin.confessions.approve_button.${i + 1}`}
+                  >
+                    {approvingId === c.id ? (
+                      <Loader2 className="w-3 h-3 animate-spin inline mr-1" />
+                    ) : (
+                      <CheckCircle className="w-3 h-3 inline mr-1" />
+                    )}
+                    Approve
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleDelete(c.id)}
+                  disabled={deletingId === c.id}
+                  className="flex-1 py-1.5 text-xs font-medium bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/20 rounded-lg transition-colors disabled:opacity-40"
+                  data-ocid={`admin.confessions.delete_button.${i + 1}`}
+                >
+                  {deletingId === c.id ? (
+                    <Loader2 className="w-3 h-3 animate-spin inline mr-1" />
+                  ) : (
+                    <Trash2 className="w-3 h-3 inline mr-1" />
+                  )}
+                  Delete
+                </button>
+              </div>
+            </NeonCard>
+          </motion.div>
+        ),
+      )}
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const navigate = useNavigate();
   const { isConnected, isAdmin, identity } = useAuth();
   const { data: stats } = useAdminStats();
+  const { data: totalUsers } = useTotalUserCount();
   const {
     data: applications = [],
     isLoading: appsLoading,
     error: appsError,
   } = useListApplications();
   const [activeTab, setActiveTab] = useState<
-    "applications" | "broadcast" | "invite-codes" | "admins"
+    | "applications"
+    | "broadcast"
+    | "invite-codes"
+    | "admins"
+    | "users"
+    | "gallery"
+    | "confessions"
   >("applications");
   const [statusFilter, setStatusFilter] = useState<
     "all" | "pending" | "approved" | "rejected"
@@ -958,18 +1560,26 @@ export default function AdminPage() {
       data-ocid="admin.page"
     >
       {/* header */}
-      <div>
-        <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest mb-1">
-          Control Room
-        </p>
-        <h1 className="text-3xl font-display font-bold text-foreground">
-          <span className="text-primary">Admin</span> Dashboard
-        </h1>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs text-zinc-500 font-mono uppercase tracking-widest mb-1">
+            Control Room
+          </p>
+          <h1 className="text-3xl font-display font-bold text-foreground">
+            <span className="text-primary">Admin</span> Dashboard
+          </h1>
+        </div>
+        <div className="shrink-0 mt-1 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-xs font-mono text-zinc-400 uppercase tracking-widest">
+            Live
+          </span>
+        </div>
       </div>
 
       {/* stats bar */}
       <div
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+        className="grid grid-cols-2 md:grid-cols-3 gap-4"
         data-ocid="admin.stats.section"
       >
         <StatCard
@@ -1004,36 +1614,75 @@ export default function AdminPage() {
           glowColor="rgba(239,68,68,0.4)"
           ocid="admin.stats.rejected"
         />
+        <StatCard
+          label="Registered Users"
+          value={totalUsers}
+          icon={<User className="w-5 h-5 text-blue-400" />}
+          glow="cyan"
+          glowColor="rgba(96,165,250,0.4)"
+          ocid="admin.stats.registered_users"
+        />
       </div>
 
       {/* tabs */}
-      <div
-        className="flex gap-1 p-1 rounded-xl bg-card/20 backdrop-blur-sm border border-border/20"
-        data-ocid="admin.tabs"
-      >
-        {(
-          [
-            { key: "applications", label: "Applications" },
-            { key: "broadcast", label: "Broadcast" },
-            { key: "invite-codes", label: "Invite Codes" },
-            { key: "admins", label: "Admins" },
-          ] as const
-        ).map(({ key, label }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setActiveTab(key)}
-            data-ocid={`admin.tab.${key}`}
-            className={cn(
-              "flex-1 py-2 px-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all duration-200",
-              activeTab === key
-                ? "bg-primary/80 text-foreground shadow-[0_0_16px_rgba(104,0,255,0.5)]"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="overflow-x-auto -mx-4 px-4" data-ocid="admin.tabs">
+        <div className="flex min-w-max border-b border-white/10">
+          {(
+            [
+              {
+                key: "applications",
+                label: "Applications",
+                icon: <BarChart2 className="w-3.5 h-3.5" />,
+              },
+              {
+                key: "broadcast",
+                label: "Broadcast",
+                icon: <Radio className="w-3.5 h-3.5" />,
+              },
+              {
+                key: "invite-codes",
+                label: "Invite Codes",
+                icon: <Key className="w-3.5 h-3.5" />,
+              },
+              {
+                key: "admins",
+                label: "Admins",
+                icon: <ShieldCheck className="w-3.5 h-3.5" />,
+              },
+              {
+                key: "users",
+                label: "Users",
+                icon: <UsersRound className="w-3.5 h-3.5" />,
+              },
+              {
+                key: "gallery",
+                label: "Gallery",
+                icon: <Image className="w-3.5 h-3.5" />,
+              },
+              {
+                key: "confessions",
+                label: "Confessions",
+                icon: <MessageCircle className="w-3.5 h-3.5" />,
+              },
+            ] as const
+          ).map(({ key, label, icon }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setActiveTab(key)}
+              data-ocid={`admin.tab.${key}`}
+              className={cn(
+                "flex items-center gap-1.5 px-4 py-3 text-xs font-mono uppercase tracking-wider transition-all duration-200 whitespace-nowrap border-b-2 -mb-px",
+                activeTab === key
+                  ? "border-pink-500 text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-white/20",
+              )}
+            >
+              {icon}
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* tab content */}
@@ -1046,6 +1695,15 @@ export default function AdminPage() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground">
+                Broadcast Message
+              </h2>
+              <p className="text-sm text-zinc-400 mt-0.5">
+                Send an announcement to all approved guests
+              </p>
+              <div className="mt-4 h-px bg-white/10" />
+            </div>
             <BroadcastPanel approvedCount={stats?.approved} />
           </motion.div>
         ) : activeTab === "admins" ? (
@@ -1056,6 +1714,15 @@ export default function AdminPage() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground">
+                Admin Management
+              </h2>
+              <p className="text-sm text-zinc-400 mt-0.5">
+                Add or remove admin principals with full control access
+              </p>
+              <div className="mt-4 h-px bg-white/10" />
+            </div>
             <AdminsPanel
               currentPrincipal={
                 isConnected ? (identity?.getPrincipal() ?? null) : null
@@ -1071,6 +1738,15 @@ export default function AdminPage() {
             transition={{ duration: 0.2 }}
             data-ocid="admin.apps.section"
           >
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground">
+                Applications
+              </h2>
+              <p className="text-sm text-zinc-400 mt-0.5">
+                Review, approve, or reject event access requests
+              </p>
+              <div className="mt-4 h-px bg-white/10" />
+            </div>
             {/* Status filter tabs */}
             {!appsLoading && !appsError && (
               <div
@@ -1174,6 +1850,63 @@ export default function AdminPage() {
               );
             })()}
           </motion.div>
+        ) : activeTab === "users" ? (
+          <motion.div
+            key="users"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground">
+                Registered Members
+              </h2>
+              <p className="text-sm text-zinc-400 mt-0.5">
+                Browse and manage all registered user accounts
+              </p>
+              <div className="mt-4 h-px bg-white/10" />
+            </div>
+            <UsersPanel />
+          </motion.div>
+        ) : activeTab === "gallery" ? (
+          <motion.div
+            key="gallery"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground">
+                Party Gallery
+              </h2>
+              <p className="text-sm text-zinc-400 mt-0.5">
+                Moderate member-uploaded photos before they go live
+              </p>
+              <div className="mt-4 h-px bg-white/10" />
+            </div>
+            <GalleryPanel />
+          </motion.div>
+        ) : activeTab === "confessions" ? (
+          <motion.div
+            key="confessions"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground">
+                Confession Wall
+              </h2>
+              <p className="text-sm text-zinc-400 mt-0.5">
+                Approve or remove anonymous confessions from the public wall
+              </p>
+              <div className="mt-4 h-px bg-white/10" />
+            </div>
+            <AdminConfessionsPanel />
+          </motion.div>
         ) : (
           <motion.div
             key="invite-codes"
@@ -1182,6 +1915,15 @@ export default function AdminPage() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-foreground">
+                Invite Codes
+              </h2>
+              <p className="text-sm text-zinc-400 mt-0.5">
+                Generate and manage access codes for exclusive entry
+              </p>
+              <div className="mt-4 h-px bg-white/10" />
+            </div>
             <InviteCodesPanel />
           </motion.div>
         )}

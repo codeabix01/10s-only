@@ -9,7 +9,6 @@ module {
 
   public type Application = {
     id : Nat;
-    applicationId : Text;
     name : Text;
     instagramHandle : Text;
     email : Text;
@@ -20,6 +19,8 @@ module {
     status : ApplicationStatus;
     submittedAt : Int;
     qrToken : ?Text;
+    /// The Internet Identity principal of the applicant, if they were logged in.
+    applicantPrincipal : ?Principal;
   };
 
   public type ApplicationInput = {
@@ -34,7 +35,6 @@ module {
 
   public type ApplicationView = {
     id : Nat;
-    applicationId : Text;
     name : Text;
     instagramHandle : Text;
     email : Text;
@@ -45,6 +45,7 @@ module {
     status : ApplicationStatus;
     submittedAt : Int;
     qrToken : ?Text;
+    applicantPrincipal : ?Principal;
   };
 
   public type AdminStats = {

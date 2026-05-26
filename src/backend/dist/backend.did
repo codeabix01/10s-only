@@ -11,16 +11,61 @@ type _ImmutableObjectStorageCreateCertificateResult =
    blob_hash: text;
    method: text;
  };
+type UserSignUpInput = 
+ record {
+   bio: opt text;
+   city: opt text;
+   emailOrPhone: text;
+   gender: opt Gender;
+   instagramHandle: opt text;
+   name: text;
+   password: text;
+   profilePhoto: opt text;
+ };
+type UserSessionResult = 
+ record {
+   token: text;
+   user: UserProfile;
+ };
 type UserRole = 
  variant {
    admin;
    guest;
    user;
  };
+type UserProfile = 
+ record {
+   bio: opt text;
+   city: opt text;
+   createdAt: int;
+   emailOrPhone: text;
+   gender: opt Gender;
+   id: UserId;
+   instagramHandle: opt text;
+   linkedApplicationId: opt text;
+   name: text;
+   profileCompleted: opt bool;
+   profilePhoto: opt text;
+ };
+type UserLoginInput = 
+ record {
+   emailOrPhone: text;
+   password: text;
+ };
+type UserId = nat;
 type UserApprovalInfo = 
  record {
    "principal": principal;
    status: ApprovalStatus;
+ };
+type UpdateProfileInput = 
+ record {
+   bio: opt text;
+   city: opt text;
+   gender: opt Gender;
+   instagramHandle: opt text;
+   name: opt text;
+   profilePhoto: opt text;
  };
 type QuizResult = 
  record {
@@ -44,9 +89,26 @@ type GuestQuizResult =
    resultType: text;
    takenAt: int;
  };
-type ExternalBlob = blob;
-type Confession = 
+type Gender = 
+ variant {
+   female;
+   male;
+   other;
+ };
+type GalleryUploadId = text;
+type GalleryUpload = 
  record {
+   approved: bool;
+   caption: opt text;
+   id: GalleryUploadId;
+   photo: ExternalBlob;
+   uploadedAt: int;
+   uploaderPrincipal: principal;
+ };
+type ExternalBlob = blob;
+type ConfessionView = 
+ record {
+   approved: bool;
    createdAt: int;
    id: nat;
    "text": text;
@@ -59,7 +121,7 @@ type ApprovalStatus =
  };
 type ApplicationView = 
  record {
-   applicationId: text;
+   applicantPrincipal: opt principal;
    email: text;
    id: nat;
    instagramHandle: text;
@@ -96,6 +158,14 @@ type AdminStats =
    rejected: nat;
    total: nat;
  };
+type AdminConfessionView = 
+ record {
+   approved: bool;
+   createdAt: int;
+   id: nat;
+   submittedBy: opt text;
+   "text": text;
+ };
 service : {
   _immutableObjectStorageBlobsAreLive: (hashes: vec blob) -> (vec bool) query;
   _immutableObjectStorageBlobsToDelete: () -> (vec blob) query;
@@ -112,6 +182,24 @@ service : {
                                            ok;
                                          });
   addInviteCode: (code: text) -> ();
+  adminApproveConfession: (id: nat) -> (variant {
+                                          err: text;
+                                          ok;
+                                        });
+  adminApproveGalleryPhoto: (id: text) -> (variant {
+                                             err: text;
+                                             ok;
+                                           });
+  adminDeleteConfession: (id: nat) -> (variant {
+                                         err: text;
+                                         ok;
+                                       });
+  adminGetAllGalleryPhotos: () -> (vec GalleryUpload) query;
+  adminListConfessions: () -> (vec AdminConfessionView) query;
+  adminRejectGalleryPhoto: (id: text) -> (variant {
+                                            err: text;
+                                            ok;
+                                          });
   approveApplication: (id: ApplicationId) -> ();
   assignCallerUserRole: (user: principal, role: UserRole) -> ();
   broadcastToApprovedGuests: (subject: text, message: text) ->
@@ -119,25 +207,54 @@ service : {
       err: text;
       ok: nat;
     });
+  deleteUser: (emailOrPhone: text) -> (variant {
+                                         err: text;
+                                         ok;
+                                       });
   getAdminStats: () -> (AdminStats) query;
   getApplicationStatus: (id: ApplicationId) ->
    (opt record {
           ApplicationStatus;
           opt text;
         }) query;
-  getApprovedPhotos: () -> (vec ExternalBlob) query;
   getCallerUserRole: () -> (UserRole) query;
   getMyQuizResult: (applicationId: ApplicationId) ->
    (opt GuestQuizResult) query;
+  getPublicGalleryPhotos: () -> (vec GalleryUpload) query;
   getQuizQuestions: () -> (vec QuizQuestion) query;
   getQuizResultTypes: () -> (vec QuizResult) query;
+  getRegisteredUsers: () -> (vec UserProfile) query;
+  getTotalUserCount: () -> (nat) query;
+  getUserApplicationStatus: (token: text) ->
+   (variant {
+      err: text;
+      ok: ApplicationView;
+    });
+  getUserProfile: (token: text) -> (variant {
+                                      err: text;
+                                      ok: UserProfile;
+                                    });
   isCallerAdmin: () -> (bool) query;
   isCallerApproved: () -> (bool) query;
+  linkApplicationToUser: (token: text, applicationId: text) ->
+   (variant {
+      err: text;
+      ok;
+    });
   listAdmins: () -> (vec principal) query;
   listApplications: () -> (vec ApplicationView) query;
   listApprovals: () -> (vec UserApprovalInfo) query;
-  listConfessions: () -> (vec Confession) query;
+  listConfessions: (sessionToken: opt text) -> (vec ConfessionView) query;
   listInviteCodes: () -> (vec text) query;
+  login: (input: UserLoginInput) ->
+   (variant {
+      err: text;
+      ok: UserSessionResult;
+    });
+  logout: (token: text) -> (variant {
+                              err: text;
+                              ok;
+                            });
   rejectApplication: (id: ApplicationId) -> ();
   removeAdmin: ("principal": principal) -> (variant {
                                               err: text;
@@ -149,7 +266,25 @@ service : {
                                                  ok;
                                                });
   setApproval: (user: principal, status: ApprovalStatus) -> ();
+  signUp: (input: UserSignUpInput) -> (variant {
+                                         err: text;
+                                         ok: UserProfile;
+                                       });
   submitApplication: (input: ApplicationInput) -> (ApplicationId);
-  submitConfession: ("text": text) -> (nat);
+  submitConfession: ("text": text, sessionToken: opt text) -> (nat);
   submitQuizResult: (applicationId: ApplicationId, resultType: text) -> ();
+  updateUserProfile: (token: text, input: UpdateProfileInput) ->
+   (variant {
+      err: text;
+      ok: UserProfile;
+    });
+  uploadGalleryPhoto: (photo: ExternalBlob, caption: opt text, sessionToken:
+   opt text) -> (variant {
+                   err: text;
+                   ok: text;
+                 });
+  verifySession: (token: text) -> (variant {
+                                     err: text;
+                                     ok: UserProfile;
+                                   });
 }

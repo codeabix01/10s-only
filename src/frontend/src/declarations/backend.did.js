@@ -19,6 +19,23 @@ export const _ImmutableObjectStorageRefillResult = IDL.Record({
   'success' : IDL.Opt(IDL.Bool),
   'topped_up_amount' : IDL.Opt(IDL.Nat),
 });
+export const GalleryUploadId = IDL.Text;
+export const ExternalBlob = IDL.Vec(IDL.Nat8);
+export const GalleryUpload = IDL.Record({
+  'id' : GalleryUploadId,
+  'uploaderPrincipal' : IDL.Principal,
+  'approved' : IDL.Bool,
+  'caption' : IDL.Opt(IDL.Text),
+  'photo' : ExternalBlob,
+  'uploadedAt' : IDL.Int,
+});
+export const AdminConfessionView = IDL.Record({
+  'id' : IDL.Nat,
+  'createdAt' : IDL.Int,
+  'text' : IDL.Text,
+  'submittedBy' : IDL.Opt(IDL.Text),
+  'approved' : IDL.Bool,
+});
 export const ApplicationId = IDL.Nat;
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
@@ -36,7 +53,6 @@ export const ApplicationStatus = IDL.Variant({
   'approved' : IDL.Null,
   'rejected' : IDL.Null,
 });
-export const ExternalBlob = IDL.Vec(IDL.Nat8);
 export const GuestQuizResult = IDL.Record({
   'applicationId' : IDL.Nat,
   'takenAt' : IDL.Int,
@@ -52,11 +68,30 @@ export const QuizResult = IDL.Record({
   'description' : IDL.Text,
   'resultType' : IDL.Text,
 });
+export const UserId = IDL.Nat;
+export const Gender = IDL.Variant({
+  'other' : IDL.Null,
+  'female' : IDL.Null,
+  'male' : IDL.Null,
+});
+export const UserProfile = IDL.Record({
+  'id' : UserId,
+  'bio' : IDL.Opt(IDL.Text),
+  'emailOrPhone' : IDL.Text,
+  'city' : IDL.Opt(IDL.Text),
+  'name' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'profilePhoto' : IDL.Opt(IDL.Text),
+  'instagramHandle' : IDL.Opt(IDL.Text),
+  'linkedApplicationId' : IDL.Opt(IDL.Text),
+  'gender' : IDL.Opt(Gender),
+  'profileCompleted' : IDL.Opt(IDL.Bool),
+});
 export const ApplicationView = IDL.Record({
   'id' : IDL.Nat,
   'status' : ApplicationStatus,
   'plusOne' : IDL.Opt(IDL.Bool),
-  'applicationId' : IDL.Text,
+  'applicantPrincipal' : IDL.Opt(IDL.Principal),
   'name' : IDL.Text,
   'instagramHandle' : IDL.Text,
   'submittedAt' : IDL.Int,
@@ -75,10 +110,29 @@ export const UserApprovalInfo = IDL.Record({
   'status' : ApprovalStatus,
   'principal' : IDL.Principal,
 });
-export const Confession = IDL.Record({
+export const ConfessionView = IDL.Record({
   'id' : IDL.Nat,
   'createdAt' : IDL.Int,
   'text' : IDL.Text,
+  'approved' : IDL.Bool,
+});
+export const UserLoginInput = IDL.Record({
+  'emailOrPhone' : IDL.Text,
+  'password' : IDL.Text,
+});
+export const UserSessionResult = IDL.Record({
+  'token' : IDL.Text,
+  'user' : UserProfile,
+});
+export const UserSignUpInput = IDL.Record({
+  'bio' : IDL.Opt(IDL.Text),
+  'emailOrPhone' : IDL.Text,
+  'city' : IDL.Opt(IDL.Text),
+  'password' : IDL.Text,
+  'name' : IDL.Text,
+  'profilePhoto' : IDL.Opt(IDL.Text),
+  'instagramHandle' : IDL.Opt(IDL.Text),
+  'gender' : IDL.Opt(Gender),
 });
 export const ApplicationInput = IDL.Record({
   'plusOne' : IDL.Opt(IDL.Bool),
@@ -88,6 +142,14 @@ export const ApplicationInput = IDL.Record({
   'inviteCode' : IDL.Text,
   'phone' : IDL.Text,
   'photos' : IDL.Vec(ExternalBlob),
+});
+export const UpdateProfileInput = IDL.Record({
+  'bio' : IDL.Opt(IDL.Text),
+  'city' : IDL.Opt(IDL.Text),
+  'name' : IDL.Opt(IDL.Text),
+  'profilePhoto' : IDL.Opt(IDL.Text),
+  'instagramHandle' : IDL.Opt(IDL.Text),
+  'gender' : IDL.Opt(Gender),
 });
 
 export const idlService = IDL.Service({
@@ -124,11 +186,46 @@ export const idlService = IDL.Service({
       [],
     ),
   'addInviteCode' : IDL.Func([IDL.Text], [], []),
+  'adminApproveConfession' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
+  'adminApproveGalleryPhoto' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
+  'adminDeleteConfession' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
+  'adminGetAllGalleryPhotos' : IDL.Func(
+      [],
+      [IDL.Vec(GalleryUpload)],
+      ['query'],
+    ),
+  'adminListConfessions' : IDL.Func(
+      [],
+      [IDL.Vec(AdminConfessionView)],
+      ['query'],
+    ),
+  'adminRejectGalleryPhoto' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
   'approveApplication' : IDL.Func([ApplicationId], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'broadcastToApprovedGuests' : IDL.Func(
       [IDL.Text, IDL.Text],
       [IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text })],
+      [],
+    ),
+  'deleteUser' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
       [],
     ),
   'getAdminStats' : IDL.Func([], [AdminStats], ['query']),
@@ -137,22 +234,53 @@ export const idlService = IDL.Service({
       [IDL.Opt(IDL.Tuple(ApplicationStatus, IDL.Opt(IDL.Text)))],
       ['query'],
     ),
-  'getApprovedPhotos' : IDL.Func([], [IDL.Vec(ExternalBlob)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getMyQuizResult' : IDL.Func(
       [ApplicationId],
       [IDL.Opt(GuestQuizResult)],
       ['query'],
     ),
+  'getPublicGalleryPhotos' : IDL.Func([], [IDL.Vec(GalleryUpload)], ['query']),
   'getQuizQuestions' : IDL.Func([], [IDL.Vec(QuizQuestion)], ['query']),
   'getQuizResultTypes' : IDL.Func([], [IDL.Vec(QuizResult)], ['query']),
+  'getRegisteredUsers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
+  'getTotalUserCount' : IDL.Func([], [IDL.Nat], ['query']),
+  'getUserApplicationStatus' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : ApplicationView, 'err' : IDL.Text })],
+      [],
+    ),
+  'getUserProfile' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : UserProfile, 'err' : IDL.Text })],
+      [],
+    ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
+  'linkApplicationToUser' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
   'listAdmins' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
   'listApplications' : IDL.Func([], [IDL.Vec(ApplicationView)], ['query']),
   'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
-  'listConfessions' : IDL.Func([], [IDL.Vec(Confession)], ['query']),
+  'listConfessions' : IDL.Func(
+      [IDL.Opt(IDL.Text)],
+      [IDL.Vec(ConfessionView)],
+      ['query'],
+    ),
   'listInviteCodes' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
+  'login' : IDL.Func(
+      [UserLoginInput],
+      [IDL.Variant({ 'ok' : UserSessionResult, 'err' : IDL.Text })],
+      [],
+    ),
+  'logout' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
   'rejectApplication' : IDL.Func([ApplicationId], [], []),
   'removeAdmin' : IDL.Func(
       [IDL.Principal],
@@ -166,9 +294,29 @@ export const idlService = IDL.Service({
       [],
     ),
   'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
+  'signUp' : IDL.Func(
+      [UserSignUpInput],
+      [IDL.Variant({ 'ok' : UserProfile, 'err' : IDL.Text })],
+      [],
+    ),
   'submitApplication' : IDL.Func([ApplicationInput], [ApplicationId], []),
-  'submitConfession' : IDL.Func([IDL.Text], [IDL.Nat], []),
+  'submitConfession' : IDL.Func([IDL.Text, IDL.Opt(IDL.Text)], [IDL.Nat], []),
   'submitQuizResult' : IDL.Func([ApplicationId, IDL.Text], [], []),
+  'updateUserProfile' : IDL.Func(
+      [IDL.Text, UpdateProfileInput],
+      [IDL.Variant({ 'ok' : UserProfile, 'err' : IDL.Text })],
+      [],
+    ),
+  'uploadGalleryPhoto' : IDL.Func(
+      [ExternalBlob, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
+      [IDL.Variant({ 'ok' : IDL.Text, 'err' : IDL.Text })],
+      [],
+    ),
+  'verifySession' : IDL.Func(
+      [IDL.Text],
+      [IDL.Variant({ 'ok' : UserProfile, 'err' : IDL.Text })],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -184,6 +332,23 @@ export const idlFactory = ({ IDL }) => {
   const _ImmutableObjectStorageRefillResult = IDL.Record({
     'success' : IDL.Opt(IDL.Bool),
     'topped_up_amount' : IDL.Opt(IDL.Nat),
+  });
+  const GalleryUploadId = IDL.Text;
+  const ExternalBlob = IDL.Vec(IDL.Nat8);
+  const GalleryUpload = IDL.Record({
+    'id' : GalleryUploadId,
+    'uploaderPrincipal' : IDL.Principal,
+    'approved' : IDL.Bool,
+    'caption' : IDL.Opt(IDL.Text),
+    'photo' : ExternalBlob,
+    'uploadedAt' : IDL.Int,
+  });
+  const AdminConfessionView = IDL.Record({
+    'id' : IDL.Nat,
+    'createdAt' : IDL.Int,
+    'text' : IDL.Text,
+    'submittedBy' : IDL.Opt(IDL.Text),
+    'approved' : IDL.Bool,
   });
   const ApplicationId = IDL.Nat;
   const UserRole = IDL.Variant({
@@ -202,7 +367,6 @@ export const idlFactory = ({ IDL }) => {
     'approved' : IDL.Null,
     'rejected' : IDL.Null,
   });
-  const ExternalBlob = IDL.Vec(IDL.Nat8);
   const GuestQuizResult = IDL.Record({
     'applicationId' : IDL.Nat,
     'takenAt' : IDL.Int,
@@ -218,11 +382,30 @@ export const idlFactory = ({ IDL }) => {
     'description' : IDL.Text,
     'resultType' : IDL.Text,
   });
+  const UserId = IDL.Nat;
+  const Gender = IDL.Variant({
+    'other' : IDL.Null,
+    'female' : IDL.Null,
+    'male' : IDL.Null,
+  });
+  const UserProfile = IDL.Record({
+    'id' : UserId,
+    'bio' : IDL.Opt(IDL.Text),
+    'emailOrPhone' : IDL.Text,
+    'city' : IDL.Opt(IDL.Text),
+    'name' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'profilePhoto' : IDL.Opt(IDL.Text),
+    'instagramHandle' : IDL.Opt(IDL.Text),
+    'linkedApplicationId' : IDL.Opt(IDL.Text),
+    'gender' : IDL.Opt(Gender),
+    'profileCompleted' : IDL.Opt(IDL.Bool),
+  });
   const ApplicationView = IDL.Record({
     'id' : IDL.Nat,
     'status' : ApplicationStatus,
     'plusOne' : IDL.Opt(IDL.Bool),
-    'applicationId' : IDL.Text,
+    'applicantPrincipal' : IDL.Opt(IDL.Principal),
     'name' : IDL.Text,
     'instagramHandle' : IDL.Text,
     'submittedAt' : IDL.Int,
@@ -241,10 +424,29 @@ export const idlFactory = ({ IDL }) => {
     'status' : ApprovalStatus,
     'principal' : IDL.Principal,
   });
-  const Confession = IDL.Record({
+  const ConfessionView = IDL.Record({
     'id' : IDL.Nat,
     'createdAt' : IDL.Int,
     'text' : IDL.Text,
+    'approved' : IDL.Bool,
+  });
+  const UserLoginInput = IDL.Record({
+    'emailOrPhone' : IDL.Text,
+    'password' : IDL.Text,
+  });
+  const UserSessionResult = IDL.Record({
+    'token' : IDL.Text,
+    'user' : UserProfile,
+  });
+  const UserSignUpInput = IDL.Record({
+    'bio' : IDL.Opt(IDL.Text),
+    'emailOrPhone' : IDL.Text,
+    'city' : IDL.Opt(IDL.Text),
+    'password' : IDL.Text,
+    'name' : IDL.Text,
+    'profilePhoto' : IDL.Opt(IDL.Text),
+    'instagramHandle' : IDL.Opt(IDL.Text),
+    'gender' : IDL.Opt(Gender),
   });
   const ApplicationInput = IDL.Record({
     'plusOne' : IDL.Opt(IDL.Bool),
@@ -254,6 +456,14 @@ export const idlFactory = ({ IDL }) => {
     'inviteCode' : IDL.Text,
     'phone' : IDL.Text,
     'photos' : IDL.Vec(ExternalBlob),
+  });
+  const UpdateProfileInput = IDL.Record({
+    'bio' : IDL.Opt(IDL.Text),
+    'city' : IDL.Opt(IDL.Text),
+    'name' : IDL.Opt(IDL.Text),
+    'profilePhoto' : IDL.Opt(IDL.Text),
+    'instagramHandle' : IDL.Opt(IDL.Text),
+    'gender' : IDL.Opt(Gender),
   });
   
   return IDL.Service({
@@ -290,11 +500,46 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'addInviteCode' : IDL.Func([IDL.Text], [], []),
+    'adminApproveConfession' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
+    'adminApproveGalleryPhoto' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
+    'adminDeleteConfession' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
+    'adminGetAllGalleryPhotos' : IDL.Func(
+        [],
+        [IDL.Vec(GalleryUpload)],
+        ['query'],
+      ),
+    'adminListConfessions' : IDL.Func(
+        [],
+        [IDL.Vec(AdminConfessionView)],
+        ['query'],
+      ),
+    'adminRejectGalleryPhoto' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
     'approveApplication' : IDL.Func([ApplicationId], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'broadcastToApprovedGuests' : IDL.Func(
         [IDL.Text, IDL.Text],
         [IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text })],
+        [],
+      ),
+    'deleteUser' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
         [],
       ),
     'getAdminStats' : IDL.Func([], [AdminStats], ['query']),
@@ -303,22 +548,57 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(IDL.Tuple(ApplicationStatus, IDL.Opt(IDL.Text)))],
         ['query'],
       ),
-    'getApprovedPhotos' : IDL.Func([], [IDL.Vec(ExternalBlob)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getMyQuizResult' : IDL.Func(
         [ApplicationId],
         [IDL.Opt(GuestQuizResult)],
         ['query'],
       ),
+    'getPublicGalleryPhotos' : IDL.Func(
+        [],
+        [IDL.Vec(GalleryUpload)],
+        ['query'],
+      ),
     'getQuizQuestions' : IDL.Func([], [IDL.Vec(QuizQuestion)], ['query']),
     'getQuizResultTypes' : IDL.Func([], [IDL.Vec(QuizResult)], ['query']),
+    'getRegisteredUsers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
+    'getTotalUserCount' : IDL.Func([], [IDL.Nat], ['query']),
+    'getUserApplicationStatus' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : ApplicationView, 'err' : IDL.Text })],
+        [],
+      ),
+    'getUserProfile' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : UserProfile, 'err' : IDL.Text })],
+        [],
+      ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
+    'linkApplicationToUser' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
     'listAdmins' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
     'listApplications' : IDL.Func([], [IDL.Vec(ApplicationView)], ['query']),
     'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
-    'listConfessions' : IDL.Func([], [IDL.Vec(Confession)], ['query']),
+    'listConfessions' : IDL.Func(
+        [IDL.Opt(IDL.Text)],
+        [IDL.Vec(ConfessionView)],
+        ['query'],
+      ),
     'listInviteCodes' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
+    'login' : IDL.Func(
+        [UserLoginInput],
+        [IDL.Variant({ 'ok' : UserSessionResult, 'err' : IDL.Text })],
+        [],
+      ),
+    'logout' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
     'rejectApplication' : IDL.Func([ApplicationId], [], []),
     'removeAdmin' : IDL.Func(
         [IDL.Principal],
@@ -332,9 +612,29 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
+    'signUp' : IDL.Func(
+        [UserSignUpInput],
+        [IDL.Variant({ 'ok' : UserProfile, 'err' : IDL.Text })],
+        [],
+      ),
     'submitApplication' : IDL.Func([ApplicationInput], [ApplicationId], []),
-    'submitConfession' : IDL.Func([IDL.Text], [IDL.Nat], []),
+    'submitConfession' : IDL.Func([IDL.Text, IDL.Opt(IDL.Text)], [IDL.Nat], []),
     'submitQuizResult' : IDL.Func([ApplicationId, IDL.Text], [], []),
+    'updateUserProfile' : IDL.Func(
+        [IDL.Text, UpdateProfileInput],
+        [IDL.Variant({ 'ok' : UserProfile, 'err' : IDL.Text })],
+        [],
+      ),
+    'uploadGalleryPhoto' : IDL.Func(
+        [ExternalBlob, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
+        [IDL.Variant({ 'ok' : IDL.Text, 'err' : IDL.Text })],
+        [],
+      ),
+    'verifySession' : IDL.Func(
+        [IDL.Text],
+        [IDL.Variant({ 'ok' : UserProfile, 'err' : IDL.Text })],
+        [],
+      ),
   });
 };
 

@@ -18507,15 +18507,15 @@ function readContextForConsumer(consumer, context) {
   return value;
 }
 var AbortControllerLocal = "undefined" !== typeof AbortController ? AbortController : function() {
-  var listeners = [], signal = this.signal = {
+  var listeners2 = [], signal = this.signal = {
     aborted: false,
     addEventListener: function(type, listener) {
-      listeners.push(listener);
+      listeners2.push(listener);
     }
   };
   this.abort = function() {
     signal.aborted = true;
-    listeners.forEach(function(listener) {
+    listeners2.forEach(function(listener) {
       return listener();
     });
   };
@@ -18561,33 +18561,33 @@ function entangleAsyncAction(transition, thenable) {
 function pingEngtangledActionScope() {
   if (0 === --currentEntangledPendingCount && null !== currentEntangledListeners) {
     null !== currentEntangledActionThenable && (currentEntangledActionThenable.status = "fulfilled");
-    var listeners = currentEntangledListeners;
+    var listeners2 = currentEntangledListeners;
     currentEntangledListeners = null;
     currentEntangledLane = 0;
     currentEntangledActionThenable = null;
-    for (var i = 0; i < listeners.length; i++) (0, listeners[i])();
+    for (var i = 0; i < listeners2.length; i++) (0, listeners2[i])();
   }
 }
 function chainThenableValue(thenable, result) {
-  var listeners = [], thenableWithOverride = {
+  var listeners2 = [], thenableWithOverride = {
     status: "pending",
     value: null,
     reason: null,
     then: function(resolve) {
-      listeners.push(resolve);
+      listeners2.push(resolve);
     }
   };
   thenable.then(
     function() {
       thenableWithOverride.status = "fulfilled";
       thenableWithOverride.value = result;
-      for (var i = 0; i < listeners.length; i++) (0, listeners[i])(result);
+      for (var i = 0; i < listeners2.length; i++) (0, listeners2[i])(result);
     },
     function(error) {
       thenableWithOverride.status = "rejected";
       thenableWithOverride.reason = error;
-      for (error = 0; error < listeners.length; error++)
-        (0, listeners[error])(void 0);
+      for (error = 0; error < listeners2.length; error++)
+        (0, listeners2[error])(void 0);
     }
   );
   return thenableWithOverride;
@@ -25250,15 +25250,15 @@ function createDispatchListener(instance, listener, currentTarget) {
   };
 }
 function accumulateTwoPhaseListeners(targetFiber, reactName) {
-  for (var captureName = reactName + "Capture", listeners = []; null !== targetFiber; ) {
+  for (var captureName = reactName + "Capture", listeners2 = []; null !== targetFiber; ) {
     var _instance2 = targetFiber, stateNode = _instance2.stateNode;
     _instance2 = _instance2.tag;
-    5 !== _instance2 && 26 !== _instance2 && 27 !== _instance2 || null === stateNode || (_instance2 = getListener(targetFiber, captureName), null != _instance2 && listeners.unshift(
+    5 !== _instance2 && 26 !== _instance2 && 27 !== _instance2 || null === stateNode || (_instance2 = getListener(targetFiber, captureName), null != _instance2 && listeners2.unshift(
       createDispatchListener(targetFiber, _instance2, stateNode)
-    ), _instance2 = getListener(targetFiber, reactName), null != _instance2 && listeners.push(
+    ), _instance2 = getListener(targetFiber, reactName), null != _instance2 && listeners2.push(
       createDispatchListener(targetFiber, _instance2, stateNode)
     ));
-    if (3 === targetFiber.tag) return listeners;
+    if (3 === targetFiber.tag) return listeners2;
     targetFiber = targetFiber.return;
   }
   return [];
@@ -25271,18 +25271,18 @@ function getParent(inst) {
   return inst ? inst : null;
 }
 function accumulateEnterLeaveListenersForEvent(dispatchQueue, event, target, common, inCapturePhase) {
-  for (var registrationName = event._reactName, listeners = []; null !== target && target !== common; ) {
+  for (var registrationName = event._reactName, listeners2 = []; null !== target && target !== common; ) {
     var _instance3 = target, alternate = _instance3.alternate, stateNode = _instance3.stateNode;
     _instance3 = _instance3.tag;
     if (null !== alternate && alternate === common) break;
-    5 !== _instance3 && 26 !== _instance3 && 27 !== _instance3 || null === stateNode || (alternate = stateNode, inCapturePhase ? (stateNode = getListener(target, registrationName), null != stateNode && listeners.unshift(
+    5 !== _instance3 && 26 !== _instance3 && 27 !== _instance3 || null === stateNode || (alternate = stateNode, inCapturePhase ? (stateNode = getListener(target, registrationName), null != stateNode && listeners2.unshift(
       createDispatchListener(target, stateNode, alternate)
-    )) : inCapturePhase || (stateNode = getListener(target, registrationName), null != stateNode && listeners.push(
+    )) : inCapturePhase || (stateNode = getListener(target, registrationName), null != stateNode && listeners2.push(
       createDispatchListener(target, stateNode, alternate)
     )));
     target = target.return;
   }
-  0 !== listeners.length && dispatchQueue.push({ event, listeners });
+  0 !== listeners2.length && dispatchQueue.push({ event, listeners: listeners2 });
 }
 var NORMALIZE_NEWLINES_REGEX = /\r\n?/g, NORMALIZE_NULL_AND_REPLACEMENT_REGEX = /\u0000|\uFFFD/g;
 function normalizeMarkupForTextOrAttribute(markup) {
@@ -30151,6 +30151,23 @@ const _ImmutableObjectStorageRefillResult = Record({
   "success": Opt(Bool),
   "topped_up_amount": Opt(Nat)
 });
+const GalleryUploadId = Text;
+const ExternalBlob$1 = Vec(Nat8);
+const GalleryUpload = Record({
+  "id": GalleryUploadId,
+  "uploaderPrincipal": Principal2,
+  "approved": Bool,
+  "caption": Opt(Text),
+  "photo": ExternalBlob$1,
+  "uploadedAt": Int
+});
+const AdminConfessionView = Record({
+  "id": Nat,
+  "createdAt": Int,
+  "text": Text,
+  "submittedBy": Opt(Text),
+  "approved": Bool
+});
 const ApplicationId = Nat;
 const UserRole = Variant({
   "admin": Null,
@@ -30168,7 +30185,6 @@ const ApplicationStatus = Variant({
   "approved": Null,
   "rejected": Null
 });
-const ExternalBlob$1 = Vec(Nat8);
 const GuestQuizResult = Record({
   "applicationId": Nat,
   "takenAt": Int,
@@ -30184,11 +30200,30 @@ const QuizResult = Record({
   "description": Text,
   "resultType": Text
 });
+const UserId = Nat;
+const Gender$1 = Variant({
+  "other": Null,
+  "female": Null,
+  "male": Null
+});
+const UserProfile = Record({
+  "id": UserId,
+  "bio": Opt(Text),
+  "emailOrPhone": Text,
+  "city": Opt(Text),
+  "name": Text,
+  "createdAt": Int,
+  "profilePhoto": Opt(Text),
+  "instagramHandle": Opt(Text),
+  "linkedApplicationId": Opt(Text),
+  "gender": Opt(Gender$1),
+  "profileCompleted": Opt(Bool)
+});
 const ApplicationView = Record({
   "id": Nat,
   "status": ApplicationStatus,
   "plusOne": Opt(Bool),
-  "applicationId": Text,
+  "applicantPrincipal": Opt(Principal2),
   "name": Text,
   "instagramHandle": Text,
   "submittedAt": Int,
@@ -30207,10 +30242,29 @@ const UserApprovalInfo = Record({
   "status": ApprovalStatus,
   "principal": Principal2
 });
-const Confession = Record({
+const ConfessionView = Record({
   "id": Nat,
   "createdAt": Int,
-  "text": Text
+  "text": Text,
+  "approved": Bool
+});
+const UserLoginInput = Record({
+  "emailOrPhone": Text,
+  "password": Text
+});
+const UserSessionResult = Record({
+  "token": Text,
+  "user": UserProfile
+});
+const UserSignUpInput = Record({
+  "bio": Opt(Text),
+  "emailOrPhone": Text,
+  "city": Opt(Text),
+  "password": Text,
+  "name": Text,
+  "profilePhoto": Opt(Text),
+  "instagramHandle": Opt(Text),
+  "gender": Opt(Gender$1)
 });
 const ApplicationInput = Record({
   "plusOne": Opt(Bool),
@@ -30220,6 +30274,14 @@ const ApplicationInput = Record({
   "inviteCode": Text,
   "phone": Text,
   "photos": Vec(ExternalBlob$1)
+});
+const UpdateProfileInput = Record({
+  "bio": Opt(Text),
+  "city": Opt(Text),
+  "name": Opt(Text),
+  "profilePhoto": Opt(Text),
+  "instagramHandle": Opt(Text),
+  "gender": Opt(Gender$1)
 });
 Service({
   "_immutableObjectStorageBlobsAreLive": Func(
@@ -30255,11 +30317,46 @@ Service({
     []
   ),
   "addInviteCode": Func([Text], [], []),
+  "adminApproveConfession": Func(
+    [Nat],
+    [Variant({ "ok": Null, "err": Text })],
+    []
+  ),
+  "adminApproveGalleryPhoto": Func(
+    [Text],
+    [Variant({ "ok": Null, "err": Text })],
+    []
+  ),
+  "adminDeleteConfession": Func(
+    [Nat],
+    [Variant({ "ok": Null, "err": Text })],
+    []
+  ),
+  "adminGetAllGalleryPhotos": Func(
+    [],
+    [Vec(GalleryUpload)],
+    ["query"]
+  ),
+  "adminListConfessions": Func(
+    [],
+    [Vec(AdminConfessionView)],
+    ["query"]
+  ),
+  "adminRejectGalleryPhoto": Func(
+    [Text],
+    [Variant({ "ok": Null, "err": Text })],
+    []
+  ),
   "approveApplication": Func([ApplicationId], [], []),
   "assignCallerUserRole": Func([Principal2, UserRole], [], []),
   "broadcastToApprovedGuests": Func(
     [Text, Text],
     [Variant({ "ok": Nat, "err": Text })],
+    []
+  ),
+  "deleteUser": Func(
+    [Text],
+    [Variant({ "ok": Null, "err": Text })],
     []
   ),
   "getAdminStats": Func([], [AdminStats], ["query"]),
@@ -30268,22 +30365,53 @@ Service({
     [Opt(Tuple(ApplicationStatus, Opt(Text)))],
     ["query"]
   ),
-  "getApprovedPhotos": Func([], [Vec(ExternalBlob$1)], ["query"]),
   "getCallerUserRole": Func([], [UserRole], ["query"]),
   "getMyQuizResult": Func(
     [ApplicationId],
     [Opt(GuestQuizResult)],
     ["query"]
   ),
+  "getPublicGalleryPhotos": Func([], [Vec(GalleryUpload)], ["query"]),
   "getQuizQuestions": Func([], [Vec(QuizQuestion)], ["query"]),
   "getQuizResultTypes": Func([], [Vec(QuizResult)], ["query"]),
+  "getRegisteredUsers": Func([], [Vec(UserProfile)], ["query"]),
+  "getTotalUserCount": Func([], [Nat], ["query"]),
+  "getUserApplicationStatus": Func(
+    [Text],
+    [Variant({ "ok": ApplicationView, "err": Text })],
+    []
+  ),
+  "getUserProfile": Func(
+    [Text],
+    [Variant({ "ok": UserProfile, "err": Text })],
+    []
+  ),
   "isCallerAdmin": Func([], [Bool], ["query"]),
   "isCallerApproved": Func([], [Bool], ["query"]),
+  "linkApplicationToUser": Func(
+    [Text, Text],
+    [Variant({ "ok": Null, "err": Text })],
+    []
+  ),
   "listAdmins": Func([], [Vec(Principal2)], ["query"]),
   "listApplications": Func([], [Vec(ApplicationView)], ["query"]),
   "listApprovals": Func([], [Vec(UserApprovalInfo)], ["query"]),
-  "listConfessions": Func([], [Vec(Confession)], ["query"]),
+  "listConfessions": Func(
+    [Opt(Text)],
+    [Vec(ConfessionView)],
+    ["query"]
+  ),
   "listInviteCodes": Func([], [Vec(Text)], ["query"]),
+  "login": Func(
+    [UserLoginInput],
+    [Variant({ "ok": UserSessionResult, "err": Text })],
+    []
+  ),
+  "logout": Func(
+    [Text],
+    [Variant({ "ok": Null, "err": Text })],
+    []
+  ),
   "rejectApplication": Func([ApplicationId], [], []),
   "removeAdmin": Func(
     [Principal2],
@@ -30297,9 +30425,29 @@ Service({
     []
   ),
   "setApproval": Func([Principal2, ApprovalStatus], [], []),
+  "signUp": Func(
+    [UserSignUpInput],
+    [Variant({ "ok": UserProfile, "err": Text })],
+    []
+  ),
   "submitApplication": Func([ApplicationInput], [ApplicationId], []),
-  "submitConfession": Func([Text], [Nat], []),
-  "submitQuizResult": Func([ApplicationId, Text], [], [])
+  "submitConfession": Func([Text, Opt(Text)], [Nat], []),
+  "submitQuizResult": Func([ApplicationId, Text], [], []),
+  "updateUserProfile": Func(
+    [Text, UpdateProfileInput],
+    [Variant({ "ok": UserProfile, "err": Text })],
+    []
+  ),
+  "uploadGalleryPhoto": Func(
+    [ExternalBlob$1, Opt(Text), Opt(Text)],
+    [Variant({ "ok": Text, "err": Text })],
+    []
+  ),
+  "verifySession": Func(
+    [Text],
+    [Variant({ "ok": UserProfile, "err": Text })],
+    []
+  )
 });
 const idlFactory = ({ IDL: IDL2 }) => {
   const _ImmutableObjectStorageCreateCertificateResult2 = IDL2.Record({
@@ -30312,6 +30460,23 @@ const idlFactory = ({ IDL: IDL2 }) => {
   const _ImmutableObjectStorageRefillResult2 = IDL2.Record({
     "success": IDL2.Opt(IDL2.Bool),
     "topped_up_amount": IDL2.Opt(IDL2.Nat)
+  });
+  const GalleryUploadId2 = IDL2.Text;
+  const ExternalBlob3 = IDL2.Vec(IDL2.Nat8);
+  const GalleryUpload2 = IDL2.Record({
+    "id": GalleryUploadId2,
+    "uploaderPrincipal": IDL2.Principal,
+    "approved": IDL2.Bool,
+    "caption": IDL2.Opt(IDL2.Text),
+    "photo": ExternalBlob3,
+    "uploadedAt": IDL2.Int
+  });
+  const AdminConfessionView2 = IDL2.Record({
+    "id": IDL2.Nat,
+    "createdAt": IDL2.Int,
+    "text": IDL2.Text,
+    "submittedBy": IDL2.Opt(IDL2.Text),
+    "approved": IDL2.Bool
   });
   const ApplicationId2 = IDL2.Nat;
   const UserRole2 = IDL2.Variant({
@@ -30330,7 +30495,6 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "approved": IDL2.Null,
     "rejected": IDL2.Null
   });
-  const ExternalBlob3 = IDL2.Vec(IDL2.Nat8);
   const GuestQuizResult2 = IDL2.Record({
     "applicationId": IDL2.Nat,
     "takenAt": IDL2.Int,
@@ -30346,11 +30510,30 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "description": IDL2.Text,
     "resultType": IDL2.Text
   });
+  const UserId2 = IDL2.Nat;
+  const Gender2 = IDL2.Variant({
+    "other": IDL2.Null,
+    "female": IDL2.Null,
+    "male": IDL2.Null
+  });
+  const UserProfile2 = IDL2.Record({
+    "id": UserId2,
+    "bio": IDL2.Opt(IDL2.Text),
+    "emailOrPhone": IDL2.Text,
+    "city": IDL2.Opt(IDL2.Text),
+    "name": IDL2.Text,
+    "createdAt": IDL2.Int,
+    "profilePhoto": IDL2.Opt(IDL2.Text),
+    "instagramHandle": IDL2.Opt(IDL2.Text),
+    "linkedApplicationId": IDL2.Opt(IDL2.Text),
+    "gender": IDL2.Opt(Gender2),
+    "profileCompleted": IDL2.Opt(IDL2.Bool)
+  });
   const ApplicationView2 = IDL2.Record({
     "id": IDL2.Nat,
     "status": ApplicationStatus2,
     "plusOne": IDL2.Opt(IDL2.Bool),
-    "applicationId": IDL2.Text,
+    "applicantPrincipal": IDL2.Opt(IDL2.Principal),
     "name": IDL2.Text,
     "instagramHandle": IDL2.Text,
     "submittedAt": IDL2.Int,
@@ -30369,10 +30552,29 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "status": ApprovalStatus2,
     "principal": IDL2.Principal
   });
-  const Confession2 = IDL2.Record({
+  const ConfessionView2 = IDL2.Record({
     "id": IDL2.Nat,
     "createdAt": IDL2.Int,
-    "text": IDL2.Text
+    "text": IDL2.Text,
+    "approved": IDL2.Bool
+  });
+  const UserLoginInput2 = IDL2.Record({
+    "emailOrPhone": IDL2.Text,
+    "password": IDL2.Text
+  });
+  const UserSessionResult2 = IDL2.Record({
+    "token": IDL2.Text,
+    "user": UserProfile2
+  });
+  const UserSignUpInput2 = IDL2.Record({
+    "bio": IDL2.Opt(IDL2.Text),
+    "emailOrPhone": IDL2.Text,
+    "city": IDL2.Opt(IDL2.Text),
+    "password": IDL2.Text,
+    "name": IDL2.Text,
+    "profilePhoto": IDL2.Opt(IDL2.Text),
+    "instagramHandle": IDL2.Opt(IDL2.Text),
+    "gender": IDL2.Opt(Gender2)
   });
   const ApplicationInput2 = IDL2.Record({
     "plusOne": IDL2.Opt(IDL2.Bool),
@@ -30382,6 +30584,14 @@ const idlFactory = ({ IDL: IDL2 }) => {
     "inviteCode": IDL2.Text,
     "phone": IDL2.Text,
     "photos": IDL2.Vec(ExternalBlob3)
+  });
+  const UpdateProfileInput2 = IDL2.Record({
+    "bio": IDL2.Opt(IDL2.Text),
+    "city": IDL2.Opt(IDL2.Text),
+    "name": IDL2.Opt(IDL2.Text),
+    "profilePhoto": IDL2.Opt(IDL2.Text),
+    "instagramHandle": IDL2.Opt(IDL2.Text),
+    "gender": IDL2.Opt(Gender2)
   });
   return IDL2.Service({
     "_immutableObjectStorageBlobsAreLive": IDL2.Func(
@@ -30417,11 +30627,46 @@ const idlFactory = ({ IDL: IDL2 }) => {
       []
     ),
     "addInviteCode": IDL2.Func([IDL2.Text], [], []),
+    "adminApproveConfession": IDL2.Func(
+      [IDL2.Nat],
+      [IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text })],
+      []
+    ),
+    "adminApproveGalleryPhoto": IDL2.Func(
+      [IDL2.Text],
+      [IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text })],
+      []
+    ),
+    "adminDeleteConfession": IDL2.Func(
+      [IDL2.Nat],
+      [IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text })],
+      []
+    ),
+    "adminGetAllGalleryPhotos": IDL2.Func(
+      [],
+      [IDL2.Vec(GalleryUpload2)],
+      ["query"]
+    ),
+    "adminListConfessions": IDL2.Func(
+      [],
+      [IDL2.Vec(AdminConfessionView2)],
+      ["query"]
+    ),
+    "adminRejectGalleryPhoto": IDL2.Func(
+      [IDL2.Text],
+      [IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text })],
+      []
+    ),
     "approveApplication": IDL2.Func([ApplicationId2], [], []),
     "assignCallerUserRole": IDL2.Func([IDL2.Principal, UserRole2], [], []),
     "broadcastToApprovedGuests": IDL2.Func(
       [IDL2.Text, IDL2.Text],
       [IDL2.Variant({ "ok": IDL2.Nat, "err": IDL2.Text })],
+      []
+    ),
+    "deleteUser": IDL2.Func(
+      [IDL2.Text],
+      [IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text })],
       []
     ),
     "getAdminStats": IDL2.Func([], [AdminStats2], ["query"]),
@@ -30430,22 +30675,57 @@ const idlFactory = ({ IDL: IDL2 }) => {
       [IDL2.Opt(IDL2.Tuple(ApplicationStatus2, IDL2.Opt(IDL2.Text)))],
       ["query"]
     ),
-    "getApprovedPhotos": IDL2.Func([], [IDL2.Vec(ExternalBlob3)], ["query"]),
     "getCallerUserRole": IDL2.Func([], [UserRole2], ["query"]),
     "getMyQuizResult": IDL2.Func(
       [ApplicationId2],
       [IDL2.Opt(GuestQuizResult2)],
       ["query"]
     ),
+    "getPublicGalleryPhotos": IDL2.Func(
+      [],
+      [IDL2.Vec(GalleryUpload2)],
+      ["query"]
+    ),
     "getQuizQuestions": IDL2.Func([], [IDL2.Vec(QuizQuestion2)], ["query"]),
     "getQuizResultTypes": IDL2.Func([], [IDL2.Vec(QuizResult2)], ["query"]),
+    "getRegisteredUsers": IDL2.Func([], [IDL2.Vec(UserProfile2)], ["query"]),
+    "getTotalUserCount": IDL2.Func([], [IDL2.Nat], ["query"]),
+    "getUserApplicationStatus": IDL2.Func(
+      [IDL2.Text],
+      [IDL2.Variant({ "ok": ApplicationView2, "err": IDL2.Text })],
+      []
+    ),
+    "getUserProfile": IDL2.Func(
+      [IDL2.Text],
+      [IDL2.Variant({ "ok": UserProfile2, "err": IDL2.Text })],
+      []
+    ),
     "isCallerAdmin": IDL2.Func([], [IDL2.Bool], ["query"]),
     "isCallerApproved": IDL2.Func([], [IDL2.Bool], ["query"]),
+    "linkApplicationToUser": IDL2.Func(
+      [IDL2.Text, IDL2.Text],
+      [IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text })],
+      []
+    ),
     "listAdmins": IDL2.Func([], [IDL2.Vec(IDL2.Principal)], ["query"]),
     "listApplications": IDL2.Func([], [IDL2.Vec(ApplicationView2)], ["query"]),
     "listApprovals": IDL2.Func([], [IDL2.Vec(UserApprovalInfo2)], ["query"]),
-    "listConfessions": IDL2.Func([], [IDL2.Vec(Confession2)], ["query"]),
+    "listConfessions": IDL2.Func(
+      [IDL2.Opt(IDL2.Text)],
+      [IDL2.Vec(ConfessionView2)],
+      ["query"]
+    ),
     "listInviteCodes": IDL2.Func([], [IDL2.Vec(IDL2.Text)], ["query"]),
+    "login": IDL2.Func(
+      [UserLoginInput2],
+      [IDL2.Variant({ "ok": UserSessionResult2, "err": IDL2.Text })],
+      []
+    ),
+    "logout": IDL2.Func(
+      [IDL2.Text],
+      [IDL2.Variant({ "ok": IDL2.Null, "err": IDL2.Text })],
+      []
+    ),
     "rejectApplication": IDL2.Func([ApplicationId2], [], []),
     "removeAdmin": IDL2.Func(
       [IDL2.Principal],
@@ -30459,9 +30739,29 @@ const idlFactory = ({ IDL: IDL2 }) => {
       []
     ),
     "setApproval": IDL2.Func([IDL2.Principal, ApprovalStatus2], [], []),
+    "signUp": IDL2.Func(
+      [UserSignUpInput2],
+      [IDL2.Variant({ "ok": UserProfile2, "err": IDL2.Text })],
+      []
+    ),
     "submitApplication": IDL2.Func([ApplicationInput2], [ApplicationId2], []),
-    "submitConfession": IDL2.Func([IDL2.Text], [IDL2.Nat], []),
-    "submitQuizResult": IDL2.Func([ApplicationId2, IDL2.Text], [], [])
+    "submitConfession": IDL2.Func([IDL2.Text, IDL2.Opt(IDL2.Text)], [IDL2.Nat], []),
+    "submitQuizResult": IDL2.Func([ApplicationId2, IDL2.Text], [], []),
+    "updateUserProfile": IDL2.Func(
+      [IDL2.Text, UpdateProfileInput2],
+      [IDL2.Variant({ "ok": UserProfile2, "err": IDL2.Text })],
+      []
+    ),
+    "uploadGalleryPhoto": IDL2.Func(
+      [ExternalBlob3, IDL2.Opt(IDL2.Text), IDL2.Opt(IDL2.Text)],
+      [IDL2.Variant({ "ok": IDL2.Text, "err": IDL2.Text })],
+      []
+    ),
+    "verifySession": IDL2.Func(
+      [IDL2.Text],
+      [IDL2.Variant({ "ok": UserProfile2, "err": IDL2.Text })],
+      []
+    )
   });
 };
 function candid_some(value) {
@@ -30513,6 +30813,12 @@ class ExternalBlob2 {
     return this;
   }
 }
+var Gender = /* @__PURE__ */ ((Gender2) => {
+  Gender2["other"] = "other";
+  Gender2["female"] = "female";
+  Gender2["male"] = "male";
+  return Gender2;
+})(Gender || {});
 class Backend {
   constructor(actor, _uploadFile, _downloadFile, processError2) {
     this.actor = actor;
@@ -30646,6 +30952,90 @@ class Backend {
       return result;
     }
   }
+  async adminApproveConfession(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.adminApproveConfession(arg0);
+        return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.adminApproveConfession(arg0);
+      return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async adminApproveGalleryPhoto(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.adminApproveGalleryPhoto(arg0);
+        return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.adminApproveGalleryPhoto(arg0);
+      return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async adminDeleteConfession(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.adminDeleteConfession(arg0);
+        return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.adminDeleteConfession(arg0);
+      return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async adminGetAllGalleryPhotos() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.adminGetAllGalleryPhotos();
+        return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.adminGetAllGalleryPhotos();
+      return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async adminListConfessions() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.adminListConfessions();
+        return from_candid_vec_n14(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.adminListConfessions();
+      return from_candid_vec_n14(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async adminRejectGalleryPhoto(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.adminRejectGalleryPhoto(arg0);
+        return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.adminRejectGalleryPhoto(arg0);
+      return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+    }
+  }
   async approveApplication(arg0) {
     if (this.processError) {
       try {
@@ -30663,14 +31053,14 @@ class Backend {
   async assignCallerUserRole(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n9(this._uploadFile, this._downloadFile, arg1));
+        const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n17(this._uploadFile, this._downloadFile, arg1));
         return result;
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n9(this._uploadFile, this._downloadFile, arg1));
+      const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n17(this._uploadFile, this._downloadFile, arg1));
       return result;
     }
   }
@@ -30678,14 +31068,28 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.broadcastToApprovedGuests(arg0, arg1);
-        return from_candid_variant_n11(this._uploadFile, this._downloadFile, result);
+        return from_candid_variant_n19(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.broadcastToApprovedGuests(arg0, arg1);
-      return from_candid_variant_n11(this._uploadFile, this._downloadFile, result);
+      return from_candid_variant_n19(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async deleteUser(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.deleteUser(arg0);
+        return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.deleteUser(arg0);
+      return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
     }
   }
   async getAdminStats() {
@@ -30706,56 +31110,56 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.getApplicationStatus(arg0);
-        return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
+        return from_candid_opt_n20(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.getApplicationStatus(arg0);
-      return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
-    }
-  }
-  async getApprovedPhotos() {
-    if (this.processError) {
-      try {
-        const result = await this.actor.getApprovedPhotos();
-        return from_candid_vec_n17(this._uploadFile, this._downloadFile, result);
-      } catch (e) {
-        this.processError(e);
-        throw new Error("unreachable");
-      }
-    } else {
-      const result = await this.actor.getApprovedPhotos();
-      return from_candid_vec_n17(this._uploadFile, this._downloadFile, result);
+      return from_candid_opt_n20(this._uploadFile, this._downloadFile, result);
     }
   }
   async getCallerUserRole() {
     if (this.processError) {
       try {
         const result = await this.actor.getCallerUserRole();
-        return from_candid_UserRole_n19(this._uploadFile, this._downloadFile, result);
+        return from_candid_UserRole_n24(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.getCallerUserRole();
-      return from_candid_UserRole_n19(this._uploadFile, this._downloadFile, result);
+      return from_candid_UserRole_n24(this._uploadFile, this._downloadFile, result);
     }
   }
   async getMyQuizResult(arg0) {
     if (this.processError) {
       try {
         const result = await this.actor.getMyQuizResult(arg0);
-        return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
+        return from_candid_opt_n26(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.getMyQuizResult(arg0);
-      return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
+      return from_candid_opt_n26(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async getPublicGalleryPhotos() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getPublicGalleryPhotos();
+        return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getPublicGalleryPhotos();
+      return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
     }
   }
   async getQuizQuestions() {
@@ -30786,6 +31190,62 @@ class Backend {
       return result;
     }
   }
+  async getRegisteredUsers() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getRegisteredUsers();
+        return from_candid_vec_n27(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getRegisteredUsers();
+      return from_candid_vec_n27(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async getTotalUserCount() {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getTotalUserCount();
+        return result;
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getTotalUserCount();
+      return result;
+    }
+  }
+  async getUserApplicationStatus(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getUserApplicationStatus(arg0);
+        return from_candid_variant_n33(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getUserApplicationStatus(arg0);
+      return from_candid_variant_n33(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async getUserProfile(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.getUserProfile(arg0);
+        return from_candid_variant_n38(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.getUserProfile(arg0);
+      return from_candid_variant_n38(this._uploadFile, this._downloadFile, result);
+    }
+  }
   async isCallerAdmin() {
     if (this.processError) {
       try {
@@ -30814,6 +31274,20 @@ class Backend {
       return result;
     }
   }
+  async linkApplicationToUser(arg0, arg1) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.linkApplicationToUser(arg0, arg1);
+        return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.linkApplicationToUser(arg0, arg1);
+      return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+    }
+  }
   async listAdmins() {
     if (this.processError) {
       try {
@@ -30832,41 +31306,41 @@ class Backend {
     if (this.processError) {
       try {
         const result = await this.actor.listApplications();
-        return from_candid_vec_n22(this._uploadFile, this._downloadFile, result);
+        return from_candid_vec_n39(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.listApplications();
-      return from_candid_vec_n22(this._uploadFile, this._downloadFile, result);
+      return from_candid_vec_n39(this._uploadFile, this._downloadFile, result);
     }
   }
   async listApprovals() {
     if (this.processError) {
       try {
         const result = await this.actor.listApprovals();
-        return from_candid_vec_n25(this._uploadFile, this._downloadFile, result);
+        return from_candid_vec_n40(this._uploadFile, this._downloadFile, result);
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
       const result = await this.actor.listApprovals();
-      return from_candid_vec_n25(this._uploadFile, this._downloadFile, result);
+      return from_candid_vec_n40(this._uploadFile, this._downloadFile, result);
     }
   }
-  async listConfessions() {
+  async listConfessions(arg0) {
     if (this.processError) {
       try {
-        const result = await this.actor.listConfessions();
+        const result = await this.actor.listConfessions(to_candid_opt_n44(this._uploadFile, this._downloadFile, arg0));
         return result;
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.listConfessions();
+      const result = await this.actor.listConfessions(to_candid_opt_n44(this._uploadFile, this._downloadFile, arg0));
       return result;
     }
   }
@@ -30882,6 +31356,34 @@ class Backend {
     } else {
       const result = await this.actor.listInviteCodes();
       return result;
+    }
+  }
+  async login(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.login(arg0);
+        return from_candid_variant_n45(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.login(arg0);
+      return from_candid_variant_n45(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async logout(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.logout(arg0);
+        return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.logout(arg0);
+      return from_candid_variant_n8(this._uploadFile, this._downloadFile, result);
     }
   }
   async rejectApplication(arg0) {
@@ -30943,42 +31445,56 @@ class Backend {
   async setApproval(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n29(this._uploadFile, this._downloadFile, arg1));
+        const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n48(this._uploadFile, this._downloadFile, arg1));
         return result;
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n29(this._uploadFile, this._downloadFile, arg1));
+      const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n48(this._uploadFile, this._downloadFile, arg1));
       return result;
+    }
+  }
+  async signUp(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.signUp(to_candid_UserSignUpInput_n50(this._uploadFile, this._downloadFile, arg0));
+        return from_candid_variant_n38(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.signUp(to_candid_UserSignUpInput_n50(this._uploadFile, this._downloadFile, arg0));
+      return from_candid_variant_n38(this._uploadFile, this._downloadFile, result);
     }
   }
   async submitApplication(arg0) {
     if (this.processError) {
       try {
-        const result = await this.actor.submitApplication(await to_candid_ApplicationInput_n31(this._uploadFile, this._downloadFile, arg0));
+        const result = await this.actor.submitApplication(await to_candid_ApplicationInput_n54(this._uploadFile, this._downloadFile, arg0));
         return result;
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.submitApplication(await to_candid_ApplicationInput_n31(this._uploadFile, this._downloadFile, arg0));
+      const result = await this.actor.submitApplication(await to_candid_ApplicationInput_n54(this._uploadFile, this._downloadFile, arg0));
       return result;
     }
   }
-  async submitConfession(arg0) {
+  async submitConfession(arg0, arg1) {
     if (this.processError) {
       try {
-        const result = await this.actor.submitConfession(arg0);
+        const result = await this.actor.submitConfession(arg0, to_candid_opt_n44(this._uploadFile, this._downloadFile, arg1));
         return result;
       } catch (e) {
         this.processError(e);
         throw new Error("unreachable");
       }
     } else {
-      const result = await this.actor.submitConfession(arg0);
+      const result = await this.actor.submitConfession(arg0, to_candid_opt_n44(this._uploadFile, this._downloadFile, arg1));
       return result;
     }
   }
@@ -30996,35 +31512,98 @@ class Backend {
       return result;
     }
   }
+  async updateUserProfile(arg0, arg1) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.updateUserProfile(arg0, to_candid_UpdateProfileInput_n58(this._uploadFile, this._downloadFile, arg1));
+        return from_candid_variant_n38(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.updateUserProfile(arg0, to_candid_UpdateProfileInput_n58(this._uploadFile, this._downloadFile, arg1));
+      return from_candid_variant_n38(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async uploadGalleryPhoto(arg0, arg1, arg2) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.uploadGalleryPhoto(await to_candid_ExternalBlob_n57(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n44(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n44(this._uploadFile, this._downloadFile, arg2));
+        return from_candid_variant_n60(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.uploadGalleryPhoto(await to_candid_ExternalBlob_n57(this._uploadFile, this._downloadFile, arg0), to_candid_opt_n44(this._uploadFile, this._downloadFile, arg1), to_candid_opt_n44(this._uploadFile, this._downloadFile, arg2));
+      return from_candid_variant_n60(this._uploadFile, this._downloadFile, result);
+    }
+  }
+  async verifySession(arg0) {
+    if (this.processError) {
+      try {
+        const result = await this.actor.verifySession(arg0);
+        return from_candid_variant_n38(this._uploadFile, this._downloadFile, result);
+      } catch (e) {
+        this.processError(e);
+        throw new Error("unreachable");
+      }
+    } else {
+      const result = await this.actor.verifySession(arg0);
+      return from_candid_variant_n38(this._uploadFile, this._downloadFile, result);
+    }
+  }
 }
-function from_candid_ApplicationStatus_n14(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n15(_uploadFile, _downloadFile, value);
+function from_candid_AdminConfessionView_n15(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n16(_uploadFile, _downloadFile, value);
 }
-async function from_candid_ApplicationView_n23(_uploadFile, _downloadFile, value) {
-  return await from_candid_record_n24(_uploadFile, _downloadFile, value);
+function from_candid_ApplicationStatus_n22(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n23(_uploadFile, _downloadFile, value);
 }
-function from_candid_ApprovalStatus_n28(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n15(_uploadFile, _downloadFile, value);
+async function from_candid_ApplicationView_n34(_uploadFile, _downloadFile, value) {
+  return await from_candid_record_n35(_uploadFile, _downloadFile, value);
 }
-async function from_candid_ExternalBlob_n18(_uploadFile, _downloadFile, value) {
+function from_candid_ApprovalStatus_n43(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n23(_uploadFile, _downloadFile, value);
+}
+async function from_candid_ExternalBlob_n13(_uploadFile, _downloadFile, value) {
   return await _downloadFile(value);
 }
-function from_candid_UserApprovalInfo_n26(_uploadFile, _downloadFile, value) {
-  return from_candid_record_n27(_uploadFile, _downloadFile, value);
+async function from_candid_GalleryUpload_n10(_uploadFile, _downloadFile, value) {
+  return await from_candid_record_n11(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n19(_uploadFile, _downloadFile, value) {
-  return from_candid_variant_n20(_uploadFile, _downloadFile, value);
+function from_candid_Gender_n31(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n32(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserApprovalInfo_n41(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n42(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserProfile_n28(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n29(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserRole_n24(_uploadFile, _downloadFile, value) {
+  return from_candid_variant_n25(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserSessionResult_n46(_uploadFile, _downloadFile, value) {
+  return from_candid_record_n47(_uploadFile, _downloadFile, value);
 }
 function from_candid__ImmutableObjectStorageRefillResult_n4(_uploadFile, _downloadFile, value) {
   return from_candid_record_n5(_uploadFile, _downloadFile, value);
 }
 function from_candid_opt_n12(_uploadFile, _downloadFile, value) {
-  return value.length === 0 ? null : from_candid_tuple_n13(_uploadFile, _downloadFile, value[0]);
-}
-function from_candid_opt_n16(_uploadFile, _downloadFile, value) {
   return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n21(_uploadFile, _downloadFile, value) {
+function from_candid_opt_n20(_uploadFile, _downloadFile, value) {
+  return value.length === 0 ? null : from_candid_tuple_n21(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n26(_uploadFile, _downloadFile, value) {
+  return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n30(_uploadFile, _downloadFile, value) {
+  return value.length === 0 ? null : from_candid_Gender_n31(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n36(_uploadFile, _downloadFile, value) {
   return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n6(_uploadFile, _downloadFile, value) {
@@ -31033,26 +31612,66 @@ function from_candid_opt_n6(_uploadFile, _downloadFile, value) {
 function from_candid_opt_n7(_uploadFile, _downloadFile, value) {
   return value.length === 0 ? null : value[0];
 }
-async function from_candid_record_n24(_uploadFile, _downloadFile, value) {
+async function from_candid_record_n11(_uploadFile, _downloadFile, value) {
   return {
     id: value.id,
-    status: from_candid_ApplicationStatus_n14(_uploadFile, _downloadFile, value.status),
+    uploaderPrincipal: value.uploaderPrincipal,
+    approved: value.approved,
+    caption: record_opt_to_undefined(from_candid_opt_n12(_uploadFile, _downloadFile, value.caption)),
+    photo: await from_candid_ExternalBlob_n13(_uploadFile, _downloadFile, value.photo),
+    uploadedAt: value.uploadedAt
+  };
+}
+function from_candid_record_n16(_uploadFile, _downloadFile, value) {
+  return {
+    id: value.id,
+    createdAt: value.createdAt,
+    text: value.text,
+    submittedBy: record_opt_to_undefined(from_candid_opt_n12(_uploadFile, _downloadFile, value.submittedBy)),
+    approved: value.approved
+  };
+}
+function from_candid_record_n29(_uploadFile, _downloadFile, value) {
+  return {
+    id: value.id,
+    bio: record_opt_to_undefined(from_candid_opt_n12(_uploadFile, _downloadFile, value.bio)),
+    emailOrPhone: value.emailOrPhone,
+    city: record_opt_to_undefined(from_candid_opt_n12(_uploadFile, _downloadFile, value.city)),
+    name: value.name,
+    createdAt: value.createdAt,
+    profilePhoto: record_opt_to_undefined(from_candid_opt_n12(_uploadFile, _downloadFile, value.profilePhoto)),
+    instagramHandle: record_opt_to_undefined(from_candid_opt_n12(_uploadFile, _downloadFile, value.instagramHandle)),
+    linkedApplicationId: record_opt_to_undefined(from_candid_opt_n12(_uploadFile, _downloadFile, value.linkedApplicationId)),
+    gender: record_opt_to_undefined(from_candid_opt_n30(_uploadFile, _downloadFile, value.gender)),
+    profileCompleted: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.profileCompleted))
+  };
+}
+async function from_candid_record_n35(_uploadFile, _downloadFile, value) {
+  return {
+    id: value.id,
+    status: from_candid_ApplicationStatus_n22(_uploadFile, _downloadFile, value.status),
     plusOne: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.plusOne)),
-    applicationId: value.applicationId,
+    applicantPrincipal: record_opt_to_undefined(from_candid_opt_n36(_uploadFile, _downloadFile, value.applicantPrincipal)),
     name: value.name,
     instagramHandle: value.instagramHandle,
     submittedAt: value.submittedAt,
     email: value.email,
-    qrToken: record_opt_to_undefined(from_candid_opt_n16(_uploadFile, _downloadFile, value.qrToken)),
+    qrToken: record_opt_to_undefined(from_candid_opt_n12(_uploadFile, _downloadFile, value.qrToken)),
     inviteCode: value.inviteCode,
     phone: value.phone,
-    photos: await from_candid_vec_n17(_uploadFile, _downloadFile, value.photos)
+    photos: await from_candid_vec_n37(_uploadFile, _downloadFile, value.photos)
   };
 }
-function from_candid_record_n27(_uploadFile, _downloadFile, value) {
+function from_candid_record_n42(_uploadFile, _downloadFile, value) {
   return {
-    status: from_candid_ApprovalStatus_n28(_uploadFile, _downloadFile, value.status),
+    status: from_candid_ApprovalStatus_n43(_uploadFile, _downloadFile, value.status),
     principal: value.principal
+  };
+}
+function from_candid_record_n47(_uploadFile, _downloadFile, value) {
+  return {
+    token: value.token,
+    user: from_candid_UserProfile_n28(_uploadFile, _downloadFile, value.user)
   };
 }
 function from_candid_record_n5(_uploadFile, _downloadFile, value) {
@@ -31061,13 +31680,13 @@ function from_candid_record_n5(_uploadFile, _downloadFile, value) {
     topped_up_amount: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.topped_up_amount))
   };
 }
-function from_candid_tuple_n13(_uploadFile, _downloadFile, value) {
+function from_candid_tuple_n21(_uploadFile, _downloadFile, value) {
   return [
-    from_candid_ApplicationStatus_n14(_uploadFile, _downloadFile, value[0]),
-    from_candid_opt_n16(_uploadFile, _downloadFile, value[1])
+    from_candid_ApplicationStatus_n22(_uploadFile, _downloadFile, value[0]),
+    from_candid_opt_n12(_uploadFile, _downloadFile, value[1])
   ];
 }
-function from_candid_variant_n11(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n19(_uploadFile, _downloadFile, value) {
   return "ok" in value ? {
     __kind__: "ok",
     ok: value.ok
@@ -31076,11 +31695,50 @@ function from_candid_variant_n11(_uploadFile, _downloadFile, value) {
     err: value.err
   } : value;
 }
-function from_candid_variant_n15(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n23(_uploadFile, _downloadFile, value) {
   return "pending" in value ? "pending" : "approved" in value ? "approved" : "rejected" in value ? "rejected" : value;
 }
-function from_candid_variant_n20(_uploadFile, _downloadFile, value) {
+function from_candid_variant_n25(_uploadFile, _downloadFile, value) {
   return "admin" in value ? "admin" : "user" in value ? "user" : "guest" in value ? "guest" : value;
+}
+function from_candid_variant_n32(_uploadFile, _downloadFile, value) {
+  return "other" in value ? "other" : "female" in value ? "female" : "male" in value ? "male" : value;
+}
+async function from_candid_variant_n33(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: await from_candid_ApplicationView_n34(_uploadFile, _downloadFile, value.ok)
+  } : "err" in value ? {
+    __kind__: "err",
+    err: value.err
+  } : value;
+}
+function from_candid_variant_n38(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: from_candid_UserProfile_n28(_uploadFile, _downloadFile, value.ok)
+  } : "err" in value ? {
+    __kind__: "err",
+    err: value.err
+  } : value;
+}
+function from_candid_variant_n45(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: from_candid_UserSessionResult_n46(_uploadFile, _downloadFile, value.ok)
+  } : "err" in value ? {
+    __kind__: "err",
+    err: value.err
+  } : value;
+}
+function from_candid_variant_n60(_uploadFile, _downloadFile, value) {
+  return "ok" in value ? {
+    __kind__: "ok",
+    ok: value.ok
+  } : "err" in value ? {
+    __kind__: "err",
+    err: value.err
+  } : value;
 }
 function from_candid_variant_n8(_uploadFile, _downloadFile, value) {
   return "ok" in value ? {
@@ -31091,26 +31749,44 @@ function from_candid_variant_n8(_uploadFile, _downloadFile, value) {
     err: value.err
   } : value;
 }
-async function from_candid_vec_n17(_uploadFile, _downloadFile, value) {
-  return await Promise.all(value.map(async (x2) => await from_candid_ExternalBlob_n18(_uploadFile, _downloadFile, x2)));
+function from_candid_vec_n14(_uploadFile, _downloadFile, value) {
+  return value.map((x2) => from_candid_AdminConfessionView_n15(_uploadFile, _downloadFile, x2));
 }
-async function from_candid_vec_n22(_uploadFile, _downloadFile, value) {
-  return await Promise.all(value.map(async (x2) => await from_candid_ApplicationView_n23(_uploadFile, _downloadFile, x2)));
+function from_candid_vec_n27(_uploadFile, _downloadFile, value) {
+  return value.map((x2) => from_candid_UserProfile_n28(_uploadFile, _downloadFile, x2));
 }
-function from_candid_vec_n25(_uploadFile, _downloadFile, value) {
-  return value.map((x2) => from_candid_UserApprovalInfo_n26(_uploadFile, _downloadFile, x2));
+async function from_candid_vec_n37(_uploadFile, _downloadFile, value) {
+  return await Promise.all(value.map(async (x2) => await from_candid_ExternalBlob_n13(_uploadFile, _downloadFile, x2)));
 }
-async function to_candid_ApplicationInput_n31(_uploadFile, _downloadFile, value) {
-  return await to_candid_record_n32(_uploadFile, _downloadFile, value);
+async function from_candid_vec_n39(_uploadFile, _downloadFile, value) {
+  return await Promise.all(value.map(async (x2) => await from_candid_ApplicationView_n34(_uploadFile, _downloadFile, x2)));
 }
-function to_candid_ApprovalStatus_n29(_uploadFile, _downloadFile, value) {
-  return to_candid_variant_n30(_uploadFile, _downloadFile, value);
+function from_candid_vec_n40(_uploadFile, _downloadFile, value) {
+  return value.map((x2) => from_candid_UserApprovalInfo_n41(_uploadFile, _downloadFile, x2));
 }
-async function to_candid_ExternalBlob_n34(_uploadFile, _downloadFile, value) {
+async function from_candid_vec_n9(_uploadFile, _downloadFile, value) {
+  return await Promise.all(value.map(async (x2) => await from_candid_GalleryUpload_n10(_uploadFile, _downloadFile, x2)));
+}
+async function to_candid_ApplicationInput_n54(_uploadFile, _downloadFile, value) {
+  return await to_candid_record_n55(_uploadFile, _downloadFile, value);
+}
+function to_candid_ApprovalStatus_n48(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n49(_uploadFile, _downloadFile, value);
+}
+async function to_candid_ExternalBlob_n57(_uploadFile, _downloadFile, value) {
   return await _uploadFile(value);
 }
-function to_candid_UserRole_n9(_uploadFile, _downloadFile, value) {
-  return to_candid_variant_n10(_uploadFile, _downloadFile, value);
+function to_candid_Gender_n52(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n53(_uploadFile, _downloadFile, value);
+}
+function to_candid_UpdateProfileInput_n58(_uploadFile, _downloadFile, value) {
+  return to_candid_record_n59(_uploadFile, _downloadFile, value);
+}
+function to_candid_UserRole_n17(_uploadFile, _downloadFile, value) {
+  return to_candid_variant_n18(_uploadFile, _downloadFile, value);
+}
+function to_candid_UserSignUpInput_n50(_uploadFile, _downloadFile, value) {
+  return to_candid_record_n51(_uploadFile, _downloadFile, value);
 }
 function to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _downloadFile, value) {
   return to_candid_record_n3(_uploadFile, _downloadFile, value);
@@ -31118,12 +31794,27 @@ function to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _dow
 function to_candid_opt_n1(_uploadFile, _downloadFile, value) {
   return value === null ? candid_none() : candid_some(to_candid__ImmutableObjectStorageRefillInformation_n2(_uploadFile, _downloadFile, value));
 }
+function to_candid_opt_n44(_uploadFile, _downloadFile, value) {
+  return value === null ? candid_none() : candid_some(value);
+}
 function to_candid_record_n3(_uploadFile, _downloadFile, value) {
   return {
     proposed_top_up_amount: value.proposed_top_up_amount ? candid_some(value.proposed_top_up_amount) : candid_none()
   };
 }
-async function to_candid_record_n32(_uploadFile, _downloadFile, value) {
+function to_candid_record_n51(_uploadFile, _downloadFile, value) {
+  return {
+    bio: value.bio ? candid_some(value.bio) : candid_none(),
+    emailOrPhone: value.emailOrPhone,
+    city: value.city ? candid_some(value.city) : candid_none(),
+    password: value.password,
+    name: value.name,
+    profilePhoto: value.profilePhoto ? candid_some(value.profilePhoto) : candid_none(),
+    instagramHandle: value.instagramHandle ? candid_some(value.instagramHandle) : candid_none(),
+    gender: value.gender ? candid_some(to_candid_Gender_n52(_uploadFile, _downloadFile, value.gender)) : candid_none()
+  };
+}
+async function to_candid_record_n55(_uploadFile, _downloadFile, value) {
   return {
     plusOne: value.plusOne ? candid_some(value.plusOne) : candid_none(),
     name: value.name,
@@ -31131,10 +31822,20 @@ async function to_candid_record_n32(_uploadFile, _downloadFile, value) {
     email: value.email,
     inviteCode: value.inviteCode,
     phone: value.phone,
-    photos: await to_candid_vec_n33(_uploadFile, _downloadFile, value.photos)
+    photos: await to_candid_vec_n56(_uploadFile, _downloadFile, value.photos)
   };
 }
-function to_candid_variant_n10(_uploadFile, _downloadFile, value) {
+function to_candid_record_n59(_uploadFile, _downloadFile, value) {
+  return {
+    bio: value.bio ? candid_some(value.bio) : candid_none(),
+    city: value.city ? candid_some(value.city) : candid_none(),
+    name: value.name ? candid_some(value.name) : candid_none(),
+    profilePhoto: value.profilePhoto ? candid_some(value.profilePhoto) : candid_none(),
+    instagramHandle: value.instagramHandle ? candid_some(value.instagramHandle) : candid_none(),
+    gender: value.gender ? candid_some(to_candid_Gender_n52(_uploadFile, _downloadFile, value.gender)) : candid_none()
+  };
+}
+function to_candid_variant_n18(_uploadFile, _downloadFile, value) {
   return value == "admin" ? {
     admin: null
   } : value == "user" ? {
@@ -31143,7 +31844,7 @@ function to_candid_variant_n10(_uploadFile, _downloadFile, value) {
     guest: null
   } : value;
 }
-function to_candid_variant_n30(_uploadFile, _downloadFile, value) {
+function to_candid_variant_n49(_uploadFile, _downloadFile, value) {
   return value == "pending" ? {
     pending: null
   } : value == "approved" ? {
@@ -31152,8 +31853,17 @@ function to_candid_variant_n30(_uploadFile, _downloadFile, value) {
     rejected: null
   } : value;
 }
-async function to_candid_vec_n33(_uploadFile, _downloadFile, value) {
-  return await Promise.all(value.map(async (x2) => await to_candid_ExternalBlob_n34(_uploadFile, _downloadFile, x2)));
+function to_candid_variant_n53(_uploadFile, _downloadFile, value) {
+  return value == "other" ? {
+    other: null
+  } : value == "female" ? {
+    female: null
+  } : value == "male" ? {
+    male: null
+  } : value;
+}
+async function to_candid_vec_n56(_uploadFile, _downloadFile, value) {
+  return await Promise.all(value.map(async (x2) => await to_candid_ExternalBlob_n57(_uploadFile, _downloadFile, x2)));
 }
 function createActor(canisterId, _uploadFile, _downloadFile, options = {}) {
   const agent = options.agent || HttpAgent.createSync({
@@ -31199,6 +31909,159 @@ function useAuth() {
     loginStatus,
     login,
     logout: clear
+  };
+}
+const SESSION_KEY = "userSessionToken";
+let verifyGuard = false;
+let globalState = {
+  userProfile: null,
+  sessionToken: null,
+  isLoading: true,
+  error: null
+};
+const listeners = /* @__PURE__ */ new Set();
+function notify() {
+  for (const fn of listeners) fn();
+}
+function setGlobal(patch) {
+  globalState = { ...globalState, ...patch };
+  notify();
+}
+function useUserAuth() {
+  const { actor, isFetching } = useActor(createActor);
+  const [, rerender] = reactExports.useState(0);
+  const actorRef = reactExports.useRef(actor);
+  actorRef.current = actor;
+  reactExports.useEffect(() => {
+    const fn = () => rerender((n) => n + 1);
+    listeners.add(fn);
+    return () => {
+      listeners.delete(fn);
+    };
+  }, []);
+  reactExports.useEffect(() => {
+    if (verifyGuard) return;
+    if (isFetching || !actor) return;
+    const stored = localStorage.getItem(SESSION_KEY);
+    if (!stored) {
+      setGlobal({ isLoading: false });
+      return;
+    }
+    if (globalState.userProfile) {
+      setGlobal({ isLoading: false });
+      return;
+    }
+    verifyGuard = true;
+    setGlobal({ isLoading: true });
+    actor.verifySession(stored).then((res) => {
+      if (res.__kind__ === "ok") {
+        setGlobal({
+          userProfile: res.ok,
+          sessionToken: stored,
+          isLoading: false,
+          error: null
+        });
+      } else {
+        localStorage.removeItem(SESSION_KEY);
+        setGlobal({
+          userProfile: null,
+          sessionToken: null,
+          isLoading: false,
+          error: null
+        });
+      }
+    }).catch(() => {
+      localStorage.removeItem(SESSION_KEY);
+      setGlobal({
+        userProfile: null,
+        sessionToken: null,
+        isLoading: false,
+        error: null
+      });
+    });
+  }, [actor, isFetching]);
+  const signUp = reactExports.useCallback(
+    async (name, emailOrPhone, password) => {
+      const a2 = actorRef.current;
+      if (!a2) throw new Error("Connecting to backend...");
+      setGlobal({ isLoading: true, error: null });
+      try {
+        const res = await a2.signUp({ name, emailOrPhone, password });
+        if (res.__kind__ === "err") throw new Error(res.err);
+        const loginRes = await a2.login({ emailOrPhone, password });
+        if (loginRes.__kind__ === "err") throw new Error(loginRes.err);
+        const { token, user } = loginRes.ok;
+        localStorage.setItem(SESSION_KEY, token);
+        setGlobal({
+          userProfile: user,
+          sessionToken: token,
+          isLoading: false,
+          error: null
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Sign up failed";
+        setGlobal({ isLoading: false, error: msg });
+        throw e;
+      }
+    },
+    []
+  );
+  const login = reactExports.useCallback(async (emailOrPhone, password) => {
+    const a2 = actorRef.current;
+    if (!a2) throw new Error("Connecting to backend...");
+    setGlobal({ isLoading: true, error: null });
+    try {
+      const res = await a2.login({ emailOrPhone, password });
+      if (res.__kind__ === "err") throw new Error(res.err);
+      const { token, user } = res.ok;
+      localStorage.setItem(SESSION_KEY, token);
+      setGlobal({
+        userProfile: user,
+        sessionToken: token,
+        isLoading: false,
+        error: null
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Login failed";
+      setGlobal({ isLoading: false, error: msg });
+      throw e;
+    }
+  }, []);
+  const logout = reactExports.useCallback(async () => {
+    const a2 = actorRef.current;
+    const token = globalState.sessionToken;
+    verifyGuard = true;
+    localStorage.removeItem(SESSION_KEY);
+    setGlobal({
+      userProfile: null,
+      sessionToken: null,
+      isLoading: false,
+      error: null
+    });
+    if (a2 && token) {
+      try {
+        await a2.logout(token);
+      } catch {
+      }
+    }
+  }, []);
+  const getUserApplicationStatus = reactExports.useCallback(async () => {
+    const a2 = actorRef.current;
+    const token = globalState.sessionToken;
+    if (!a2) throw new Error("Not connected");
+    if (!token) throw new Error("Not logged in");
+    return a2.getUserApplicationStatus(token);
+  }, []);
+  const clearError = reactExports.useCallback(() => {
+    setGlobal({ error: null });
+  }, []);
+  return {
+    ...globalState,
+    signUp,
+    login,
+    logout,
+    getUserApplicationStatus,
+    clearError
   };
 }
 var prefix = "Invariant failed";
@@ -31464,12 +32327,12 @@ const beforeUnloadEvent = "beforeunload";
 function createHistory(opts) {
   let location2 = opts.getLocation();
   const subscribers = /* @__PURE__ */ new Set();
-  const notify = (action) => {
+  const notify2 = (action) => {
     location2 = opts.getLocation();
     subscribers.forEach((subscriber) => subscriber({ location: location2, action }));
   };
   const handleIndexChange = (action) => {
-    if (opts.notifyOnIndexChange ?? true) notify(action);
+    if (opts.notifyOnIndexChange ?? true) notify2(action);
     else location2 = opts.getLocation();
   };
   const tryNavigation = async ({
@@ -31521,7 +32384,7 @@ function createHistory(opts) {
       tryNavigation({
         task: () => {
           opts.pushState(path, state);
-          notify({ type: "PUSH" });
+          notify2({ type: "PUSH" });
         },
         navigateOpts,
         type: "PUSH",
@@ -31535,7 +32398,7 @@ function createHistory(opts) {
       tryNavigation({
         task: () => {
           opts.replaceState(path, state);
-          notify({ type: "REPLACE" });
+          notify2({ type: "REPLACE" });
         },
         navigateOpts,
         type: "REPLACE",
@@ -31595,7 +32458,7 @@ function createHistory(opts) {
       var _a3;
       return (_a3 = opts.destroy) == null ? void 0 : _a3.call(opts);
     },
-    notify
+    notify: notify2
   };
 }
 function assignKeyAndIndex(index2, state) {
@@ -31691,7 +32554,7 @@ function createBrowserHistory(opts) {
     const isGo = !isForward && !isBack || nextPopIsGo;
     nextPopIsGo = false;
     const action = isGo ? "GO" : isBack ? "BACK" : "FORWARD";
-    const notify = isGo ? {
+    const notify2 = isGo ? {
       type: "GO",
       index: delta
     } : {
@@ -31711,14 +32574,14 @@ function createBrowserHistory(opts) {
           if (isBlocked) {
             ignoreNextPop = true;
             win.history.go(1);
-            history.notify(notify);
+            history.notify(notify2);
             return;
           }
         }
       }
     }
     currentLocation = parseLocation();
-    history.notify(notify);
+    history.notify(notify2);
   };
   const onBeforeUnload = (e) => {
     if (ignoreNextBeforeUnload) {
@@ -36531,11 +37394,137 @@ const createLucideIcon = (iconName, iconNode) => {
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$p = [
+const __iconNode$z = [
   ["path", { d: "m12 19-7-7 7-7", key: "1l729n" }],
   ["path", { d: "M19 12H5", key: "x3x0zl" }]
 ];
-const ArrowLeft = createLucideIcon("arrow-left", __iconNode$p);
+const ArrowLeft = createLucideIcon("arrow-left", __iconNode$z);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$y = [
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
+];
+const ArrowRight = createLucideIcon("arrow-right", __iconNode$y);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$x = [
+  [
+    "path",
+    {
+      d: "M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z",
+      key: "1tc9qg"
+    }
+  ],
+  ["circle", { cx: "12", cy: "13", r: "3", key: "1vg3eu" }]
+];
+const Camera = createLucideIcon("camera", __iconNode$x);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$w = [
+  ["line", { x1: "18", x2: "18", y1: "20", y2: "10", key: "1xfpm4" }],
+  ["line", { x1: "12", x2: "12", y1: "20", y2: "4", key: "be30l9" }],
+  ["line", { x1: "6", x2: "6", y1: "20", y2: "14", key: "1r4le6" }]
+];
+const ChartNoAxesColumn = createLucideIcon("chart-no-axes-column", __iconNode$w);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$v = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+const ChevronDown = createLucideIcon("chevron-down", __iconNode$v);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$u = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
+const ChevronUp = createLucideIcon("chevron-up", __iconNode$u);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$t = [
+  ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
+  ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
+];
+const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$t);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$s = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
+];
+const CircleCheck = createLucideIcon("circle-check", __iconNode$s);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$r = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
+  ["path", { d: "m9 9 6 6", key: "z0biqf" }]
+];
+const CircleX = createLucideIcon("circle-x", __iconNode$r);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$q = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["polyline", { points: "12 6 12 12 16 14", key: "68esgv" }]
+];
+const Clock = createLucideIcon("clock", __iconNode$q);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$p = [
+  [
+    "path",
+    {
+      d: "M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49",
+      key: "ct8e1f"
+    }
+  ],
+  ["path", { d: "M14.084 14.158a3 3 0 0 1-4.242-4.242", key: "151rxh" }],
+  [
+    "path",
+    {
+      d: "M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143",
+      key: "13bj9a"
+    }
+  ],
+  ["path", { d: "m2 2 20 20", key: "1ooewy" }]
+];
+const EyeOff = createLucideIcon("eye-off", __iconNode$p);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36543,37 +37532,48 @@ const ArrowLeft = createLucideIcon("arrow-left", __iconNode$p);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$o = [
-  ["path", { d: "M5 12h14", key: "1ays0h" }],
-  ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
+  [
+    "path",
+    {
+      d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
+      key: "1nclc0"
+    }
+  ],
+  ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
 ];
-const ArrowRight = createLucideIcon("arrow-right", __iconNode$o);
+const Eye = createLucideIcon("eye", __iconNode$o);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$n = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-const ChevronDown = createLucideIcon("chevron-down", __iconNode$n);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$m = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
-const ChevronUp = createLucideIcon("chevron-up", __iconNode$m);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$l = [
-  ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
-  ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
+const __iconNode$n = [
+  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
+  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
+  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
 ];
-const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$l);
+const Image$1 = createLucideIcon("image", __iconNode$n);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$m = [
+  ["path", { d: "m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4", key: "g0fldk" }],
+  ["path", { d: "m21 2-9.6 9.6", key: "1j0ho8" }],
+  ["circle", { cx: "7.5", cy: "15.5", r: "5.5", key: "yqb3hr" }]
+];
+const Key = createLucideIcon("key", __iconNode$m);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$l = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+const LoaderCircle = createLucideIcon("loader-circle", __iconNode$l);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36581,10 +37581,10 @@ const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$l);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$k = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
+  ["path", { d: "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7", key: "132q7q" }],
+  ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }]
 ];
-const CircleCheck = createLucideIcon("circle-check", __iconNode$k);
+const Mail = createLucideIcon("mail", __iconNode$k);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36592,11 +37592,11 @@ const CircleCheck = createLucideIcon("circle-check", __iconNode$k);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$j = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
-  ["path", { d: "m9 9 6 6", key: "z0biqf" }]
+  ["path", { d: "M4 12h16", key: "1lakjw" }],
+  ["path", { d: "M4 18h16", key: "19g7jn" }],
+  ["path", { d: "M4 6h16", key: "1o0s65" }]
 ];
-const CircleX = createLucideIcon("circle-x", __iconNode$j);
+const Menu = createLucideIcon("menu", __iconNode$j);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36604,10 +37604,9 @@ const CircleX = createLucideIcon("circle-x", __iconNode$j);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$i = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["polyline", { points: "12 6 12 12 16 14", key: "68esgv" }]
+  ["path", { d: "M7.9 20A9 9 0 1 0 4 16.1L2 22Z", key: "vv11sd" }]
 ];
-const Clock = createLucideIcon("clock", __iconNode$i);
+const MessageCircle = createLucideIcon("message-circle", __iconNode$i);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36615,19 +37614,20 @@ const Clock = createLucideIcon("clock", __iconNode$i);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$h = [
-  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
-  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
-  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
+  ["path", { d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z", key: "1lielz" }]
 ];
-const Image = createLucideIcon("image", __iconNode$h);
+const MessageSquare = createLucideIcon("message-square", __iconNode$h);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$g = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-const LoaderCircle = createLucideIcon("loader-circle", __iconNode$g);
+const __iconNode$g = [
+  ["circle", { cx: "8", cy: "18", r: "4", key: "1fc0mg" }],
+  ["path", { d: "M12 18V2l7 4", key: "g04rme" }]
+];
+const Music2 = createLucideIcon("music-2", __iconNode$g);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36635,10 +37635,10 @@ const LoaderCircle = createLucideIcon("loader-circle", __iconNode$g);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$f = [
-  ["path", { d: "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7", key: "132q7q" }],
-  ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2", key: "izxlao" }]
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "M12 5v14", key: "s699le" }]
 ];
-const Mail = createLucideIcon("mail", __iconNode$f);
+const Plus = createLucideIcon("plus", __iconNode$f);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36646,50 +37646,6 @@ const Mail = createLucideIcon("mail", __iconNode$f);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$e = [
-  ["path", { d: "M4 12h16", key: "1lakjw" }],
-  ["path", { d: "M4 18h16", key: "19g7jn" }],
-  ["path", { d: "M4 6h16", key: "1o0s65" }]
-];
-const Menu = createLucideIcon("menu", __iconNode$e);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$d = [
-  ["path", { d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z", key: "1lielz" }]
-];
-const MessageSquare = createLucideIcon("message-square", __iconNode$d);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$c = [
-  ["circle", { cx: "8", cy: "18", r: "4", key: "1fc0mg" }],
-  ["path", { d: "M12 18V2l7 4", key: "g04rme" }]
-];
-const Music2 = createLucideIcon("music-2", __iconNode$c);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$b = [
-  ["path", { d: "M5 12h14", key: "1ays0h" }],
-  ["path", { d: "M12 5v14", key: "s699le" }]
-];
-const Plus = createLucideIcon("plus", __iconNode$b);
-/**
- * @license lucide-react v0.511.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$a = [
   ["rect", { width: "5", height: "5", x: "3", y: "3", rx: "1", key: "1tu5fj" }],
   ["rect", { width: "5", height: "5", x: "16", y: "3", rx: "1", key: "1v8r4q" }],
   ["rect", { width: "5", height: "5", x: "3", y: "16", rx: "1", key: "1x03jg" }],
@@ -36703,14 +37659,28 @@ const __iconNode$a = [
   ["path", { d: "M21 12v.01", key: "1lwtk9" }],
   ["path", { d: "M12 21v-1", key: "1880an" }]
 ];
-const QrCode = createLucideIcon("qr-code", __iconNode$a);
+const QrCode = createLucideIcon("qr-code", __iconNode$e);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$9 = [
+const __iconNode$d = [
+  ["path", { d: "M4.9 19.1C1 15.2 1 8.8 4.9 4.9", key: "1vaf9d" }],
+  ["path", { d: "M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5", key: "u1ii0m" }],
+  ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }],
+  ["path", { d: "M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5", key: "1j5fej" }],
+  ["path", { d: "M19.1 4.9C23 8.8 23 15.1 19.1 19", key: "10b0cb" }]
+];
+const Radio = createLucideIcon("radio", __iconNode$d);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$c = [
   [
     "path",
     {
@@ -36720,14 +37690,31 @@ const __iconNode$9 = [
   ],
   ["path", { d: "m21.854 2.147-10.94 10.939", key: "12cjpa" }]
 ];
-const Send = createLucideIcon("send", __iconNode$9);
+const Send = createLucideIcon("send", __iconNode$c);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$8 = [
+const __iconNode$b = [
+  [
+    "path",
+    {
+      d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
+      key: "oel41y"
+    }
+  ],
+  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
+];
+const ShieldCheck = createLucideIcon("shield-check", __iconNode$b);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$a = [
   [
     "path",
     {
@@ -36736,7 +37723,33 @@ const __iconNode$8 = [
     }
   ]
 ];
-const Shield = createLucideIcon("shield", __iconNode$8);
+const Shield = createLucideIcon("shield", __iconNode$a);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$9 = [
+  ["path", { d: "M3 6h18", key: "d0wm0j" }],
+  ["path", { d: "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6", key: "4alrt4" }],
+  ["path", { d: "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2", key: "v07s0e" }],
+  ["line", { x1: "10", x2: "10", y1: "11", y2: "17", key: "1uufr5" }],
+  ["line", { x1: "14", x2: "14", y1: "11", y2: "17", key: "xtxkd" }]
+];
+const Trash2 = createLucideIcon("trash-2", __iconNode$9);
+/**
+ * @license lucide-react v0.511.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$8 = [
+  ["path", { d: "M12 3v12", key: "1x0j5s" }],
+  ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
+  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
+];
+const Upload = createLucideIcon("upload", __iconNode$8);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36744,13 +37757,11 @@ const Shield = createLucideIcon("shield", __iconNode$8);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$7 = [
-  ["path", { d: "M3 6h18", key: "d0wm0j" }],
-  ["path", { d: "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6", key: "4alrt4" }],
-  ["path", { d: "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2", key: "v07s0e" }],
-  ["line", { x1: "10", x2: "10", y1: "11", y2: "17", key: "1uufr5" }],
-  ["line", { x1: "14", x2: "14", y1: "11", y2: "17", key: "xtxkd" }]
+  ["path", { d: "m16 11 2 2 4-4", key: "9rsbq5" }],
+  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
+  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
 ];
-const Trash2 = createLucideIcon("trash-2", __iconNode$7);
+const UserCheck = createLucideIcon("user-check", __iconNode$7);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36758,11 +37769,12 @@ const Trash2 = createLucideIcon("trash-2", __iconNode$7);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$6 = [
-  ["path", { d: "M12 3v12", key: "1x0j5s" }],
-  ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
-  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
+  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
+  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }],
+  ["line", { x1: "17", x2: "22", y1: "8", y2: "13", key: "3nzzx3" }],
+  ["line", { x1: "22", x2: "17", y1: "8", y2: "13", key: "1swrse" }]
 ];
-const Upload = createLucideIcon("upload", __iconNode$6);
+const UserX = createLucideIcon("user-x", __iconNode$6);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36770,11 +37782,10 @@ const Upload = createLucideIcon("upload", __iconNode$6);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$5 = [
-  ["path", { d: "m16 11 2 2 4-4", key: "9rsbq5" }],
-  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
-  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
+  ["path", { d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2", key: "975kel" }],
+  ["circle", { cx: "12", cy: "7", r: "4", key: "17ys0d" }]
 ];
-const UserCheck = createLucideIcon("user-check", __iconNode$5);
+const User = createLucideIcon("user", __iconNode$5);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36782,12 +37793,11 @@ const UserCheck = createLucideIcon("user-check", __iconNode$5);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$4 = [
-  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
-  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }],
-  ["line", { x1: "17", x2: "22", y1: "8", y2: "13", key: "3nzzx3" }],
-  ["line", { x1: "22", x2: "17", y1: "8", y2: "13", key: "1swrse" }]
+  ["path", { d: "M18 21a8 8 0 0 0-16 0", key: "3ypg7q" }],
+  ["circle", { cx: "10", cy: "8", r: "5", key: "o932ke" }],
+  ["path", { d: "M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3", key: "10s06x" }]
 ];
-const UserX = createLucideIcon("user-x", __iconNode$4);
+const UsersRound = createLucideIcon("users-round", __iconNode$4);
 /**
  * @license lucide-react v0.511.0 - ISC
  *
@@ -36849,20 +37859,22 @@ const Zap = createLucideIcon("zap", __iconNode);
 const NAV_LINKS = [
   { label: "Home", href: "/", always: true },
   { label: "Apply", href: "/apply", always: true },
-  { label: "My Status", href: "/status", requiresConnected: true },
+  { label: "My Status", href: "/status", always: true },
   { label: "Portal", href: "/portal", requiresApproved: true },
   { label: "Admin", href: "/admin", requiresAdmin: true }
 ];
 function Layout({ children }) {
   const { isConnected, isApproved, isAdmin, login, logout, loginStatus } = useAuth();
+  const { userProfile, logout: userLogout } = useUserAuth();
   const [menuOpen, setMenuOpen] = reactExports.useState(false);
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
+  const navigate = useNavigate();
   const visibleLinks = NAV_LINKS.filter((link) => {
     if (link.always) return true;
     if (link.requiresAdmin) return isAdmin;
-    if (link.requiresApproved) return isConnected && isApproved;
-    if (link.requiresConnected) return isConnected;
+    if (link.requiresApproved)
+      return isConnected && isApproved || !!userProfile;
     return true;
   });
   const isLoggingIn = loginStatus === "logging-in";
@@ -36957,31 +37969,69 @@ function Layout({ children }) {
             ))
           }
         ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "hidden md:block", children: isConnected ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Button,
-          {
-            variant: "outline",
-            size: "sm",
-            onClick: logout,
-            "data-ocid": "nav.disconnect_button",
-            className: "border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/60 transition-smooth font-display",
-            children: "Disconnect"
-          }
-        ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Button,
-          {
-            size: "sm",
-            onClick: login,
-            disabled: isLoggingIn,
-            "data-ocid": "nav.connect_button",
-            className: "font-display font-semibold transition-smooth",
-            style: {
-              background: "linear-gradient(135deg, oklch(0.65 0.22 290), oklch(0.55 0.25 315))",
-              boxShadow: "0 0 16px oklch(0.65 0.22 290 / 0.4)"
-            },
-            children: isLoggingIn ? "Connecting…" : "Connect"
-          }
-        ) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "hidden md:flex items-center gap-2", children: [
+          userProfile ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "div",
+              {
+                className: "w-8 h-8 rounded-full flex items-center justify-center font-display font-bold text-xs text-foreground",
+                style: {
+                  background: "linear-gradient(135deg, oklch(0.65 0.22 290), oklch(0.68 0.27 305))",
+                  boxShadow: "0 0 10px oklch(0.65 0.22 290 / 0.4)"
+                },
+                title: userProfile.name,
+                children: userProfile.name.slice(0, 2).toUpperCase()
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Button,
+              {
+                variant: "outline",
+                size: "sm",
+                onClick: () => {
+                  userLogout();
+                  navigate({ to: "/login" });
+                },
+                "data-ocid": "nav.user_logout_button",
+                className: "border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/60 transition-smooth font-display text-xs",
+                children: "Sign Out"
+              }
+            )
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Link,
+            {
+              to: "/login",
+              "data-ocid": "nav.signin_link",
+              className: "px-4 py-2 rounded-lg text-sm font-display font-medium border border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/60 transition-smooth",
+              children: "Sign In"
+            }
+          ),
+          isConnected ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              variant: "outline",
+              size: "sm",
+              onClick: logout,
+              "data-ocid": "nav.disconnect_button",
+              className: "border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/60 transition-smooth font-display",
+              children: "Disconnect"
+            }
+          ) : isAdmin ? null : /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              size: "sm",
+              onClick: login,
+              disabled: isLoggingIn,
+              "data-ocid": "nav.connect_button",
+              className: "font-display font-semibold transition-smooth",
+              style: {
+                background: "linear-gradient(135deg, oklch(0.65 0.22 290), oklch(0.55 0.25 315))",
+                boxShadow: "0 0 16px oklch(0.65 0.22 290 / 0.4)"
+              },
+              children: isLoggingIn ? "Connecting…" : "Admin"
+            }
+          )
+        ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
@@ -37010,37 +38060,67 @@ function Layout({ children }) {
           },
           link.href
         )),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "pt-2 border-t border-border/30", children: isConnected ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Button,
-          {
-            variant: "outline",
-            size: "sm",
-            onClick: () => {
-              logout();
-              setMenuOpen(false);
-            },
-            "data-ocid": "nav.mobile_disconnect_button",
-            className: "w-full border-primary/30 text-primary hover:bg-primary/10 transition-smooth font-display",
-            children: "Disconnect"
-          }
-        ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Button,
-          {
-            size: "sm",
-            onClick: () => {
-              login();
-              setMenuOpen(false);
-            },
-            disabled: isLoggingIn,
-            "data-ocid": "nav.mobile_connect_button",
-            className: "w-full font-display font-semibold transition-smooth",
-            style: {
-              background: "linear-gradient(135deg, oklch(0.65 0.22 290), oklch(0.55 0.25 315))",
-              boxShadow: "0 0 16px oklch(0.65 0.22 290 / 0.4)"
-            },
-            children: isLoggingIn ? "Connecting…" : "Connect"
-          }
-        ) })
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "pt-2 border-t border-border/30 flex flex-col gap-2", children: [
+          userProfile ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            Button,
+            {
+              variant: "outline",
+              size: "sm",
+              onClick: () => {
+                userLogout();
+                setMenuOpen(false);
+                navigate({ to: "/login" });
+              },
+              "data-ocid": "nav.mobile_user_logout_button",
+              className: "w-full border-primary/30 text-primary hover:bg-primary/10 transition-smooth font-display text-xs",
+              children: [
+                "Sign Out (",
+                userProfile.name.split(" ")[0],
+                ")"
+              ]
+            }
+          ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Link,
+            {
+              to: "/login",
+              onClick: () => setMenuOpen(false),
+              "data-ocid": "nav.mobile_signin_link",
+              className: "block w-full text-center px-4 py-2.5 rounded-lg text-sm font-display font-medium border border-primary/30 text-primary hover:bg-primary/10 transition-smooth",
+              children: "Sign In"
+            }
+          ),
+          isConnected ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              variant: "outline",
+              size: "sm",
+              onClick: () => {
+                logout();
+                setMenuOpen(false);
+              },
+              "data-ocid": "nav.mobile_disconnect_button",
+              className: "w-full border-primary/30 text-primary hover:bg-primary/10 transition-smooth font-display",
+              children: "Disconnect"
+            }
+          ) : isAdmin ? null : /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              size: "sm",
+              onClick: () => {
+                login();
+                setMenuOpen(false);
+              },
+              disabled: isLoggingIn,
+              "data-ocid": "nav.mobile_connect_button",
+              className: "w-full font-display font-semibold transition-smooth",
+              style: {
+                background: "linear-gradient(135deg, oklch(0.65 0.22 290), oklch(0.55 0.25 315))",
+                boxShadow: "0 0 16px oklch(0.65 0.22 290 / 0.4)"
+              },
+              children: isLoggingIn ? "Connecting…" : "Admin"
+            }
+          )
+        ] })
       ] })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("main", { className: "relative z-10 flex-1", children })
@@ -37049,17 +38129,20 @@ function Layout({ children }) {
 function ProtectedRoute({
   children,
   requireAdmin = false,
-  redirectTo = "/"
+  redirectTo = "/login"
 }) {
   const { isConnected, isApproved, isAdmin } = useAuth();
-  if (!isConnected) {
+  const { userProfile } = useUserAuth();
+  if (requireAdmin) {
+    if (!isConnected || !isAdmin) {
+      return /* @__PURE__ */ jsxRuntimeExports.jsx(Navigate, { to: "/" });
+    }
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children });
+  }
+  const hasIIAuth = isConnected && isApproved;
+  const hasSessionAuth = !!userProfile;
+  if (!hasIIAuth && !hasSessionAuth) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(Navigate, { to: redirectTo });
-  }
-  if (requireAdmin && !isAdmin) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Navigate, { to: "/" });
-  }
-  if (!requireAdmin && !isApproved) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Navigate, { to: "/status" });
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children });
 }
@@ -37127,6 +38210,17 @@ function Skeleton({ className, ...props }) {
       ...props
     }
   );
+}
+function useGetRegisteredUsers() {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["registeredUsers"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getRegisteredUsers();
+    },
+    enabled: !!actor && !isFetching
+  });
 }
 function useApplicationStatus(id2) {
   const { actor, isFetching } = useActor(createActor);
@@ -37202,15 +38296,96 @@ function useRejectApplication() {
     }
   });
 }
-function useApprovedPhotos() {
+function useGalleryPhotos() {
+  const { actor } = useActor(createActor);
+  const [photos, setPhotos] = reactExports.useState([]);
+  const [loading, setLoading] = reactExports.useState(true);
+  const [error, setError] = reactExports.useState(null);
+  const fetchPhotos = reactExports.useCallback(async () => {
+    if (!actor) return;
+    try {
+      setLoading(true);
+      const result = await actor.getPublicGalleryPhotos();
+      setPhotos(result);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [actor]);
+  reactExports.useEffect(() => {
+    fetchPhotos();
+  }, [fetchPhotos]);
+  return { photos, loading, error, refetch: fetchPhotos };
+}
+function useAdminGalleryPhotos() {
+  const { actor } = useActor(createActor);
+  const [photos, setPhotos] = reactExports.useState([]);
+  const [loading, setLoading] = reactExports.useState(true);
+  const [error, setError] = reactExports.useState(null);
+  const fetchPhotos = reactExports.useCallback(async () => {
+    if (!actor) return;
+    try {
+      setLoading(true);
+      const result = await actor.adminGetAllGalleryPhotos();
+      setPhotos(result);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [actor]);
+  reactExports.useEffect(() => {
+    fetchPhotos();
+  }, [fetchPhotos]);
+  return { photos, loading, error, refetch: fetchPhotos };
+}
+async function doUploadGalleryPhoto(actor, file, caption, sessionToken) {
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  const blob = ExternalBlob2.fromBytes(bytes);
+  return actor.uploadGalleryPhoto(
+    blob,
+    caption || null,
+    sessionToken || null
+  );
+}
+function useAdminListConfessions() {
   const { actor, isFetching } = useActor(createActor);
-  return useQuery({
-    queryKey: ["approvedPhotos"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getApprovedPhotos();
+  const [confessions, setConfessions] = reactExports.useState([]);
+  const [loading, setLoading] = reactExports.useState(true);
+  const [error, setError] = reactExports.useState(null);
+  const fetchConfessions = reactExports.useCallback(async () => {
+    if (!actor) return;
+    try {
+      setLoading(true);
+      const result = await actor.adminListConfessions();
+      setConfessions(result);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [actor]);
+  reactExports.useEffect(() => {
+    if (!isFetching) fetchConfessions();
+  }, [fetchConfessions, isFetching]);
+  return { confessions, loading, error, refetch: fetchConfessions };
+}
+function useDeleteUser() {
+  const { actor } = useActor(createActor);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (email) => {
+      if (!actor) throw new Error("No actor");
+      const result = await actor.deleteUser(email);
+      if (result && result.__kind__ === "err") throw new Error(result.err);
+      return result;
     },
-    enabled: !!actor && !isFetching
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["registeredUsers"] });
+      qc.invalidateQueries({ queryKey: ["totalUserCount"] });
+    }
   });
 }
 function useQuizQuestions() {
@@ -37262,25 +38437,25 @@ function useSubmitQuizResult() {
     }
   });
 }
-function useConfessions() {
+function useConfessions(sessionToken) {
   const { actor, isFetching } = useActor(createActor);
   return useQuery({
-    queryKey: ["confessions"],
+    queryKey: ["confessions", sessionToken ?? ""],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.listConfessions();
+      return actor.listConfessions(sessionToken || null);
     },
     enabled: !!actor && !isFetching,
     refetchInterval: 15e3
   });
 }
-function useSubmitConfession() {
+function useSubmitConfession(sessionToken) {
   const { actor } = useActor(createActor);
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (text) => {
       if (!actor) throw new Error("No actor");
-      return actor.submitConfession(text);
+      return actor.submitConfession(text, sessionToken || null);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["confessions"] });
@@ -37361,6 +38536,17 @@ function useResendApprovalEmail() {
       if (result.__kind__ === "err") throw new Error(result.err);
       return result;
     }
+  });
+}
+function useTotalUserCount() {
+  const { actor, isFetching } = useActor(createActor);
+  return useQuery({
+    queryKey: ["totalUserCount"],
+    queryFn: async () => {
+      if (!actor) return BigInt(0);
+      return actor.getTotalUserCount();
+    },
+    enabled: !!actor && !isFetching
   });
 }
 function useBroadcastToApprovedGuests() {
@@ -43450,7 +44636,7 @@ function checkNodeWasScrollRoot(node) {
   return node !== node.root && ((_a3 = node.scroll) == null ? void 0 : _a3.wasRoot);
 }
 const DocumentProjectionNode = createProjectionNode$1({
-  attachResizeListener: (ref, notify) => addDomEvent(ref, "resize", notify),
+  attachResizeListener: (ref, notify2) => addDomEvent(ref, "resize", notify2),
   measureScroll: () => {
     var _a3, _b3;
     return {
@@ -45746,32 +46932,30 @@ function StatCard({
   label,
   value,
   icon,
-  glow,
+  glow: _glow,
   glowColor,
   ocid
 }) {
+  const borderColorMap = {
+    "rgba(104,0,255,0.4)": "border-l-violet-500",
+    "rgba(52,211,153,0.4)": "border-l-emerald-400",
+    "rgba(251,191,36,0.4)": "border-l-yellow-400",
+    "rgba(239,68,68,0.4)": "border-l-red-400",
+    "rgba(96,165,250,0.4)": "border-l-blue-400"
+  };
+  const borderClass = borderColorMap[glowColor] ?? "border-l-primary";
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    NeonCard,
+    "div",
     {
-      glow,
-      className: "p-4 flex items-center gap-4",
+      className: cn(
+        "relative bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all duration-200 border-l-4",
+        borderClass
+      ),
       "data-ocid": ocid,
-      style: {
-        boxShadow: value !== void 0 ? `0 0 24px ${glowColor}` : void 0
-      },
       children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            className: "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
-            style: { background: `${glowColor}22` },
-            children: icon
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-xs uppercase tracking-widest font-mono", children: label }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground text-2xl font-display font-bold", children: value !== void 0 ? value.toString() : "—" })
-        ] })
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-3 right-3 opacity-40", children: icon }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-3xl font-display font-bold text-foreground leading-none mb-1.5", children: value !== void 0 ? value.toString() : "—" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-zinc-400 font-mono uppercase tracking-widest", children: label })
       ]
     }
   );
@@ -45860,6 +47044,223 @@ function QRModal({
     }
   ) });
 }
+function GenderBadge({ gender }) {
+  if (!gender) return null;
+  const map = {
+    [Gender.male]: {
+      label: "Male",
+      style: "border-cyan-400/50 text-cyan-300 bg-cyan-400/10"
+    },
+    [Gender.female]: {
+      label: "Female",
+      style: "border-fuchsia-400/50 text-fuchsia-300 bg-fuchsia-400/10"
+    },
+    [Gender.other]: {
+      label: "Other",
+      style: "border-violet-400/50 text-violet-300 bg-violet-400/10"
+    }
+  };
+  const entry = map[gender];
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "span",
+    {
+      className: cn(
+        "inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-mono uppercase tracking-wider",
+        entry.style
+      ),
+      children: entry.label
+    }
+  );
+}
+function UserCard({
+  user,
+  index: index2,
+  onRefetch
+}) {
+  const [expanded, setExpanded] = reactExports.useState(false);
+  const deleteUserMutation = useDeleteUser();
+  const initials = user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    motion.div,
+    {
+      initial: { opacity: 0, y: 10 },
+      animate: { opacity: 1, y: 0 },
+      transition: { delay: index2 * 0.04 },
+      "data-ocid": `admin.user.item.${index2 + 1}`,
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonCard, { glow: "purple", className: "overflow-hidden", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            type: "button",
+            className: "w-full p-4 text-left flex items-center gap-3",
+            onClick: () => setExpanded((p2) => !p2),
+            "aria-expanded": expanded,
+            "data-ocid": `admin.user.expand.${index2 + 1}`,
+            children: [
+              user.profilePhoto ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "img",
+                {
+                  src: user.profilePhoto,
+                  alt: user.name,
+                  className: "w-10 h-10 rounded-full object-cover border border-primary/30 shrink-0"
+                }
+              ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "div",
+                {
+                  className: "w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm font-display font-bold",
+                  style: {
+                    background: "oklch(0.65 0.22 290 / 0.3)",
+                    border: "1px solid oklch(0.65 0.22 290 / 0.4)",
+                    color: "oklch(0.9 0.1 290)"
+                  },
+                  children: initials
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center gap-2 mb-0.5", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display font-semibold text-foreground truncate", children: user.name }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(GenderBadge, { gender: user.gender })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground truncate", children: user.instagramHandle ? `@${user.instagramHandle}` : user.emailOrPhone })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 shrink-0", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground font-mono hidden sm:block", children: formatDate(user.createdAt) }),
+                expanded ? /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronUp, { className: "w-4 h-4 text-muted-foreground" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ChevronDown, { className: "w-4 h-4 text-muted-foreground" })
+              ] })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: expanded && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          motion.div,
+          {
+            initial: { height: 0, opacity: 0 },
+            animate: { height: "auto", opacity: 1 },
+            exit: { height: 0, opacity: 0 },
+            transition: { duration: 0.22 },
+            className: "overflow-hidden",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-4 pb-4 border-t border-border/20 pt-3 space-y-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-x-4 gap-y-2 text-sm", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono", children: "Email / Phone" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground truncate", children: user.emailOrPhone })
+                ] }),
+                user.city && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono", children: "City" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground", children: user.city })
+                ] }),
+                user.bio && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono mb-1", children: "Bio" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground text-sm", children: user.bio })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono", children: "Joined" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground", children: formatDate(user.createdAt) })
+                ] }),
+                user.linkedApplicationId && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono", children: "Application ID" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground font-mono text-xs", children: user.linkedApplicationId })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "pt-2", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                Button,
+                {
+                  type: "button",
+                  size: "sm",
+                  disabled: deleteUserMutation.isPending,
+                  onClick: () => {
+                    if (window.confirm(
+                      "Delete this user? This cannot be undone."
+                    )) {
+                      deleteUserMutation.mutate(user.emailOrPhone, {
+                        onSuccess: () => {
+                          ue.success("User deleted.");
+                          onRefetch == null ? void 0 : onRefetch();
+                        },
+                        onError: (err) => {
+                          ue.error(
+                            err instanceof Error ? err.message : "Failed to delete user"
+                          );
+                        }
+                      });
+                    }
+                  },
+                  className: "bg-red-500/20 border border-red-400/50 text-red-300 hover:bg-red-500/30 hover:border-red-400 transition-all",
+                  "data-ocid": `admin.user.delete_button.${index2 + 1}`,
+                  children: [
+                    deleteUserMutation.isPending ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-3 h-3 animate-spin mr-1" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "w-3 h-3 mr-1" }),
+                    "Delete User"
+                  ]
+                }
+              ) })
+            ] })
+          }
+        ) })
+      ] })
+    }
+  );
+}
+function UsersPanel() {
+  const { data: users = [], isLoading } = useGetRegisteredUsers();
+  const [genderFilter, setGenderFilter] = reactExports.useState("all");
+  const filtered = genderFilter === "all" ? users : users.filter((u) => u.gender === genderFilter);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4", "data-ocid": "admin.users.section", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        className: "flex gap-1 p-1 rounded-xl bg-card/20 backdrop-blur-sm border border-border/20",
+        "data-ocid": "admin.users.gender_filter",
+        children: ["all", Gender.male, Gender.female, Gender.other].map(
+          (g2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              type: "button",
+              onClick: () => setGenderFilter(g2),
+              "data-ocid": `admin.users.filter.${g2}`,
+              className: cn(
+                "flex-1 py-1.5 px-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all duration-200 capitalize",
+                genderFilter === g2 ? "bg-primary/80 text-foreground shadow-[0_0_16px_rgba(104,0,255,0.5)]" : "text-muted-foreground hover:text-foreground"
+              ),
+              children: g2
+            },
+            g2
+          )
+        )
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground font-mono uppercase tracking-widest", children: [
+      filtered.length,
+      " registered member",
+      filtered.length !== 1 ? "s" : ""
+    ] }),
+    isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-3", children: [0, 1, 2].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Skeleton,
+      {
+        className: "h-16 w-full rounded-xl"
+      },
+      `skeleton-user-${i}`
+    )) }) : filtered.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      NeonCard,
+      {
+        glow: "none",
+        className: "p-8 text-center",
+        "data-ocid": "admin.users.empty_state",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Users, { className: "w-8 h-8 text-muted-foreground mx-auto mb-3" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-sm", children: "No registered members yet." })
+        ]
+      }
+    ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-3", children: filtered.map((u, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+      UserCard,
+      {
+        user: u,
+        index: i,
+        onRefetch: () => {
+        }
+      },
+      u.id.toString()
+    )) })
+  ] });
+}
 function ApplicationCard({
   app,
   index: index2
@@ -45925,7 +47326,7 @@ function ApplicationCard({
                   children: [
                     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0", children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center gap-2 mb-1", children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs(
                           "span",
                           {
                             className: "text-[11px] font-mono font-bold tracking-widest shrink-0",
@@ -45934,7 +47335,10 @@ function ApplicationCard({
                               textShadow: "0 0 10px oklch(0.68 0.27 305 / 0.5)"
                             },
                             "data-ocid": `admin.app.id.${index2 + 1}`,
-                            children: app.applicationId || `#${app.id.toString().padStart(6, "0")}`
+                            children: [
+                              "#",
+                              app.id.toString().padStart(6, "0")
+                            ]
                           }
                         ),
                         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display font-semibold text-foreground truncate", children: app.name }),
@@ -46000,39 +47404,37 @@ function ApplicationCard({
                       )) })
                     ] }),
                     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap gap-2 pt-1", children: [
-                      isPending && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                          Button,
-                          {
-                            type: "button",
-                            size: "sm",
-                            disabled: approvingThis || rejectingThis,
-                            onClick: () => approve.mutate(app.id),
-                            className: "bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 hover:bg-emerald-500/30 hover:border-emerald-400 transition-all",
-                            "data-ocid": `admin.app.approve_button.${index2 + 1}`,
-                            children: [
-                              approvingThis ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-3 h-3 animate-spin mr-1" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheckBig, { className: "w-3 h-3 mr-1" }),
-                              "Approve"
-                            ]
-                          }
-                        ),
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                          Button,
-                          {
-                            type: "button",
-                            size: "sm",
-                            variant: "destructive",
-                            disabled: approvingThis || rejectingThis,
-                            onClick: () => reject.mutate(app.id),
-                            className: "bg-red-500/20 border border-red-400/50 text-red-300 hover:bg-red-500/30 hover:border-red-400 transition-all",
-                            "data-ocid": `admin.app.reject_button.${index2 + 1}`,
-                            children: [
-                              rejectingThis ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-3 h-3 animate-spin mr-1" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(CircleX, { className: "w-3 h-3 mr-1" }),
-                              "Reject"
-                            ]
-                          }
-                        )
-                      ] }),
+                      isPending && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        Button,
+                        {
+                          type: "button",
+                          size: "sm",
+                          disabled: approvingThis || rejectingThis,
+                          onClick: () => approve.mutate(app.id),
+                          className: "bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 hover:bg-emerald-500/30 hover:border-emerald-400 transition-all",
+                          "data-ocid": `admin.app.approve_button.${index2 + 1}`,
+                          children: [
+                            approvingThis ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-3 h-3 animate-spin mr-1" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheckBig, { className: "w-3 h-3 mr-1" }),
+                            "Approve"
+                          ]
+                        }
+                      ),
+                      (isPending || isApproved) && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                        Button,
+                        {
+                          type: "button",
+                          size: "sm",
+                          variant: "destructive",
+                          disabled: approvingThis || rejectingThis,
+                          onClick: () => reject.mutate(app.id),
+                          className: "bg-red-500/20 border border-red-400/50 text-red-300 hover:bg-red-500/30 hover:border-red-400 transition-all",
+                          "data-ocid": `admin.app.reject_button.${index2 + 1}`,
+                          children: [
+                            rejectingThis ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-3 h-3 animate-spin mr-1" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(CircleX, { className: "w-3 h-3 mr-1" }),
+                            isApproved ? "Revoke" : "Reject"
+                          ]
+                        }
+                      ),
                       isApproved && app.qrToken && /* @__PURE__ */ jsxRuntimeExports.jsxs(
                         Button,
                         {
@@ -46084,7 +47486,7 @@ function AppSkeleton() {
       /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-4 w-40 bg-muted/20" })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-4 w-16 bg-muted/30" })
-  ] }) }, i)) });
+  ] }) }, `skeleton-app-${i}`)) });
 }
 function InviteCodesPanel() {
   const { data: codes = [], isLoading } = useInviteCodes();
@@ -46470,10 +47872,274 @@ function BroadcastPanel({ approvedCount }) {
     ] })
   ] }) });
 }
+function GalleryPanel() {
+  const { actor } = useActor(createActor);
+  const { photos, loading, refetch } = useAdminGalleryPhotos();
+  const [actionLoading, setActionLoading] = reactExports.useState(null);
+  const getPhotoUrl = (photo) => {
+    var _a3;
+    return ((_a3 = photo == null ? void 0 : photo.getDirectURL) == null ? void 0 : _a3.call(photo)) ?? "";
+  };
+  const approve = async (id2) => {
+    if (!actor) return;
+    setActionLoading(`${id2}-approve`);
+    await actor.adminApproveGalleryPhoto(id2);
+    setActionLoading(null);
+    refetch();
+  };
+  const reject = async (id2) => {
+    if (!actor) return;
+    setActionLoading(`${id2}-reject`);
+    await actor.adminRejectGalleryPhoto(id2);
+    setActionLoading(null);
+    refetch();
+  };
+  const pending = photos.filter((p2) => !p2.approved);
+  const approved = photos.filter((p2) => p2.approved);
+  if (loading)
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-white/40 text-center py-12", children: "Loading gallery..." });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-8", "data-ocid": "admin.gallery.section", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { className: "text-lg font-semibold text-foreground mb-4", children: [
+        "Pending Approval (",
+        pending.length,
+        ")"
+      ] }),
+      pending.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "p",
+        {
+          className: "text-muted-foreground text-sm",
+          "data-ocid": "admin.gallery.pending.empty_state",
+          children: "No photos pending approval."
+        }
+      ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-2 md:grid-cols-3 gap-4", children: pending.map((photo, i) => {
+        var _a3, _b3, _c2, _d2;
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "bg-white/5 backdrop-blur border border-white/10 rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-200",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "aspect-square overflow-hidden", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "img",
+                {
+                  src: getPhotoUrl(photo.photo),
+                  alt: "",
+                  className: "w-full h-full object-cover"
+                }
+              ) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-3 space-y-2", children: [
+                ((_a3 = photo.caption) == null ? void 0 : _a3[0]) && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-xs truncate", children: photo.caption[0] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-muted-foreground/50 text-xs", children: [
+                  (_d2 = (_c2 = (_b3 = photo.uploaderPrincipal) == null ? void 0 : _b3.toString) == null ? void 0 : _c2.call(_b3)) == null ? void 0 : _d2.slice(0, 12),
+                  "..."
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: () => approve(photo.id),
+                      disabled: actionLoading === `${photo.id}-approve`,
+                      className: "flex-1 py-1.5 text-xs font-medium bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/20 rounded-lg transition-colors disabled:opacity-40",
+                      "data-ocid": `admin.gallery.approve_button.${i + 1}`,
+                      children: "Approve"
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: () => reject(photo.id),
+                      disabled: actionLoading === `${photo.id}-reject`,
+                      className: "flex-1 py-1.5 text-xs font-medium bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/20 rounded-lg transition-colors disabled:opacity-40",
+                      "data-ocid": `admin.gallery.reject_button.${i + 1}`,
+                      children: "Remove"
+                    }
+                  )
+                ] })
+              ] })
+            ]
+          },
+          photo.id
+        );
+      }) })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { className: "text-lg font-semibold text-foreground mb-4", children: [
+        "Live Gallery (",
+        approved.length,
+        ")"
+      ] }),
+      approved.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "p",
+        {
+          className: "text-muted-foreground text-sm",
+          "data-ocid": "admin.gallery.approved.empty_state",
+          children: "No approved photos yet."
+        }
+      ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-2 md:grid-cols-3 gap-4", children: approved.map((photo, i) => {
+        var _a3;
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "bg-white/5 backdrop-blur border border-white/10 rounded-xl overflow-hidden hover:bg-white/10 transition-all duration-200",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "aspect-square overflow-hidden", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "img",
+                {
+                  src: getPhotoUrl(photo.photo),
+                  alt: "",
+                  className: "w-full h-full object-cover"
+                }
+              ) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-3 space-y-2", children: [
+                ((_a3 = photo.caption) == null ? void 0 : _a3[0]) && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-xs truncate", children: photo.caption[0] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: () => reject(photo.id),
+                    disabled: actionLoading === `${photo.id}-reject`,
+                    className: "w-full py-1.5 text-xs font-medium bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/20 rounded-lg transition-colors disabled:opacity-40",
+                    "data-ocid": `admin.gallery.remove_button.${i + 1}`,
+                    children: "Remove"
+                  }
+                )
+              ] })
+            ]
+          },
+          photo.id
+        );
+      }) })
+    ] })
+  ] });
+}
+function AdminConfessionsPanel() {
+  const { actor } = useActor(createActor);
+  const { confessions, loading, refetch } = useAdminListConfessions();
+  const [deletingId, setDeletingId] = reactExports.useState(null);
+  const [approvingId, setApprovingId] = reactExports.useState(null);
+  async function handleApprove(id2) {
+    if (!actor) return;
+    setApprovingId(id2);
+    try {
+      await actor.adminApproveConfession(BigInt(id2));
+      ue.success("Confession approved.");
+      refetch();
+    } catch (e) {
+      ue.error(e instanceof Error ? e.message : "Failed to approve");
+    } finally {
+      setApprovingId(null);
+    }
+  }
+  async function handleDelete(id2) {
+    if (!actor) return;
+    if (!window.confirm("Delete this confession? This cannot be undone."))
+      return;
+    setDeletingId(id2);
+    try {
+      await actor.adminDeleteConfession(BigInt(id2));
+      ue.success("Confession deleted.");
+      refetch();
+    } catch (e) {
+      ue.error(e instanceof Error ? e.message : "Failed to delete");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+  if (loading)
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-3", "data-ocid": "admin.confessions.loading_state", children: [1, 2, 3].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-20 w-full rounded-xl" }, `skel-conf-${i}`)) });
+  if (confessions.length === 0)
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      NeonCard,
+      {
+        glow: "none",
+        className: "p-8 text-center",
+        "data-ocid": "admin.confessions.empty_state",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(MessageSquare, { className: "w-8 h-8 text-muted-foreground mx-auto mb-3" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-sm", children: "No confessions yet." })
+        ]
+      }
+    );
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-3", "data-ocid": "admin.confessions.section", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground font-mono uppercase tracking-widest", children: [
+      confessions.length,
+      " confession",
+      confessions.length !== 1 ? "s" : ""
+    ] }),
+    confessions.map(
+      (c2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        motion.div,
+        {
+          initial: { opacity: 0, y: 8 },
+          animate: { opacity: 1, y: 0 },
+          transition: { delay: i * 0.04 },
+          "data-ocid": `admin.confessions.item.${i + 1}`,
+          children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            NeonCard,
+            {
+              glow: c2.approved ? "cyan" : "none",
+              className: "p-4 space-y-3",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between gap-3", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground text-sm leading-relaxed flex-1", children: c2.text }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "span",
+                    {
+                      className: cn(
+                        "inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-mono uppercase tracking-wider shrink-0",
+                        c2.approved ? "border-emerald-400/50 text-emerald-300 bg-emerald-400/10" : "border-yellow-400/50 text-yellow-300 bg-yellow-400/10"
+                      ),
+                      children: c2.approved ? "Approved" : "Pending"
+                    }
+                  )
+                ] }),
+                (c2.submittedAt ?? c2.createdAt) && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono", children: formatDate(c2.submittedAt ?? c2.createdAt) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
+                  !c2.approved && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: () => handleApprove(c2.id),
+                      disabled: approvingId === c2.id,
+                      className: "flex-1 py-1.5 text-xs font-medium bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/20 rounded-lg transition-colors disabled:opacity-40",
+                      "data-ocid": `admin.confessions.approve_button.${i + 1}`,
+                      children: [
+                        approvingId === c2.id ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-3 h-3 animate-spin inline mr-1" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheckBig, { className: "w-3 h-3 inline mr-1" }),
+                        "Approve"
+                      ]
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: () => handleDelete(c2.id),
+                      disabled: deletingId === c2.id,
+                      className: "flex-1 py-1.5 text-xs font-medium bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/20 rounded-lg transition-colors disabled:opacity-40",
+                      "data-ocid": `admin.confessions.delete_button.${i + 1}`,
+                      children: [
+                        deletingId === c2.id ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-3 h-3 animate-spin inline mr-1" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "w-3 h-3 inline mr-1" }),
+                        "Delete"
+                      ]
+                    }
+                  )
+                ] })
+              ]
+            }
+          )
+        },
+        c2.id
+      )
+    )
+  ] });
+}
 function AdminPage() {
   const navigate = useNavigate();
   const { isConnected, isAdmin, identity } = useAuth();
   const { data: stats } = useAdminStats();
+  const { data: totalUsers } = useTotalUserCount();
   const {
     data: applications = [],
     isLoading: appsLoading,
@@ -46506,17 +48172,23 @@ function AdminPage() {
       className: "max-w-3xl mx-auto px-4 py-8 space-y-8",
       "data-ocid": "admin.page",
       children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-mono uppercase tracking-widest mb-1", children: "Control Room" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("h1", { className: "text-3xl font-display font-bold text-foreground", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-primary", children: "Admin" }),
-            " Dashboard"
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between gap-4", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-zinc-500 font-mono uppercase tracking-widest mb-1", children: "Control Room" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("h1", { className: "text-3xl font-display font-bold text-foreground", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-primary", children: "Admin" }),
+              " Dashboard"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "shrink-0 mt-1 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-pulse" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-mono text-zinc-400 uppercase tracking-widest", children: "Live" })
           ] })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "div",
           {
-            className: "grid grid-cols-2 sm:grid-cols-4 gap-3",
+            className: "grid grid-cols-2 md:grid-cols-3 gap-4",
             "data-ocid": "admin.stats.section",
             children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -46562,59 +48234,111 @@ function AdminPage() {
                   glowColor: "rgba(239,68,68,0.4)",
                   ocid: "admin.stats.rejected"
                 }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                StatCard,
+                {
+                  label: "Registered Users",
+                  value: totalUsers,
+                  icon: /* @__PURE__ */ jsxRuntimeExports.jsx(User, { className: "w-5 h-5 text-blue-400" }),
+                  glow: "cyan",
+                  glowColor: "rgba(96,165,250,0.4)",
+                  ocid: "admin.stats.registered_users"
+                }
               )
             ]
           }
         ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-x-auto -mx-4 px-4", "data-ocid": "admin.tabs", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex min-w-max border-b border-white/10", children: [
           {
-            className: "flex gap-1 p-1 rounded-xl bg-card/20 backdrop-blur-sm border border-border/20",
-            "data-ocid": "admin.tabs",
-            children: [
-              { key: "applications", label: "Applications" },
-              { key: "broadcast", label: "Broadcast" },
-              { key: "invite-codes", label: "Invite Codes" },
-              { key: "admins", label: "Admins" }
-            ].map(({ key, label }) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "button",
-              {
-                type: "button",
-                onClick: () => setActiveTab(key),
-                "data-ocid": `admin.tab.${key}`,
-                className: cn(
-                  "flex-1 py-2 px-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-all duration-200",
-                  activeTab === key ? "bg-primary/80 text-foreground shadow-[0_0_16px_rgba(104,0,255,0.5)]" : "text-muted-foreground hover:text-foreground"
-                ),
-                children: label
-              },
-              key
-            ))
+            key: "applications",
+            label: "Applications",
+            icon: /* @__PURE__ */ jsxRuntimeExports.jsx(ChartNoAxesColumn, { className: "w-3.5 h-3.5" })
+          },
+          {
+            key: "broadcast",
+            label: "Broadcast",
+            icon: /* @__PURE__ */ jsxRuntimeExports.jsx(Radio, { className: "w-3.5 h-3.5" })
+          },
+          {
+            key: "invite-codes",
+            label: "Invite Codes",
+            icon: /* @__PURE__ */ jsxRuntimeExports.jsx(Key, { className: "w-3.5 h-3.5" })
+          },
+          {
+            key: "admins",
+            label: "Admins",
+            icon: /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { className: "w-3.5 h-3.5" })
+          },
+          {
+            key: "users",
+            label: "Users",
+            icon: /* @__PURE__ */ jsxRuntimeExports.jsx(UsersRound, { className: "w-3.5 h-3.5" })
+          },
+          {
+            key: "gallery",
+            label: "Gallery",
+            icon: /* @__PURE__ */ jsxRuntimeExports.jsx(Image$1, { className: "w-3.5 h-3.5" })
+          },
+          {
+            key: "confessions",
+            label: "Confessions",
+            icon: /* @__PURE__ */ jsxRuntimeExports.jsx(MessageCircle, { className: "w-3.5 h-3.5" })
           }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { mode: "wait", children: activeTab === "broadcast" ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+        ].map(({ key, label, icon }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: () => setActiveTab(key),
+            "data-ocid": `admin.tab.${key}`,
+            className: cn(
+              "flex items-center gap-1.5 px-4 py-3 text-xs font-mono uppercase tracking-wider transition-all duration-200 whitespace-nowrap border-b-2 -mb-px",
+              activeTab === key ? "border-pink-500 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground hover:border-white/20"
+            ),
+            children: [
+              icon,
+              label
+            ]
+          },
+          key
+        )) }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { mode: "wait", children: activeTab === "broadcast" ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
           motion.div,
           {
             initial: { opacity: 0, y: 8 },
             animate: { opacity: 1, y: 0 },
             exit: { opacity: 0, y: -8 },
             transition: { duration: 0.2 },
-            children: /* @__PURE__ */ jsxRuntimeExports.jsx(BroadcastPanel, { approvedCount: stats == null ? void 0 : stats.approved })
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-xl font-semibold text-foreground", children: "Broadcast Message" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-zinc-400 mt-0.5", children: "Send an announcement to all approved guests" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-4 h-px bg-white/10" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(BroadcastPanel, { approvedCount: stats == null ? void 0 : stats.approved })
+            ]
           },
           "broadcast"
-        ) : activeTab === "admins" ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+        ) : activeTab === "admins" ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
           motion.div,
           {
             initial: { opacity: 0, y: 8 },
             animate: { opacity: 1, y: 0 },
             exit: { opacity: 0, y: -8 },
             transition: { duration: 0.2 },
-            children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-              AdminsPanel,
-              {
-                currentPrincipal: isConnected ? (identity == null ? void 0 : identity.getPrincipal()) ?? null : null
-              }
-            )
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-xl font-semibold text-foreground", children: "Admin Management" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-zinc-400 mt-0.5", children: "Add or remove admin principals with full control access" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-4 h-px bg-white/10" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                AdminsPanel,
+                {
+                  currentPrincipal: isConnected ? (identity == null ? void 0 : identity.getPrincipal()) ?? null : null
+                }
+              )
+            ]
           },
           "admins"
         ) : activeTab === "applications" ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -46626,6 +48350,11 @@ function AdminPage() {
             transition: { duration: 0.2 },
             "data-ocid": "admin.apps.section",
             children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-xl font-semibold text-foreground", children: "Applications" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-zinc-400 mt-0.5", children: "Review, approve, or reject event access requests" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-4 h-px bg-white/10" })
+              ] }),
               !appsLoading && !appsError && /* @__PURE__ */ jsxRuntimeExports.jsx(
                 "div",
                 {
@@ -46718,14 +48447,72 @@ function AdminPage() {
             ]
           },
           "applications"
-        ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+        ) : activeTab === "users" ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
           motion.div,
           {
             initial: { opacity: 0, y: 8 },
             animate: { opacity: 1, y: 0 },
             exit: { opacity: 0, y: -8 },
             transition: { duration: 0.2 },
-            children: /* @__PURE__ */ jsxRuntimeExports.jsx(InviteCodesPanel, {})
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-xl font-semibold text-foreground", children: "Registered Members" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-zinc-400 mt-0.5", children: "Browse and manage all registered user accounts" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-4 h-px bg-white/10" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(UsersPanel, {})
+            ]
+          },
+          "users"
+        ) : activeTab === "gallery" ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          motion.div,
+          {
+            initial: { opacity: 0, y: 8 },
+            animate: { opacity: 1, y: 0 },
+            exit: { opacity: 0, y: -8 },
+            transition: { duration: 0.2 },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-xl font-semibold text-foreground", children: "Party Gallery" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-zinc-400 mt-0.5", children: "Moderate member-uploaded photos before they go live" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-4 h-px bg-white/10" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(GalleryPanel, {})
+            ]
+          },
+          "gallery"
+        ) : activeTab === "confessions" ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          motion.div,
+          {
+            initial: { opacity: 0, y: 8 },
+            animate: { opacity: 1, y: 0 },
+            exit: { opacity: 0, y: -8 },
+            transition: { duration: 0.2 },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-xl font-semibold text-foreground", children: "Confession Wall" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-zinc-400 mt-0.5", children: "Approve or remove anonymous confessions from the public wall" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-4 h-px bg-white/10" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(AdminConfessionsPanel, {})
+            ]
+          },
+          "confessions"
+        ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          motion.div,
+          {
+            initial: { opacity: 0, y: 8 },
+            animate: { opacity: 1, y: 0 },
+            exit: { opacity: 0, y: -8 },
+            transition: { duration: 0.2 },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-xl font-semibold text-foreground", children: "Invite Codes" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-zinc-400 mt-0.5", children: "Generate and manage access codes for exclusive entry" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-4 h-px bg-white/10" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(InviteCodesPanel, {})
+            ]
           },
           "invite-codes"
         ) })
@@ -47008,7 +48795,7 @@ function PhotoUpload({
       p2.preview
     )) }) }),
     photos.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-xs text-muted-foreground/60", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Image, { className: "w-4 h-4" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Image$1, { className: "w-4 h-4" }),
       "Minimum 3 photos required"
     ] })
   ] });
@@ -47290,34 +49077,7 @@ function ApplyPage() {
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { "aria-hidden": true, className: "pointer-events-none fixed inset-0 z-0", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-[-20%] left-[10%] w-[40vw] h-[40vw] rounded-full bg-primary/8 blur-[120px]" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute bottom-[-10%] right-[5%] w-[35vw] h-[35vw] rounded-full bg-secondary/6 blur-[100px]" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-[40%] left-[-5%] w-[25vw] h-[25vw] rounded-full bg-accent/5 blur-[80px]" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "div",
-        {
-          className: "party-blob-1 absolute top-1/4 left-1/3 w-80 h-80 rounded-full opacity-20 blur-3xl pointer-events-none",
-          style: {
-            background: "radial-gradient(circle, oklch(0.65 0.25 15), oklch(0.55 0.22 340))"
-          }
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "div",
-        {
-          className: "party-blob-2 absolute bottom-1/4 right-1/4 w-72 h-72 rounded-full opacity-15 blur-3xl pointer-events-none",
-          style: {
-            background: "radial-gradient(circle, oklch(0.75 0.18 80), oklch(0.60 0.20 45))"
-          }
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "div",
-        {
-          className: "party-blob-3 absolute top-3/4 left-1/4 w-64 h-64 rounded-full opacity-20 blur-3xl pointer-events-none",
-          style: {
-            background: "radial-gradient(circle, oklch(0.70 0.22 320), oklch(0.60 0.18 290))"
-          }
-        }
-      )
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-[40%] left-[-5%] w-[25vw] h-[25vw] rounded-full bg-accent/5 blur-[80px]" })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative z-10 max-w-lg mx-auto px-4 py-12 pb-20", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -47789,10 +49549,10 @@ function HomePage() {
       {
         ref: audioRef,
         loop: true,
-        src: "https://iriefm.fast.idealsolutions.media/iriefm",
+        src: "https://stream.zeno.fm/0r0xa792kwzuv",
         preload: "none",
         onCanPlay: (e) => {
-          e.currentTarget.volume = 0.08;
+          e.currentTarget.volume = 0.18;
         }
       }
     ),
@@ -48176,13 +49936,517 @@ function HomePage() {
               style: {
                 color: musicPlaying ? "oklch(0.68 0.27 305)" : "oklch(0.55 0.15 270)"
               },
-              children: "IRIE FM"
+              children: "MUSIC"
             }
           )
         ]
       }
     )
   ] });
+}
+function WelcomeTransition({
+  isVisible,
+  userName,
+  onComplete
+}) {
+  const timerRef = reactExports.useRef(null);
+  reactExports.useEffect(() => {
+    if (!isVisible) return;
+    timerRef.current = setTimeout(() => {
+      onComplete();
+    }, 1800);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [isVisible, onComplete]);
+  if (!isVisible) return null;
+  const line1 = userName ? `Welcome back, ${userName}.` : "Welcome to 10s Only.";
+  const line2 = "Your access begins now.";
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "div",
+    {
+      className: "welcome-transition-overlay",
+      "aria-live": "polite",
+      "aria-label": "Welcome",
+      "data-ocid": "welcome.overlay",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "welcome-grain" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "welcome-blob welcome-blob--purple" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "welcome-blob welcome-blob--cyan" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "welcome-blob welcome-blob--magenta" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "welcome-content", "data-ocid": "welcome.content", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "welcome-dot", "aria-hidden": "true" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "welcome-line-1", "data-ocid": "welcome.line1", children: line1 }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "welcome-line-2", "data-ocid": "welcome.line2", children: line2 })
+        ] })
+      ]
+    }
+  );
+}
+function getPasswordStrength(pw) {
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  if (score <= 1) return { label: "Weak", score, color: "" };
+  if (score <= 3) return { label: "Medium", score, color: "" };
+  return { label: "Strong", score, color: "" };
+}
+function getInitials(name) {
+  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+}
+function LoginPage() {
+  const [tab, setTab] = reactExports.useState("signin");
+  const [showPw, setShowPw] = reactExports.useState(false);
+  const [showSignupPw, setShowSignupPw] = reactExports.useState(false);
+  const [successState2, setSuccessState] = reactExports.useState(null);
+  const [showWelcome, setShowWelcome] = reactExports.useState(false);
+  const pendingUserProfile = reactExports.useRef(
+    null
+  );
+  const [signInEmail, setSignInEmail] = reactExports.useState("");
+  const [signInPw, setSignInPw] = reactExports.useState("");
+  const [signUpName, setSignUpName] = reactExports.useState("");
+  const [signUpEmail, setSignUpEmail] = reactExports.useState("");
+  const [signUpPw, setSignUpPw] = reactExports.useState("");
+  const [isSubmitting, setIsSubmitting] = reactExports.useState(false);
+  const [formError, setFormError] = reactExports.useState(null);
+  const { login, signUp, userProfile } = useUserAuth();
+  const navigate = useNavigate();
+  const redirected = reactExports.useRef(false);
+  reactExports.useEffect(() => {
+    if (userProfile && !redirected.current && !showWelcome && !successState2) {
+      redirected.current = true;
+      if (!userProfile.profileCompleted) {
+        navigate({ to: "/profile-setup" });
+      } else {
+        navigate({ to: "/status" });
+      }
+    }
+  }, [userProfile, navigate, showWelcome, successState2]);
+  const pwStrength = getPasswordStrength(signUpPw);
+  async function handleSignIn(e) {
+    e.preventDefault();
+    setFormError(null);
+    setIsSubmitting(true);
+    try {
+      await login(signInEmail, signInPw);
+      setSuccessState({
+        name: signInEmail.split("@")[0] || signInEmail,
+        mode: "login"
+      });
+      setShowWelcome(true);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Login failed");
+      setIsSubmitting(false);
+    }
+  }
+  async function handleSignUp(e) {
+    e.preventDefault();
+    setFormError(null);
+    setIsSubmitting(true);
+    try {
+      await signUp(signUpName, signUpEmail, signUpPw);
+      setSuccessState({ name: signUpName, mode: "signup" });
+      setShowWelcome(true);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Sign up failed");
+      setIsSubmitting(false);
+    }
+  }
+  function handleWelcomeComplete() {
+    setShowWelcome(false);
+    redirected.current = true;
+    const profile = userProfile ?? pendingUserProfile.current;
+    if (!(profile == null ? void 0 : profile.profileCompleted)) {
+      navigate({ to: "/profile-setup" });
+    } else {
+      navigate({ to: "/status" });
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-background", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      WelcomeTransition,
+      {
+        isVisible: showWelcome,
+        userName: (successState2 == null ? void 0 : successState2.mode) === "login" ? successState2.name : void 0,
+        onComplete: handleWelcomeComplete
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        className: "pointer-events-none absolute inset-0 z-0 opacity-[0.03]",
+        style: {
+          backgroundImage: `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' seed='3'/><feColorMatrix type='saturate' values='0'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='1'/></svg>")`,
+          backgroundSize: "200px 200px"
+        }
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "neon-blob neon-blob--purple" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "neon-blob neon-blob--magenta" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "neon-blob neon-blob--cyan" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        className: "pointer-events-none absolute rounded-full",
+        style: {
+          width: "clamp(200px,30vw,440px)",
+          height: "clamp(150px,22vw,320px)",
+          background: "radial-gradient(ellipse, oklch(0.75 0.18 70 / 0.18) 0%, transparent 70%)",
+          filter: "blur(80px)",
+          bottom: "20%",
+          left: "5%",
+          animation: "blobDrift2 28s ease-in-out infinite alternate"
+        }
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        className: "relative z-10 w-full max-w-md mx-4 page-transition-in",
+        "data-ocid": "login.card",
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "glass-card-elevated rounded-2xl p-8 md:p-10", children: successState2 ? /* @__PURE__ */ jsxRuntimeExports.jsx(SuccessState, { successState: successState2 }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center mb-8", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "inline-flex items-center justify-center mb-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-display font-black text-3xl tracking-[0.15em] bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent", children: "10s Only" }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display text-sm tracking-[0.25em] uppercase text-muted-foreground", children: "The VIP Entrance" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              className: "relative flex rounded-xl p-1 mb-8",
+              style: { background: "oklch(0 0 0 / 0.25)" },
+              "data-ocid": "login.tab_switcher",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: () => {
+                      setTab("signin");
+                      setFormError(null);
+                    },
+                    "data-ocid": "login.signin_tab",
+                    className: "relative z-10 flex-1 py-2.5 text-sm font-display font-bold tracking-widest uppercase transition-colors duration-200",
+                    style: {
+                      color: tab === "signin" ? "oklch(0.95 0 0)" : "oklch(0.55 0 0)"
+                    },
+                    children: "Sign In"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: () => {
+                      setTab("signup");
+                      setFormError(null);
+                    },
+                    "data-ocid": "login.signup_tab",
+                    className: "relative z-10 flex-1 py-2.5 text-sm font-display font-bold tracking-widest uppercase transition-colors duration-200",
+                    style: {
+                      color: tab === "signup" ? "oklch(0.95 0 0)" : "oklch(0.55 0 0)"
+                    },
+                    children: "Join the List"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "div",
+                  {
+                    className: "absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg transition-transform duration-300 ease-in-out",
+                    style: {
+                      background: "linear-gradient(135deg, oklch(0.65 0.22 290 / 0.7), oklch(0.68 0.27 305 / 0.7))",
+                      transform: tab === "signin" ? "translateX(4px)" : "translateX(calc(100% + 0px))",
+                      boxShadow: "0 0 16px oklch(0.65 0.22 290 / 0.4)"
+                    }
+                  }
+                )
+              ]
+            }
+          ),
+          formError && /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "mb-5 px-4 py-3 rounded-xl text-sm font-body text-red-300 border border-red-500/30",
+              style: { background: "oklch(0.4 0.15 25 / 0.18)" },
+              "data-ocid": "login.error_state",
+              children: formError
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "transition-all duration-300",
+              style: {
+                opacity: tab === "signin" ? 1 : 0,
+                transform: tab === "signin" ? "translateX(0)" : "translateX(-20px)",
+                display: tab === "signin" ? "block" : "none"
+              },
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSignIn, className: "space-y-5", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  FloatingInput,
+                  {
+                    id: "signin-email",
+                    label: "Email or Phone",
+                    type: "text",
+                    value: signInEmail,
+                    onChange: setSignInEmail,
+                    autoComplete: "username",
+                    dataOcid: "login.email_input"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  PasswordInput,
+                  {
+                    id: "signin-pw",
+                    label: "Password",
+                    value: signInPw,
+                    onChange: setSignInPw,
+                    show: showPw,
+                    onToggle: () => setShowPw((v2) => !v2),
+                    dataOcid: "login.password_input"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    type: "submit",
+                    disabled: isSubmitting,
+                    "data-ocid": "login.signin_submit_button",
+                    className: "glass-button w-full py-4 text-foreground font-display font-bold tracking-[0.2em] uppercase text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                    children: isSubmitting ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-4 h-4 animate-spin" }),
+                      " Entering..."
+                    ] }) : "Enter the Party"
+                  }
+                )
+              ] })
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "transition-all duration-300",
+              style: {
+                opacity: tab === "signup" ? 1 : 0,
+                transform: tab === "signup" ? "translateX(0)" : "translateX(20px)",
+                display: tab === "signup" ? "block" : "none"
+              },
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSignUp, className: "space-y-5", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  FloatingInput,
+                  {
+                    id: "signup-name",
+                    label: "Your Name",
+                    type: "text",
+                    value: signUpName,
+                    onChange: setSignUpName,
+                    autoComplete: "name",
+                    dataOcid: "login.name_input"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  FloatingInput,
+                  {
+                    id: "signup-email",
+                    label: "Email or Phone",
+                    type: "text",
+                    value: signUpEmail,
+                    onChange: setSignUpEmail,
+                    autoComplete: "username",
+                    dataOcid: "login.signup_email_input"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    PasswordInput,
+                    {
+                      id: "signup-pw",
+                      label: "Create Password",
+                      value: signUpPw,
+                      onChange: setSignUpPw,
+                      show: showSignupPw,
+                      onToggle: () => setShowSignupPw((v2) => !v2),
+                      dataOcid: "login.signup_password_input"
+                    }
+                  ),
+                  signUpPw.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-2.5 space-y-1", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-1", children: [1, 2, 3, 4, 5].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "div",
+                      {
+                        className: "h-1 flex-1 rounded-full transition-all duration-300",
+                        style: {
+                          background: i <= pwStrength.score ? pwStrength.score <= 1 ? "oklch(0.55 0.22 25)" : pwStrength.score <= 3 ? "oklch(0.75 0.18 80)" : "oklch(0.75 0.18 145)" : void 0,
+                          opacity: i <= pwStrength.score ? 1 : 0.18
+                        }
+                      },
+                      i
+                    )) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                      "p",
+                      {
+                        className: "text-xs font-body",
+                        style: { color: "oklch(0.65 0 0)" },
+                        children: [
+                          pwStrength.label,
+                          " password"
+                        ]
+                      }
+                    )
+                  ] })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    type: "submit",
+                    disabled: isSubmitting,
+                    "data-ocid": "login.signup_submit_button",
+                    className: "glass-button w-full py-4 text-foreground font-display font-bold tracking-[0.2em] uppercase text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                    children: isSubmitting ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-4 h-4 animate-spin" }),
+                      " ",
+                      "Requesting..."
+                    ] }) : "Request Access"
+                  }
+                )
+              ] })
+            }
+          )
+        ] }) })
+      }
+    )
+  ] });
+}
+function FloatingInput({
+  id: id2,
+  label,
+  type,
+  value,
+  onChange,
+  autoComplete,
+  dataOcid
+}) {
+  const [focused, setFocused] = reactExports.useState(false);
+  const lifted = focused || value.length > 0;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "label",
+      {
+        htmlFor: id2,
+        className: "absolute left-4 transition-all duration-200 pointer-events-none font-body",
+        style: {
+          top: lifted ? "8px" : "50%",
+          transform: lifted ? "translateY(0) scale(0.75)" : "translateY(-50%)",
+          transformOrigin: "left center",
+          fontSize: lifted ? "0.75rem" : "0.875rem",
+          color: focused ? "oklch(0.68 0.27 305)" : "oklch(0.55 0 0)",
+          zIndex: 1
+        },
+        children: label
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "input",
+      {
+        id: id2,
+        type,
+        value,
+        onChange: (e) => onChange(e.target.value),
+        onFocus: () => setFocused(true),
+        onBlur: () => setFocused(false),
+        autoComplete,
+        "data-ocid": dataOcid,
+        className: "glass-input w-full pt-6 pb-2 px-4 text-foreground font-body text-sm outline-none"
+      }
+    )
+  ] });
+}
+function PasswordInput({
+  id: id2,
+  label,
+  value,
+  onChange,
+  show,
+  onToggle,
+  dataOcid
+}) {
+  const [focused, setFocused] = reactExports.useState(false);
+  const lifted = focused || value.length > 0;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "label",
+      {
+        htmlFor: id2,
+        className: "absolute left-4 transition-all duration-200 pointer-events-none font-body",
+        style: {
+          top: lifted ? "8px" : "50%",
+          transform: lifted ? "translateY(0) scale(0.75)" : "translateY(-50%)",
+          transformOrigin: "left center",
+          fontSize: lifted ? "0.75rem" : "0.875rem",
+          color: focused ? "oklch(0.68 0.27 305)" : "oklch(0.55 0 0)",
+          zIndex: 1
+        },
+        children: label
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "input",
+      {
+        id: id2,
+        type: show ? "text" : "password",
+        value,
+        onChange: (e) => onChange(e.target.value),
+        onFocus: () => setFocused(true),
+        onBlur: () => setFocused(false),
+        autoComplete: id2 === "signup-pw" ? "new-password" : "current-password",
+        "data-ocid": dataOcid,
+        className: "glass-input w-full pt-6 pb-2 pl-4 pr-12 text-foreground font-body text-sm outline-none"
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "button",
+      {
+        type: "button",
+        onClick: onToggle,
+        "aria-label": show ? "Hide password" : "Show password",
+        "data-ocid": `${dataOcid}_toggle`,
+        className: "absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground transition-colors duration-200",
+        children: show ? /* @__PURE__ */ jsxRuntimeExports.jsx(EyeOff, { className: "w-4 h-4" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Eye, { className: "w-4 h-4" })
+      }
+    )
+  ] });
+}
+function SuccessState({
+  successState: successState2
+}) {
+  const initials = getInitials(successState2.name);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "div",
+    {
+      className: "flex flex-col items-center justify-center py-8 gap-6 page-transition-in",
+      "data-ocid": "login.success_state",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            className: "w-20 h-20 rounded-full flex items-center justify-center font-display font-black text-2xl text-foreground",
+            style: {
+              background: "linear-gradient(135deg, oklch(0.65 0.22 290), oklch(0.68 0.27 305), oklch(0.55 0.25 315))",
+              boxShadow: "0 0 32px oklch(0.65 0.22 290 / 0.5)"
+            },
+            children: initials
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center space-y-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display font-bold text-xl tracking-wide text-foreground", children: successState2.mode === "login" ? `Welcome back, ${successState2.name.split(" ")[0]}` : `You're in the system, ${successState2.name.split(" ")[0]}` }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-body text-sm text-muted-foreground", children: successState2.mode === "login" ? "Redirecting to your status..." : "Setting up your profile..." })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-5 h-5 animate-spin text-primary" })
+      ]
+    }
+  );
 }
 const badgeVariants = cva(
   "inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
@@ -49453,8 +51717,13 @@ function PersonalityQuiz({ appId }) {
 const MAX_CHARS = 200;
 const PAGE_SIZE = 10;
 function ConfessionsTab() {
-  const { data: confessions = [], isLoading } = useConfessions();
-  const submitConfession = useSubmitConfession();
+  const { sessionToken } = useUserAuth();
+  const {
+    data: confessions = [],
+    isLoading,
+    refetch: refetchConfessions
+  } = useConfessions(sessionToken);
+  const submitConfession = useSubmitConfession(sessionToken);
   const [text, setText] = reactExports.useState("");
   const [page, setPage] = reactExports.useState(1);
   const [submitted, setSubmitted] = reactExports.useState(false);
@@ -49467,7 +51736,8 @@ function ConfessionsTab() {
     await submitConfession.mutateAsync(text.trim());
     setText("");
     setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3e3);
+    refetchConfessions();
+    setTimeout(() => setSubmitted(false), 2e3);
   }
   function formatTime(ts) {
     const d2 = new Date(Number(ts / 1000000n));
@@ -49496,6 +51766,13 @@ function ConfessionsTab() {
         {
           value: text,
           onChange: (e) => setText(e.target.value.slice(0, MAX_CHARS)),
+          onKeyDown: (e) => {
+            if (e.key === "Enter" && !e.shiftKey && !submitConfession.isPending) {
+              e.preventDefault();
+              e.stopPropagation();
+              handlePost();
+            }
+          },
           placeholder: "Drop your confession into the void…",
           "data-ocid": "confessions.input",
           rows: 3,
@@ -49535,6 +51812,16 @@ function ConfessionsTab() {
         )
       ] })
     ] }),
+    submitted && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      motion.p,
+      {
+        initial: { opacity: 0, y: 4 },
+        animate: { opacity: 1, y: 0 },
+        className: "text-xs font-body text-center pt-2",
+        style: { color: "oklch(0.75 0.18 145)" },
+        children: "Confession posted!"
+      }
+    ),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-3", "data-ocid": "confessions.list", children: isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { "data-ocid": "confessions.loading_state", className: "space-y-3", children: [1, 2, 3].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "h-20 rounded-xl" }, i)) }) : visible.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(
       NeonCard,
       {
@@ -49574,150 +51861,627 @@ function ConfessionsTab() {
     )
   ] });
 }
-function GalleryTab() {
-  const { data: photos = [], isLoading } = useApprovedPhotos();
-  const [lightbox, setLightbox] = reactExports.useState(null);
-  if (isLoading)
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        "data-ocid": "gallery.loading_state",
-        className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4",
-        children: [1, 2, 3, 4].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "aspect-square rounded-lg" }, i))
-      }
-    );
-  if (photos.length === 0)
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-6", "data-ocid": "gallery.section", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "h2",
+function GalleryCard({
+  photo,
+  idx,
+  getPhotoUrl,
+  formatDate: formatDate2,
+  onClick
+}) {
+  const [imgFailed, setImgFailed] = reactExports.useState(false);
+  const [imgLoaded, setImgLoaded] = reactExports.useState(false);
+  const url = getPhotoUrl(photo.photo, String(photo.id));
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    motion.button,
+    {
+      type: "button",
+      whileHover: { y: -3 },
+      transition: { type: "spring", stiffness: 320, damping: 20 },
+      onClick,
+      className: "cursor-pointer group text-left w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-xl",
+      "data-ocid": `gallery.item.${idx + 1}`,
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "div",
         {
-          className: "text-xl font-display font-bold tracking-wide",
-          style: {
-            background: "linear-gradient(90deg, oklch(0.68 0.27 305), oklch(0.65 0.22 290))",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text"
-          },
-          children: "THE NIGHT"
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        NeonCard,
-        {
-          glow: "none",
-          className: "p-12 text-center",
-          "data-ocid": "gallery.empty_state",
+          className: [
+            "bg-white/8 backdrop-blur-md border border-white/15 rounded-xl p-3",
+            "transition-all duration-300 ease-out",
+            "group-hover:border-pink-500/40 group-hover:shadow-[0_0_28px_oklch(0.55_0.25_315_/_0.35),0_0_8px_oklch(0.65_0.22_290_/_0.2)]"
+          ].join(" "),
           children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-4xl mb-3", children: "📷" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display font-semibold text-foreground mb-1", children: "The night hasn't started yet." }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground font-body", children: "Photos will appear here after the event." })
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative w-full aspect-square overflow-hidden rounded-lg bg-card/30", children: [
+              !imgLoaded && !imgFailed && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute inset-0 animate-pulse bg-gradient-to-br from-white/5 via-white/10 to-white/5" }),
+              !imgFailed && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "img",
+                {
+                  src: url,
+                  alt: photo.caption || "Party photo",
+                  loading: "lazy",
+                  className: [
+                    "w-full h-full object-cover transition-opacity duration-500",
+                    imgLoaded ? "opacity-100" : "opacity-0"
+                  ].join(" "),
+                  onLoad: () => setImgLoaded(true),
+                  onError: () => setImgFailed(true)
+                }
+              ),
+              imgFailed && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute inset-0 flex flex-col items-center justify-center gap-2 bg-card/40", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-8 h-8 rounded-full bg-white/10 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-white/30 text-sm", children: "✕" }) }) })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "pt-2.5 pb-0.5 px-0.5 space-y-0.5", children: [
+              photo.caption && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-white/65 text-xs font-body truncate leading-tight", children: photo.caption }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-white/25 text-[10px] font-body tracking-wide", children: formatDate2(photo.uploadedAt) })
+            ] })
           ]
         }
       )
-    ] });
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-6", "data-ocid": "gallery.section", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "h2",
-      {
-        className: "text-xl font-display font-bold tracking-wide",
-        style: {
-          background: "linear-gradient(90deg, oklch(0.68 0.27 305), oklch(0.65 0.22 290))",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text"
-        },
-        children: "THE NIGHT"
+    }
+  );
+}
+function GalleryTab() {
+  const { actor } = useActor(createActor);
+  const { sessionToken } = useUserAuth();
+  const { photos: galleryPhotos, loading, refetch } = useGalleryPhotos();
+  const [selectedPhoto, setSelectedPhoto] = reactExports.useState(null);
+  const [photos, setPhotos] = reactExports.useState([]);
+  const [caption, setCaption] = reactExports.useState("");
+  const [uploading, setUploading] = reactExports.useState(false);
+  const [uploadSuccess, setUploadSuccess] = reactExports.useState(false);
+  const [uploadError, setUploadError] = reactExports.useState(null);
+  const fileInputRef = reactExports.useRef(null);
+  reactExports.useEffect(() => {
+    const interval = setInterval(() => refetch(), 15e3);
+    return () => clearInterval(interval);
+  }, [refetch]);
+  const handleAddPhotos = reactExports.useCallback(
+    (files) => {
+      const currentCount = photos.length;
+      const remaining = 10 - currentCount;
+      const toAdd = Array.from(files).slice(0, remaining);
+      const newEntries = toAdd.map((f) => ({
+        file: f,
+        preview: URL.createObjectURL(f),
+        progress: 0,
+        blob: null,
+        uploading: false,
+        done: true
+      }));
+      setPhotos((prev) => [...prev, ...newEntries]);
+    },
+    [photos.length]
+  );
+  const handleRemovePhoto = reactExports.useCallback((idx) => {
+    setPhotos((prev) => {
+      const removed = prev[idx];
+      if (removed == null ? void 0 : removed.preview) URL.revokeObjectURL(removed.preview);
+      return prev.filter((_2, i) => i !== idx);
+    });
+  }, []);
+  const handleUpload = async () => {
+    const readyPhotos = photos.filter((p2) => p2.done);
+    if (readyPhotos.length === 0) return;
+    if (!actor) {
+      setUploadError("Not connected to server");
+      return;
+    }
+    setUploading(true);
+    setUploadError(null);
+    setUploadSuccess(false);
+    try {
+      let successCount = 0;
+      for (const photo of readyPhotos) {
+        try {
+          const result = await doUploadGalleryPhoto(
+            actor,
+            photo.file,
+            caption || void 0,
+            sessionToken
+          );
+          if (result && ("ok" in result || result.__kind__ === "ok")) {
+            successCount++;
+          } else {
+            const errMsg = (result == null ? void 0 : result.err) || (result == null ? void 0 : result.__kind__) === "err" ? result.err : "Upload failed";
+            console.error(`Failed to upload ${photo.file.name}:`, errMsg);
+          }
+        } catch (e) {
+          console.error(`Failed to upload ${photo.file.name}:`, e);
+        }
       }
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4", children: photos.map((photo, idx) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-      motion.button,
-      {
-        type: "button",
-        "data-ocid": `gallery.item.${idx + 1}`,
-        whileHover: {
-          scale: 1.04,
-          rotate: 0,
-          y: -4,
-          boxShadow: "0 12px 40px oklch(0.65 0.22 290 / 0.5)"
-        },
-        initial: { rotate: idx % 2 === 0 ? -1.5 : 1.5 },
-        onClick: () => setLightbox(photo.getDirectURL()),
-        className: "relative aspect-square bg-white p-3 pb-8 shadow-lg cursor-pointer focus-visible:outline-2 focus-visible:outline-primary",
-        style: {
-          boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
-          transform: `rotate(${idx % 2 === 0 ? -2 : 2}deg)`
-        },
-        "aria-label": `Guest submission ${idx + 1}`,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "img",
+      if (successCount > 0) {
+        setUploadSuccess(true);
+        for (const p2 of photos) {
+          if (p2.preview) URL.revokeObjectURL(p2.preview);
+        }
+        setPhotos([]);
+        setCaption("");
+        refetch();
+        setTimeout(() => setUploadSuccess(false), 5e3);
+      } else {
+        setUploadError("All uploads failed. Please try again.");
+      }
+    } catch (e) {
+      console.error("Gallery handleUpload error:", e);
+      setUploadError(String(e));
+    } finally {
+      setUploading(false);
+    }
+  };
+  const readyCount = photos.filter((p2) => p2.done).length;
+  const uploadingCount = photos.filter((p2) => p2.uploading).length;
+  const canAdd = photos.length < 10;
+  const formatDate2 = (ts) => {
+    const ms = typeof ts === "bigint" ? Number(ts) / 1e6 : ts;
+    return new Date(ms).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric"
+    });
+  };
+  const urlCacheRef = reactExports.useRef(/* @__PURE__ */ new Map());
+  reactExports.useEffect(() => {
+    const cache = urlCacheRef.current;
+    return () => {
+      for (const url of cache.values()) URL.revokeObjectURL(url);
+      cache.clear();
+    };
+  }, []);
+  const getPhotoUrl = reactExports.useCallback((photo, cacheKey) => {
+    var _a3;
+    if (!photo) return "";
+    const key = cacheKey ?? String(photo.contentType ?? "") + String(((_a3 = photo.data) == null ? void 0 : _a3.length) ?? 0);
+    if (urlCacheRef.current.has(key))
+      return urlCacheRef.current.get(key);
+    const data = photo.data instanceof Uint8Array ? photo.data : new Uint8Array(photo.data);
+    const blob = new Blob([data], { type: photo.contentType || "image/jpeg" });
+    const url = URL.createObjectURL(blob);
+    urlCacheRef.current.set(key, url);
+    return url;
+  }, []);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-8", "data-ocid": "gallery.section", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonCard, { glow: "magenta", className: "p-6 space-y-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-lg font-display font-bold text-foreground mb-1", children: "Share Your Night" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-body", children: "Upload photos from the party — up to 10 at once." })
+      ] }),
+      uploadSuccess ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+        motion.div,
+        {
+          initial: { opacity: 0, y: 4 },
+          animate: { opacity: 1, y: 0 },
+          className: "bg-emerald-500/15 border border-emerald-500/30 rounded-xl p-4 text-emerald-300 text-center text-sm font-body",
+          "data-ocid": "gallery.success_state",
+          children: "✓ Photos uploaded! They will appear after admin approval."
+        }
+      ) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-3", children: [
+        canAdd && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
           {
-            src: photo.getDirectURL(),
-            alt: `Guest submission ${idx + 1}`,
-            className: "w-full h-full object-cover",
-            loading: "lazy"
+            type: "button",
+            "data-ocid": "gallery.dropzone",
+            onClick: () => {
+              var _a3;
+              return (_a3 = fileInputRef.current) == null ? void 0 : _a3.click();
+            },
+            tabIndex: 0,
+            "aria-label": "Upload photos",
+            onKeyDown: (e) => {
+              var _a3;
+              return e.key === "Enter" && ((_a3 = fileInputRef.current) == null ? void 0 : _a3.click());
+            },
+            className: cn(
+              "relative border-2 border-dashed rounded-xl p-6 cursor-pointer transition-all duration-300",
+              "flex flex-col items-center justify-center gap-2 min-h-[120px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+              "border-border/40 hover:border-primary/50 hover:bg-primary/5"
+            ),
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "input",
+                {
+                  ref: fileInputRef,
+                  type: "file",
+                  accept: "image/*",
+                  multiple: true,
+                  className: "sr-only",
+                  onChange: (e) => e.target.files && handleAddPhotos(e.target.files),
+                  "data-ocid": "gallery.photo_input"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Upload, { className: "w-7 h-7 text-primary/70" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-display font-semibold text-foreground/80", children: "Upload your photos" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground mt-1", children: [
+                  "Click to select — ",
+                  photos.length,
+                  "/10"
+                ] })
+              ] })
+            ]
+          }
+        ),
+        photos.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-3 gap-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: photos.map((p2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          motion.div,
+          {
+            initial: { opacity: 0, scale: 0.8 },
+            animate: { opacity: 1, scale: 1 },
+            exit: { opacity: 0, scale: 0.7 },
+            transition: { duration: 0.25 },
+            "data-ocid": `gallery.photo_thumb.${i + 1}`,
+            className: "relative aspect-square rounded-lg overflow-hidden border border-border/30 bg-card/20 group",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "img",
+                {
+                  src: p2.preview,
+                  alt: `upload ${i + 1}`,
+                  className: "w-full h-full object-cover"
+                }
+              ),
+              p2.uploading && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "absolute inset-0 bg-background/70 flex flex-col items-center justify-center gap-1", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-5 h-5 text-accent animate-spin" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-[10px] font-display text-accent", children: [
+                  p2.progress,
+                  "%"
+                ] })
+              ] }),
+              p2.done && !p2.uploading && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-1 right-1", children: /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "w-4 h-4 text-primary drop-shadow-[0_0_4px_oklch(var(--primary)/0.8)]" }) }),
+              !p2.uploading && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "button",
+                  onClick: () => handleRemovePhoto(i),
+                  "aria-label": `Remove photo ${i + 1}`,
+                  "data-ocid": `gallery.photo_remove.${i + 1}`,
+                  className: "absolute top-1 left-1 w-5 h-5 rounded-full bg-background/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200",
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "w-3 h-3 text-foreground" })
+                }
+              )
+            ]
+          },
+          p2.preview
+        )) }) }),
+        photos.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+          [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: cn(
+                "h-1 flex-1 rounded-full transition-all duration-300",
+                n < readyCount ? "bg-primary shadow-[0_0_6px_oklch(var(--primary)/0.6)]" : n === readyCount && uploadingCount > 0 ? "bg-accent/50 animate-pulse" : "bg-border/30"
+              )
+            },
+            `progress-${n}`
+          )),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs font-display text-muted-foreground ml-1", children: [
+            readyCount,
+            "/10"
+          ] })
+        ] }),
+        photos.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-xs text-muted-foreground/60", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Image$1, { className: "w-4 h-4" }),
+          "Select photos to upload"
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "input",
+          {
+            type: "text",
+            placeholder: "Add a caption (optional)",
+            value: caption,
+            onChange: (e) => setCaption(e.target.value),
+            className: "w-full bg-card/20 border border-border/30 rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/40 text-sm font-body focus:outline-none focus:border-secondary/50 transition-colors",
+            "data-ocid": "gallery.input"
+          }
+        ),
+        uploadError && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "p",
+          {
+            className: "text-destructive text-sm font-body",
+            "data-ocid": "gallery.error_state",
+            children: uploadError
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Button,
+          {
+            type: "button",
+            onClick: handleUpload,
+            disabled: !photos.some((p2) => p2.done) || uploading || uploadingCount > 0,
+            className: "w-full font-display font-bold tracking-wide",
+            style: {
+              background: "linear-gradient(135deg, oklch(0.55 0.25 315), oklch(0.68 0.27 305))",
+              boxShadow: "0 0 16px oklch(0.55 0.25 315 / 0.3)"
+            },
+            "data-ocid": "gallery.submit_button",
+            children: uploading ? "Uploading…" : `Submit ${readyCount > 0 ? `${readyCount} Photo${readyCount > 1 ? "s" : ""}` : "Photo"}`
           }
         )
+      ] })
+    ] }),
+    loading ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 lg:gap-8",
+        "data-ocid": "gallery.loading_state",
+        children: ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"].map(
+          (k2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              className: "rounded-xl p-3 bg-white/8 border border-white/10",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "aspect-square rounded-lg bg-white/8 animate-pulse" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-2.5 h-2 w-3/4 rounded bg-white/8 animate-pulse" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-1 h-2 w-1/3 rounded bg-white/6 animate-pulse" })
+              ]
+            },
+            k2
+          )
+        )
+      }
+    ) : galleryPhotos.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      NeonCard,
+      {
+        glow: "none",
+        className: "p-12 text-center space-y-2",
+        "data-ocid": "gallery.empty_state",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-4xl mb-2", children: "🎞" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-foreground font-display font-semibold", children: "Be the first to share the vibe." }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground font-body", children: "Upload a photo above." })
+        ]
+      }
+    ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 lg:gap-8", children: galleryPhotos.map((photo, idx) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+      GalleryCard,
+      {
+        photo,
+        idx,
+        getPhotoUrl,
+        formatDate: formatDate2,
+        onClick: () => setSelectedPhoto(photo)
       },
-      `${idx}-${photo.getDirectURL()}`
+      photo.id
     )) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: lightbox && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    /* @__PURE__ */ jsxRuntimeExports.jsx(AnimatePresence, { children: selectedPhoto && /* @__PURE__ */ jsxRuntimeExports.jsx(
       motion.div,
       {
         initial: { opacity: 0 },
         animate: { opacity: 1 },
         exit: { opacity: 0 },
-        className: "fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4",
-        onClick: () => setLightbox(null),
+        className: "fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4",
+        onClick: () => setSelectedPhoto(null),
         "data-ocid": "gallery.dialog",
-        children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            motion.img,
-            {
-              src: lightbox,
-              alt: "Expanded view",
-              initial: { scale: 0.8 },
-              animate: { scale: 1 },
-              exit: { scale: 0.8 },
-              className: "max-w-full max-h-full object-contain rounded-lg shadow-2xl",
-              onClick: (e) => e.stopPropagation()
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              type: "button",
-              "aria-label": "Close lightbox",
-              "data-ocid": "gallery.close_button",
-              onClick: () => setLightbox(null),
-              className: "absolute top-4 right-4 w-10 h-10 rounded-full bg-card/60 backdrop-blur border border-border/40 flex items-center justify-center text-foreground hover:bg-card/90 transition-smooth",
-              children: "✕"
-            }
-          )
-        ]
+        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          motion.div,
+          {
+            className: "max-w-2xl w-full",
+            initial: { scale: 0.8 },
+            animate: { scale: 1 },
+            exit: { scale: 0.8 },
+            onClick: (e) => e.stopPropagation(),
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "img",
+                {
+                  src: getPhotoUrl(selectedPhoto.photo, String(selectedPhoto.id)),
+                  alt: selectedPhoto.caption || "Party photo",
+                  className: "w-full rounded-xl",
+                  onError: (e) => {
+                    e.target.style.display = "none";
+                  }
+                }
+              ),
+              selectedPhoto.caption && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-white/70 text-center mt-3 text-sm", children: selectedPhoto.caption }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "button",
+                  onClick: () => setSelectedPhoto(null),
+                  className: "mt-4 mx-auto block text-white/40 hover:text-white text-sm",
+                  "data-ocid": "gallery.close_button",
+                  children: "Close"
+                }
+              )
+            ]
+          }
+        )
       }
     ) })
   ] });
 }
+function ProfileCard({ profile }) {
+  const initials = profile.name.split(" ").map((w2) => w2[0]).join("").toUpperCase().slice(0, 2);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    motion.div,
+    {
+      initial: { opacity: 0, y: 20 },
+      animate: { opacity: 1, y: 0 },
+      transition: { duration: 0.5 },
+      className: "w-full max-w-sm mx-auto space-y-5",
+      "data-ocid": "portal.profile_card",
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonCard, { glow: "purple", className: "p-6", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-4 mb-4", children: [
+          profile.profilePhoto ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              src: profile.profilePhoto,
+              alt: profile.name,
+              className: "w-16 h-16 rounded-full object-cover border-2 shrink-0",
+              style: { borderColor: "oklch(0.65 0.22 290 / 0.5)" }
+            }
+          ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "w-16 h-16 rounded-full flex items-center justify-center text-xl font-display font-black shrink-0 border-2",
+              style: {
+                background: "linear-gradient(135deg, oklch(0.65 0.22 290 / 0.25), oklch(0.55 0.25 315 / 0.25))",
+                borderColor: "oklch(0.65 0.22 290 / 0.4)",
+                color: "oklch(0.78 0.18 290)"
+              },
+              children: initials
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "p",
+              {
+                className: "font-display font-black text-lg leading-tight truncate",
+                style: {
+                  background: "linear-gradient(90deg, oklch(0.78 0.18 290), oklch(0.68 0.27 305))",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text"
+                },
+                children: profile.name
+              }
+            ),
+            profile.instagramHandle && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs font-mono text-muted-foreground mt-0.5 truncate", children: [
+              "@",
+              profile.instagramHandle
+            ] })
+          ] })
+        ] }),
+        profile.bio && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm font-body text-muted-foreground leading-relaxed border-t border-border/20 pt-4", children: profile.bio })
+      ] })
+    }
+  );
+}
+function PortalNoApplication({ profile }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "div",
+    {
+      className: "min-h-screen flex flex-col items-center justify-center px-4 py-16 gap-6",
+      "data-ocid": "portal.no_application",
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            "aria-hidden": true,
+            className: "pointer-events-none fixed inset-0 overflow-hidden",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-[-15%] left-[5%] w-[45vw] h-[45vw] rounded-full bg-primary/8 blur-[130px]" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute bottom-[-10%] right-[8%] w-[38vw] h-[38vw] rounded-full bg-secondary/6 blur-[110px]" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          motion.div,
+          {
+            initial: { opacity: 0, y: -16 },
+            animate: { opacity: 1, y: 0 },
+            transition: { duration: 0.55 },
+            className: "text-center space-y-1",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-display tracking-[0.4em] text-muted-foreground uppercase", children: "Your Portal" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "h1",
+                {
+                  className: "text-3xl md:text-4xl font-display font-black tracking-tight",
+                  style: {
+                    background: "linear-gradient(90deg, oklch(0.72 0.25 200), oklch(0.65 0.22 290))",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text"
+                  },
+                  children: [
+                    "Welcome",
+                    profile ? `, ${profile.name.split(" ")[0]}` : ""
+                  ]
+                }
+              )
+            ]
+          }
+        ),
+        profile && /* @__PURE__ */ jsxRuntimeExports.jsx(ProfileCard, { profile }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          motion.div,
+          {
+            initial: { opacity: 0, y: 24 },
+            animate: { opacity: 1, y: 0 },
+            transition: { duration: 0.55, delay: 0.15 },
+            className: "w-full max-w-sm",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              NeonCard,
+              {
+                glow: "magenta",
+                className: "p-7 text-center space-y-4",
+                "data-ocid": "portal.apply_cta_card",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-3xl", children: "🎟️" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-1.5", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display font-black text-xl text-foreground tracking-tight", children: "You're Not on the List — Yet" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground font-body leading-relaxed", children: "Apply for the party and let the committee decide. Spots are limited and every application is reviewed personally." })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Button,
+                    {
+                      type: "button",
+                      asChild: true,
+                      className: "w-full font-display font-bold tracking-widest text-sm h-12",
+                      style: {
+                        background: "linear-gradient(135deg, oklch(0.68 0.27 305), oklch(0.55 0.25 315))",
+                        boxShadow: "0 0 20px oklch(0.55 0.25 315 / 0.4)"
+                      },
+                      "data-ocid": "portal.apply_now_button",
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: "/apply", children: "APPLY FOR THE PARTY →" })
+                    }
+                  )
+                ]
+              }
+            )
+          }
+        )
+      ]
+    }
+  );
+}
 function PortalPage() {
   const navigate = useNavigate();
+  const {
+    sessionToken,
+    userProfile,
+    isLoading: authLoading,
+    getUserApplicationStatus
+  } = useUserAuth();
+  const { actor } = useActor(createActor);
   const [appId, setAppId] = reactExports.useState(null);
+  const [resolved, setResolved] = reactExports.useState(false);
+  const [fetchedProfile, setFetchedProfile] = reactExports.useState(
+    null
+  );
   reactExports.useEffect(() => {
-    const stored = localStorage.getItem("applicationId");
-    if (!stored) {
-      navigate({ to: "/apply" });
+    if (authLoading) return;
+    if (sessionToken && actor) {
+      Promise.all([
+        getUserApplicationStatus().catch(() => null),
+        actor.getUserProfile(sessionToken).catch(() => null)
+      ]).then(([statusRes, profileRes]) => {
+        if (profileRes && profileRes.__kind__ === "ok") {
+          setFetchedProfile(profileRes.ok);
+        }
+        if (statusRes && statusRes.__kind__ === "ok") {
+          const app = statusRes.ok;
+          const idStr = String(app.id);
+          try {
+            setAppId(BigInt(idStr));
+            localStorage.setItem("applicationId", idStr);
+          } catch {
+          }
+        }
+        setResolved(true);
+      });
       return;
     }
-    try {
-      setAppId(BigInt(stored));
-    } catch {
-      navigate({ to: "/apply" });
+    const stored = localStorage.getItem("applicationId");
+    if (stored) {
+      try {
+        setAppId(BigInt(stored));
+      } catch {
+      }
     }
-  }, [navigate]);
-  const { data: status, isLoading: statusLoading } = useApplicationStatus(appId);
+    setResolved(true);
+  }, [authLoading, sessionToken, actor, getUserApplicationStatus]);
+  const { data: status, isLoading: statusLoading } = useApplicationStatus(
+    resolved && appId !== null ? appId : null
+  );
   const qrToken = (status == null ? void 0 : status[1]) ?? null;
   const appStatus = status == null ? void 0 : status[0];
   const plusOne = false;
-  if (!appId || statusLoading) {
+  if (!resolved || authLoading || appId !== null && statusLoading) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {
@@ -49729,6 +52493,10 @@ function PortalPage() {
         ] })
       }
     );
+  }
+  if (appId === null) {
+    const displayProfile = fetchedProfile ?? userProfile;
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(PortalNoApplication, { profile: displayProfile });
   }
   if (appStatus !== "approved") {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -49769,35 +52537,15 @@ function PortalPage() {
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-h-screen pb-16", "data-ocid": "portal.page", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { className: "relative py-12 px-4 text-center overflow-hidden", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { "aria-hidden": true, className: "pointer-events-none absolute inset-0", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            className: "absolute inset-0",
-            style: {
-              background: "radial-gradient(ellipse 80% 60% at 50% 0%, oklch(0.65 0.22 290 / 0.15) 0%, transparent 70%)"
-            }
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { "aria-hidden": true, className: "pointer-events-none absolute inset-0", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "div",
+        {
+          className: "absolute inset-0",
+          style: {
+            background: "radial-gradient(ellipse 80% 60% at 50% 0%, oklch(0.65 0.22 290 / 0.15) 0%, transparent 70%)"
           }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            className: "party-blob-1 absolute top-1/3 left-1/4 w-96 h-96 rounded-full opacity-15 blur-3xl pointer-events-none",
-            style: {
-              background: "radial-gradient(circle, oklch(0.65 0.25 15), oklch(0.55 0.22 340))"
-            }
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            className: "party-blob-2 absolute bottom-1/3 right-1/3 w-80 h-80 rounded-full opacity-[0.12] blur-3xl pointer-events-none",
-            style: {
-              background: "radial-gradient(circle, oklch(0.75 0.18 80), oklch(0.60 0.20 45))"
-            }
-          }
-        )
-      ] }),
+        }
+      ) }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         motion.div,
         {
@@ -49932,6 +52680,494 @@ function PortalPage() {
     ] }) })
   ] });
 }
+const REQUIRED_FIELDS = ["name", "instagram", "bio", "gender"];
+function calcProgress(name, instagram, bio, gender) {
+  let filled = 0;
+  if (name.trim()) filled++;
+  if (instagram.trim()) filled++;
+  if (bio.trim()) filled++;
+  if (gender) filled++;
+  return Math.round(filled / REQUIRED_FIELDS.length * 100);
+}
+function bytesToDataURL(bytes, contentType) {
+  const binary = Array.from(bytes).map((b2) => String.fromCharCode(b2)).join("");
+  const base64 = btoa(binary);
+  return `data:${contentType};base64,${base64}`;
+}
+async function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let { width, height } = img;
+      const maxDim = 800;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round(height * maxDim / width);
+          width = maxDim;
+        } else {
+          width = Math.round(width * maxDim / height);
+          height = maxDim;
+        }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Could not get canvas context"));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        async (blob) => {
+          if (!blob) {
+            reject(new Error("Canvas toBlob failed"));
+            return;
+          }
+          const buffer = await blob.arrayBuffer();
+          resolve(new Uint8Array(buffer));
+        },
+        "image/jpeg",
+        0.7
+      );
+    };
+    img.onerror = () => reject(new Error("Failed to load image"));
+    img.src = URL.createObjectURL(file);
+  });
+}
+function ProfileSetupPage() {
+  const { userProfile, sessionToken } = useUserAuth();
+  const { actor } = useActor(createActor);
+  const navigate = useNavigate();
+  const [name, setName] = reactExports.useState("");
+  const [instagram, setInstagram] = reactExports.useState("");
+  const [bio, setBio] = reactExports.useState("");
+  const [gender, setGender] = reactExports.useState("");
+  const [city, setCity] = reactExports.useState("");
+  const [photoFile, setPhotoFile] = reactExports.useState(null);
+  const [photoPreview, setPhotoPreview] = reactExports.useState(null);
+  const [isSubmitting, setIsSubmitting] = reactExports.useState(false);
+  const [error, setError] = reactExports.useState(null);
+  const [done, setDone] = reactExports.useState(false);
+  const fileInputRef = reactExports.useRef(null);
+  reactExports.useEffect(() => {
+    if (!userProfile) return;
+    setName(userProfile.name || "");
+    setInstagram(userProfile.instagramHandle || "");
+    setBio(userProfile.bio || "");
+    setCity(userProfile.city || "");
+    if (userProfile.gender) {
+      const g2 = userProfile.gender;
+      if (g2 === "male" || g2 === "female" || g2 === "other") setGender(g2);
+    }
+    if (userProfile.profilePhoto) setPhotoPreview(userProfile.profilePhoto);
+  }, [userProfile]);
+  reactExports.useEffect(() => {
+    if (userProfile === null && sessionToken === null) {
+      navigate({ to: "/login" });
+    }
+  }, [userProfile, sessionToken, navigate]);
+  const progress2 = calcProgress(name, instagram, bio, gender);
+  function handlePhotoChange(e) {
+    var _a3;
+    const file = (_a3 = e.target.files) == null ? void 0 : _a3[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Image too large. Max 10MB.");
+      return;
+    }
+    setPhotoFile(file);
+    setError(null);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      var _a4;
+      return setPhotoPreview((_a4 = ev.target) == null ? void 0 : _a4.result);
+    };
+    reader.readAsDataURL(file);
+  }
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!actor || !sessionToken) return;
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      let photoBytes;
+      if (photoFile) {
+        photoBytes = await compressImage(photoFile);
+      }
+      const genderMap = {
+        male: "male",
+        female: "female",
+        other: "other"
+      };
+      const input = {
+        name: name.trim() || void 0,
+        instagramHandle: instagram.trim() || void 0,
+        bio: bio.trim() || void 0,
+        city: city.trim() || void 0,
+        gender: (gender == null ? void 0 : gender.trim()) ? genderMap[gender] : void 0,
+        profilePhoto: photoBytes ? bytesToDataURL(photoBytes, "image/jpeg") : void 0
+      };
+      const result = await actor.updateUserProfile(sessionToken, input);
+      if (result.__kind__ === "err") throw new Error(result.err);
+      setDone(true);
+      setTimeout(() => {
+        const linked = result.ok.linkedApplicationId;
+        if (linked) {
+          navigate({ to: "/portal" });
+        } else {
+          navigate({ to: "/status" });
+        }
+      }, 1200);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save profile");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+  if (done) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "min-h-screen flex items-center justify-center bg-background px-4", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "flex flex-col items-center gap-4 page-transition-in",
+        "data-ocid": "profile.success_state",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: "w-16 h-16 rounded-full flex items-center justify-center",
+              style: {
+                background: "linear-gradient(135deg, oklch(0.65 0.22 290), oklch(0.68 0.27 305))",
+                boxShadow: "0 0 32px oklch(0.65 0.22 290 / 0.5)"
+              },
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheckBig, { className: "w-8 h-8 text-white" })
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "font-display font-bold text-xl text-foreground", children: "Identity Locked In" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground font-body", children: "Taking you inside…" })
+        ]
+      }
+    ) });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-background px-4 py-12", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "neon-blob neon-blob--purple" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "neon-blob neon-blob--magenta" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "neon-blob neon-blob--cyan" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        className: "pointer-events-none absolute inset-0 z-0 opacity-[0.03]",
+        style: {
+          backgroundImage: `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' seed='3'/><feColorMatrix type='saturate' values='0'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='1'/></svg>")`,
+          backgroundSize: "200px 200px"
+        }
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        className: "relative z-10 w-full max-w-md",
+        "data-ocid": "profile.setup.card",
+        children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "glass-card-elevated rounded-2xl p-6 md:p-8 space-y-6", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-mono uppercase tracking-widest text-muted-foreground mb-1", children: "Step 1 of 2" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("h1", { className: "text-2xl font-display font-black text-foreground", children: [
+              "Build Your",
+              " ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "span",
+                {
+                  className: "relative",
+                  style: {
+                    background: "linear-gradient(135deg, oklch(0.65 0.22 290), oklch(0.68 0.27 305))",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent"
+                  },
+                  children: "Identity"
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground font-body mt-1", children: "Tell us who you are. Make it count." })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { "data-ocid": "profile.progress", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between items-center mb-1.5", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-mono text-muted-foreground uppercase tracking-widest", children: "Profile strength" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "span",
+                {
+                  className: "text-xs font-mono font-bold",
+                  style: {
+                    color: progress2 >= 100 ? "oklch(0.75 0.18 145)" : progress2 >= 50 ? "oklch(0.75 0.18 80)" : "oklch(0.65 0.22 290)"
+                  },
+                  children: [
+                    progress2,
+                    "%"
+                  ]
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-1.5 w-full rounded-full bg-muted/30 overflow-hidden", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "div",
+              {
+                className: "h-full rounded-full transition-all duration-500",
+                style: {
+                  width: `${progress2}%`,
+                  background: "linear-gradient(90deg, oklch(0.65 0.22 290), oklch(0.68 0.27 305), oklch(0.7 0.2 200))",
+                  boxShadow: "0 0 8px oklch(0.65 0.22 290 / 0.5)"
+                }
+              }
+            ) })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: handleSubmit, className: "space-y-5", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center gap-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "button",
+                {
+                  type: "button",
+                  onClick: () => {
+                    var _a3;
+                    return (_a3 = fileInputRef.current) == null ? void 0 : _a3.click();
+                  },
+                  "data-ocid": "profile.photo.upload_button",
+                  className: "relative group",
+                  "aria-label": "Upload profile photo",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "div",
+                      {
+                        className: "w-20 h-20 rounded-full flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:ring-2",
+                        style: {
+                          background: photoPreview ? "transparent" : "oklch(0.2 0.05 290 / 0.5)",
+                          border: photoPreview ? "2px solid oklch(0.65 0.22 290 / 0.5)" : "2px dashed oklch(0.65 0.22 290 / 0.35)",
+                          opacity: photoPreview ? 1 : 0.7
+                        },
+                        children: photoPreview ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          "img",
+                          {
+                            src: photoPreview,
+                            alt: "Profile",
+                            className: "w-full h-full object-cover"
+                          }
+                        ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          Camera,
+                          {
+                            className: "w-7 h-7",
+                            style: { color: "oklch(0.65 0.22 290)" }
+                          }
+                        )
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Camera, { className: "w-5 h-5 text-white" }) })
+                  ]
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "input",
+                {
+                  ref: fileInputRef,
+                  type: "file",
+                  accept: "image/*",
+                  className: "hidden",
+                  onChange: handlePhotoChange,
+                  "data-ocid": "profile.photo.input"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "p",
+                {
+                  className: "text-xs font-body",
+                  style: {
+                    color: photoPreview ? "oklch(0.75 0.18 145)" : "oklch(0.5 0 0)"
+                  },
+                  children: photoPreview ? "Looking good ✓" : "Add photo (optional — but it helps)"
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              ProfileInput,
+              {
+                id: "profile-name",
+                label: "Your Name *",
+                value: name,
+                onChange: setName,
+                ocid: "profile.name_input"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "relative", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              ProfileInput,
+              {
+                id: "profile-instagram",
+                label: "Instagram Handle *",
+                value: instagram,
+                onChange: setInstagram,
+                prefix: "@",
+                ocid: "profile.instagram_input"
+              }
+            ) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "label",
+                  {
+                    htmlFor: "profile-bio",
+                    className: "absolute left-4 top-3 text-xs font-body pointer-events-none z-10",
+                    style: { color: "oklch(0.55 0 0)" },
+                    children: [
+                      "Short Bio *",
+                      " ",
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground/50", children: "(who are you?)" })
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "textarea",
+                  {
+                    id: "profile-bio",
+                    value: bio,
+                    onChange: (e) => setBio(e.target.value.slice(0, 120)),
+                    rows: 3,
+                    placeholder: "",
+                    maxLength: 120,
+                    "data-ocid": "profile.bio_textarea",
+                    className: "glass-input w-full pt-8 pb-2 px-4 text-foreground font-body text-sm outline-none resize-none"
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-end mt-1", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "span",
+                {
+                  className: "text-xs font-mono",
+                  style: {
+                    color: bio.length >= 110 ? "oklch(0.65 0.22 25)" : "oklch(0.45 0 0)"
+                  },
+                  children: [
+                    bio.length,
+                    "/120"
+                  ]
+                }
+              ) })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "p",
+                {
+                  className: "text-xs font-mono uppercase tracking-widest mb-2",
+                  style: { color: "oklch(0.55 0 0)" },
+                  children: "Gender *"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-2", "data-ocid": "profile.gender_select", children: ["male", "female", "other"].map((g2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  type: "button",
+                  onClick: () => setGender(g2),
+                  "data-ocid": `profile.gender.${g2}`,
+                  className: "flex-1 py-2.5 rounded-xl text-sm font-display font-bold uppercase tracking-wider transition-all duration-200",
+                  style: {
+                    background: gender === g2 ? g2 === "male" ? "oklch(0.7 0.2 200 / 0.25)" : g2 === "female" ? "oklch(0.68 0.27 305 / 0.25)" : "oklch(0.65 0.22 290 / 0.25)" : "oklch(0.15 0.02 290 / 0.4)",
+                    border: gender === g2 ? g2 === "male" ? "1.5px solid oklch(0.7 0.2 200 / 0.7)" : g2 === "female" ? "1.5px solid oklch(0.68 0.27 305 / 0.7)" : "1.5px solid oklch(0.65 0.22 290 / 0.7)" : "1.5px solid oklch(0.3 0 0 / 0.4)",
+                    color: gender === g2 ? g2 === "male" ? "oklch(0.7 0.2 200)" : g2 === "female" ? "oklch(0.68 0.27 305)" : "oklch(0.65 0.22 290)" : "oklch(0.5 0 0)",
+                    boxShadow: gender === g2 ? g2 === "male" ? "0 0 12px oklch(0.7 0.2 200 / 0.3)" : g2 === "female" ? "0 0 12px oklch(0.68 0.27 305 / 0.3)" : "0 0 12px oklch(0.65 0.22 290 / 0.3)" : "none"
+                  },
+                  children: g2.charAt(0).toUpperCase() + g2.slice(1)
+                },
+                g2
+              )) })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              ProfileInput,
+              {
+                id: "profile-city",
+                label: "Where are you from? (optional)",
+                value: city,
+                onChange: setCity,
+                ocid: "profile.city_input"
+              }
+            ),
+            error && /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "div",
+              {
+                className: "px-4 py-3 rounded-xl text-sm font-body text-red-300 border border-red-500/30",
+                style: { background: "oklch(0.4 0.15 25 / 0.18)" },
+                "data-ocid": "profile.error_state",
+                children: error
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "submit",
+                disabled: isSubmitting,
+                "data-ocid": "profile.submit_button",
+                className: "glass-button w-full py-4 text-foreground font-display font-bold tracking-[0.2em] uppercase text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                children: isSubmitting ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-4 h-4 animate-spin" }),
+                  " Locking In…"
+                ] }) : "Lock In My Identity"
+              }
+            )
+          ] })
+        ] })
+      }
+    )
+  ] });
+}
+function ProfileInput({
+  id: id2,
+  label,
+  value,
+  onChange,
+  prefix: prefix2,
+  ocid
+}) {
+  const [focused, setFocused] = reactExports.useState(false);
+  const lifted = focused || value.length > 0;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "label",
+      {
+        htmlFor: id2,
+        className: "absolute left-4 transition-all duration-200 pointer-events-none font-body",
+        style: {
+          top: lifted ? "8px" : "50%",
+          transform: lifted ? "translateY(0) scale(0.75)" : "translateY(-50%)",
+          transformOrigin: "left center",
+          fontSize: lifted ? "0.75rem" : "0.875rem",
+          color: focused ? "oklch(0.68 0.27 305)" : "oklch(0.55 0 0)",
+          zIndex: 1
+        },
+        children: label
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative flex items-center", children: [
+      prefix2 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "span",
+        {
+          className: "absolute left-4 top-1/2 -translate-y-1/2 font-body text-sm font-bold pointer-events-none",
+          style: {
+            color: value ? "oklch(0.68 0.27 305)" : "oklch(0.45 0 0)",
+            paddingTop: "10px"
+          },
+          children: prefix2
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          id: id2,
+          type: "text",
+          value,
+          onChange: (e) => onChange(e.target.value),
+          onFocus: () => setFocused(true),
+          onBlur: () => setFocused(false),
+          "data-ocid": ocid,
+          className: "glass-input w-full pt-6 pb-2 px-4 text-foreground font-body text-sm outline-none",
+          style: { paddingLeft: prefix2 ? "1.75rem" : void 0 }
+        }
+      )
+    ] })
+  ] });
+}
 const STATUS_CONFIG = {
   pending: {
     label: "PENDING REVIEW",
@@ -49957,11 +53193,41 @@ const STATUS_CONFIG = {
 };
 function StatusPage() {
   const navigate = useNavigate();
+  const {
+    userProfile,
+    sessionToken,
+    isLoading: authLoading,
+    logout: userLogout,
+    getUserApplicationStatus
+  } = useUserAuth();
   const [appId, setAppId] = reactExports.useState(null);
   const [resolved, setResolved] = reactExports.useState(false);
   const [lookupValue, setLookupValue] = reactExports.useState("");
   const [lookupError, setLookupError] = reactExports.useState("");
+  const [sessionStatusData, setSessionStatusData] = reactExports.useState(null);
+  const [sessionStatusLoading, setSessionStatusLoading] = reactExports.useState(false);
+  const [sessionHasNoApplication, setSessionHasNoApplication] = reactExports.useState(false);
   reactExports.useEffect(() => {
+    if (authLoading) return;
+    if (sessionToken) {
+      setSessionStatusLoading(true);
+      getUserApplicationStatus().then((result) => {
+        if (result && result.__kind__ === "ok") {
+          const app = result.ok;
+          const status = String(app.status);
+          const qr = app.qrToken ?? "";
+          setSessionStatusData([status, qr]);
+        } else {
+          setSessionHasNoApplication(true);
+        }
+      }).catch(() => {
+        setSessionHasNoApplication(true);
+      }).finally(() => {
+        setSessionStatusLoading(false);
+        setResolved(true);
+      });
+      return;
+    }
     const params = new URLSearchParams(window.location.search);
     const paramId = params.get("id");
     const stored = localStorage.getItem("applicationId");
@@ -49973,9 +53239,12 @@ function StatusPage() {
       }
     }
     setResolved(true);
-  }, []);
-  const { data: statusData, isLoading } = useApplicationStatus(appId);
-  const statusKey = statusData == null ? void 0 : statusData[0];
+  }, [authLoading, sessionToken, getUserApplicationStatus]);
+  const { data: statusData, isLoading } = useApplicationStatus(
+    sessionToken ? null : appId
+  );
+  const activeStatusData = sessionToken ? sessionStatusData : statusData;
+  const statusKey = (activeStatusData == null ? void 0 : activeStatusData[0]) ?? (statusData == null ? void 0 : statusData[0]);
   const config = statusKey ? STATUS_CONFIG[statusKey] : null;
   function handleLookup(e) {
     e.preventDefault();
@@ -49995,7 +53264,7 @@ function StatusPage() {
       );
     }
   }
-  if (!resolved || appId !== null && isLoading) {
+  if (!resolved || authLoading || sessionStatusLoading || appId !== null && isLoading) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {
@@ -50008,7 +53277,7 @@ function StatusPage() {
       }
     );
   }
-  if (!appId) {
+  if (!appId && !sessionToken) {
     return /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "div",
       {
@@ -50090,8 +53359,23 @@ function StatusPage() {
                     }
                   )
                 ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "border-t border-border/30 pt-4 text-center", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-body mb-3", children: "Don't have an application yet?" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "border-t border-border/30 pt-4 space-y-3 text-center", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-body", children: "Have an account? Sign in to auto-load your status." }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    Button,
+                    {
+                      type: "button",
+                      asChild: true,
+                      className: "w-full font-display font-bold tracking-wide text-sm",
+                      style: {
+                        background: "linear-gradient(135deg, oklch(0.65 0.22 290), oklch(0.55 0.25 315))",
+                        boxShadow: "0 0 16px oklch(0.65 0.22 290 / 0.3)"
+                      },
+                      "data-ocid": "status.signin_button",
+                      children: /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: "/login", children: "Sign In" })
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-body", children: "Don't have an application yet?" }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx(
                     Button,
                     {
@@ -50111,7 +53395,72 @@ function StatusPage() {
       }
     );
   }
-  if (!statusData || !config) {
+  if (sessionToken && sessionHasNoApplication) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: "min-h-screen flex items-center justify-center px-4 py-16",
+        "data-ocid": "status.no_application",
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              "aria-hidden": true,
+              className: "pointer-events-none fixed inset-0 overflow-hidden",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-[-20%] left-[10%] w-[40vw] h-[40vw] rounded-full bg-primary/8 blur-[120px]" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute bottom-[-10%] right-[5%] w-[35vw] h-[35vw] rounded-full bg-secondary/6 blur-[100px]" })
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            motion.div,
+            {
+              initial: { opacity: 0, y: 30 },
+              animate: { opacity: 1, y: 0 },
+              transition: { duration: 0.6, type: "spring" },
+              className: "w-full max-w-sm",
+              children: /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonCard, { glow: "magenta", className: "p-8 text-center space-y-5", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  motion.p,
+                  {
+                    initial: { scale: 0 },
+                    animate: { scale: 1 },
+                    transition: { type: "spring", stiffness: 200, delay: 0.2 },
+                    className: "text-5xl",
+                    children: "🎟️"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "font-display font-black text-xl text-foreground tracking-tight", children: "You haven't applied yet." }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground font-body leading-relaxed", children: "Your status will appear here once you apply. Submit your application and let the committee decide." })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  Button,
+                  {
+                    type: "button",
+                    asChild: true,
+                    className: "w-full font-display font-bold tracking-widest text-sm h-12",
+                    style: {
+                      background: "linear-gradient(135deg, oklch(0.68 0.27 305), oklch(0.55 0.25 315))",
+                      boxShadow: "0 0 20px oklch(0.55 0.25 315 / 0.4)"
+                    },
+                    "data-ocid": "status.apply_now_button",
+                    children: /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/apply", children: "APPLY NOW →" })
+                  }
+                ),
+                userProfile && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground/50 font-mono", children: [
+                  "Signed in as ",
+                  userProfile.emailOrPhone
+                ] })
+              ] })
+            }
+          )
+        ]
+      }
+    );
+  }
+  if (!activeStatusData && !statusData && !config) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {
@@ -50149,7 +53498,7 @@ function StatusPage() {
               {
                 className: "absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full opacity-10",
                 style: {
-                  background: `radial-gradient(ellipse, ${config.color} 0%, transparent 70%)`
+                  background: config ? `radial-gradient(ellipse, ${config.color} 0%, transparent 70%)` : void 0
                 }
               }
             )
@@ -50161,228 +53510,255 @@ function StatusPage() {
             initial: { opacity: 0, y: 30 },
             animate: { opacity: 1, y: 0 },
             transition: { duration: 0.6, type: "spring" },
-            children: /* @__PURE__ */ jsxRuntimeExports.jsxs(NeonCard, { glow: config.glow, className: "p-8 text-center space-y-5", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                motion.div,
-                {
-                  initial: { scale: 0 },
-                  animate: { scale: 1 },
-                  transition: { type: "spring", stiffness: 200, delay: 0.2 },
-                  className: "text-6xl",
-                  children: config.emoji
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-display tracking-[0.4em] text-muted-foreground uppercase", children: "Application Status" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  motion.h1,
-                  {
-                    className: "text-3xl font-display font-black tracking-tight",
-                    style: {
-                      color: config.color,
-                      filter: `drop-shadow(0 0 16px ${config.color})`
-                    },
-                    initial: { opacity: 0 },
-                    animate: { opacity: 1 },
-                    transition: { delay: 0.4 },
-                    "data-ocid": "status.status_label",
-                    children: config.label
-                  }
-                )
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground font-body leading-relaxed", children: config.message }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "border-t border-border/30" }),
-              statusKey === "approved" ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                motion.div,
-                {
-                  initial: { opacity: 0, y: 10 },
-                  animate: { opacity: 1, y: 0 },
-                  transition: { delay: 0.6 },
-                  className: "space-y-5",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                      "div",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              NeonCard,
+              {
+                glow: (config == null ? void 0 : config.glow) ?? "purple",
+                className: "p-8 text-center space-y-5",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    motion.div,
+                    {
+                      initial: { scale: 0 },
+                      animate: { scale: 1 },
+                      transition: { type: "spring", stiffness: 200, delay: 0.2 },
+                      className: "text-6xl",
+                      children: config == null ? void 0 : config.emoji
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-display tracking-[0.4em] text-muted-foreground uppercase", children: "Application Status" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      motion.h1,
                       {
-                        className: "rounded-2xl overflow-hidden border border-accent/30",
+                        className: "text-3xl font-display font-black tracking-tight",
                         style: {
-                          background: "linear-gradient(160deg, oklch(0.12 0.04 200 / 0.95), oklch(0.08 0.02 220 / 0.98))",
-                          boxShadow: "0 0 40px oklch(0.7 0.2 200 / 0.15), inset 0 0 60px oklch(0.7 0.2 200 / 0.04)"
+                          color: config == null ? void 0 : config.color,
+                          filter: config ? `drop-shadow(0 0 16px ${config.color})` : void 0
                         },
-                        "data-ocid": "status.entry_ticket",
-                        children: [
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                            "div",
-                            {
-                              className: "px-5 pt-5 pb-3 border-b",
-                              style: {
-                                borderColor: "oklch(0.7 0.2 200 / 0.2)",
-                                background: "linear-gradient(90deg, oklch(0.7 0.2 200 / 0.08), transparent)"
-                              },
-                              children: [
-                                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                  "p",
-                                  {
-                                    className: "text-xs font-mono uppercase tracking-[0.4em] mb-0.5",
-                                    style: { color: "oklch(0.7 0.2 200 / 0.7)" },
-                                    children: "10s Only"
-                                  }
-                                ),
-                                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                  "h2",
-                                  {
-                                    className: "font-display font-black text-2xl tracking-tight",
-                                    style: {
-                                      color: "oklch(0.85 0.18 70)",
-                                      textShadow: "0 0 20px oklch(0.85 0.18 70 / 0.5)"
-                                    },
-                                    children: "YOUR ENTRY TICKET"
-                                  }
-                                ),
-                                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                  "p",
-                                  {
-                                    className: "text-xs font-body mt-1",
-                                    style: { color: "oklch(0.7 0.2 200 / 0.6)" },
-                                    children: "Saturday · 23 May 2026"
-                                  }
-                                )
-                              ]
-                            }
-                          ),
-                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-5 py-5 flex flex-col items-center gap-4", children: [
-                            (statusData == null ? void 0 : statusData[1]) ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                              "div",
-                              {
-                                className: "rounded-xl overflow-hidden p-2",
-                                style: {
-                                  background: "oklch(0.96 0 0)",
-                                  boxShadow: "0 0 32px oklch(0.7 0.2 200 / 0.3)"
-                                },
-                                children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                  "img",
-                                  {
-                                    src: `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(statusData[1])}&bgcolor=f5f5f5&color=0a0a12&qzone=2`,
-                                    alt: "Entry QR code",
-                                    width: 220,
-                                    height: 220,
-                                    className: "block rounded-lg",
-                                    "data-ocid": "status.entry_qr"
-                                  }
-                                )
-                              }
-                            ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-                              "div",
-                              {
-                                className: "w-[220px] h-[220px] rounded-xl flex items-center justify-center",
-                                style: { background: "oklch(0.7 0.2 200 / 0.08)" },
-                                children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-xs font-mono", children: "QR generating…" })
-                              }
-                            ),
-                            /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                              "div",
-                              {
-                                className: "w-full rounded-xl px-4 py-3 text-center border",
-                                style: {
-                                  background: "oklch(0.85 0.18 70 / 0.06)",
-                                  borderColor: "oklch(0.85 0.18 70 / 0.25)"
-                                },
-                                children: [
-                                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                    "p",
-                                    {
-                                      className: "text-xs font-display font-semibold tracking-wide",
-                                      style: { color: "oklch(0.85 0.18 70)" },
-                                      children: "📸 Screenshot & save this ticket"
-                                    }
-                                  ),
-                                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                                    "p",
-                                    {
-                                      className: "text-[11px] font-body mt-0.5",
-                                      style: { color: "oklch(0.85 0.18 70 / 0.65)" },
-                                      children: "You'll need it at the door — don't lose it"
-                                    }
-                                  )
-                                ]
-                              }
-                            ),
-                            /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                              "div",
-                              {
-                                className: "w-full rounded-xl px-4 py-3 flex items-start gap-3 border",
-                                style: {
-                                  background: "oklch(0.7 0.2 200 / 0.06)",
-                                  borderColor: "oklch(0.7 0.2 200 / 0.2)"
-                                },
-                                children: [
-                                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-lg shrink-0 mt-0.5", children: "📍" }),
-                                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                        initial: { opacity: 0 },
+                        animate: { opacity: 1 },
+                        transition: { delay: 0.4 },
+                        "data-ocid": "status.status_label",
+                        children: config == null ? void 0 : config.label
+                      }
+                    )
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground font-body leading-relaxed", children: config == null ? void 0 : config.message }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "border-t border-border/30" }),
+                  statusKey === "approved" ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    motion.div,
+                    {
+                      initial: { opacity: 0, y: 10 },
+                      animate: { opacity: 1, y: 0 },
+                      transition: { delay: 0.6 },
+                      className: "space-y-5",
+                      children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                          "div",
+                          {
+                            className: "rounded-2xl overflow-hidden border border-accent/30",
+                            style: {
+                              background: "linear-gradient(160deg, oklch(0.12 0.04 200 / 0.95), oklch(0.08 0.02 220 / 0.98))",
+                              boxShadow: "0 0 40px oklch(0.7 0.2 200 / 0.15), inset 0 0 60px oklch(0.7 0.2 200 / 0.04)"
+                            },
+                            "data-ocid": "status.entry_ticket",
+                            children: [
+                              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                                "div",
+                                {
+                                  className: "px-5 pt-5 pb-3 border-b",
+                                  style: {
+                                    borderColor: "oklch(0.7 0.2 200 / 0.2)",
+                                    background: "linear-gradient(90deg, oklch(0.7 0.2 200 / 0.08), transparent)"
+                                  },
+                                  children: [
                                     /* @__PURE__ */ jsxRuntimeExports.jsx(
                                       "p",
                                       {
-                                        className: "text-xs font-display font-bold tracking-wide",
-                                        style: { color: "oklch(0.7 0.2 200)" },
-                                        children: "Location"
+                                        className: "text-xs font-mono uppercase tracking-[0.4em] mb-0.5",
+                                        style: { color: "oklch(0.7 0.2 200 / 0.7)" },
+                                        children: "10s Only"
+                                      }
+                                    ),
+                                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                      "h2",
+                                      {
+                                        className: "font-display font-black text-2xl tracking-tight",
+                                        style: {
+                                          color: "oklch(0.85 0.18 70)",
+                                          textShadow: "0 0 20px oklch(0.85 0.18 70 / 0.5)"
+                                        },
+                                        children: "YOUR ENTRY TICKET"
                                       }
                                     ),
                                     /* @__PURE__ */ jsxRuntimeExports.jsx(
                                       "p",
                                       {
-                                        className: "text-[12px] font-body mt-0.5 leading-relaxed",
-                                        style: { color: "oklch(0.7 0.15 200 / 0.8)" },
-                                        children: "The exact address will be disclosed on your WhatsApp number closer to the event."
+                                        className: "text-xs font-body mt-1",
+                                        style: { color: "oklch(0.7 0.2 200 / 0.6)" },
+                                        children: "Saturday · 23 May 2026"
                                       }
                                     )
-                                  ] })
-                                ]
-                              }
-                            )
-                          ] })
-                        ]
-                      }
-                    ),
+                                  ]
+                                }
+                              ),
+                              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-5 py-5 flex flex-col items-center gap-4", children: [
+                                (activeStatusData == null ? void 0 : activeStatusData[1]) ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                  "div",
+                                  {
+                                    className: "rounded-xl overflow-hidden p-2",
+                                    style: {
+                                      background: "oklch(0.96 0 0)",
+                                      boxShadow: "0 0 32px oklch(0.7 0.2 200 / 0.3)"
+                                    },
+                                    children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                      "img",
+                                      {
+                                        src: `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(activeStatusData[1])}&bgcolor=f5f5f5&color=0a0a12&qzone=2`,
+                                        alt: "Entry QR code",
+                                        width: 220,
+                                        height: 220,
+                                        className: "block rounded-lg",
+                                        "data-ocid": "status.entry_qr"
+                                      }
+                                    )
+                                  }
+                                ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                  "div",
+                                  {
+                                    className: "w-[220px] h-[220px] rounded-xl flex items-center justify-center",
+                                    style: { background: "oklch(0.7 0.2 200 / 0.08)" },
+                                    children: /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-muted-foreground text-xs font-mono", children: "QR generating…" })
+                                  }
+                                ),
+                                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                                  "div",
+                                  {
+                                    className: "w-full rounded-xl px-4 py-3 text-center border",
+                                    style: {
+                                      background: "oklch(0.85 0.18 70 / 0.06)",
+                                      borderColor: "oklch(0.85 0.18 70 / 0.25)"
+                                    },
+                                    children: [
+                                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                        "p",
+                                        {
+                                          className: "text-xs font-display font-semibold tracking-wide",
+                                          style: { color: "oklch(0.85 0.18 70)" },
+                                          children: "📸 Screenshot & save this ticket"
+                                        }
+                                      ),
+                                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                        "p",
+                                        {
+                                          className: "text-[11px] font-body mt-0.5",
+                                          style: { color: "oklch(0.85 0.18 70 / 0.65)" },
+                                          children: "You'll need it at the door — don't lose it"
+                                        }
+                                      )
+                                    ]
+                                  }
+                                ),
+                                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                                  "div",
+                                  {
+                                    className: "w-full rounded-xl px-4 py-3 flex items-start gap-3 border",
+                                    style: {
+                                      background: "oklch(0.7 0.2 200 / 0.06)",
+                                      borderColor: "oklch(0.7 0.2 200 / 0.2)"
+                                    },
+                                    children: [
+                                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-lg shrink-0 mt-0.5", children: "📍" }),
+                                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                          "p",
+                                          {
+                                            className: "text-xs font-display font-bold tracking-wide",
+                                            style: { color: "oklch(0.7 0.2 200)" },
+                                            children: "Location"
+                                          }
+                                        ),
+                                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                                          "p",
+                                          {
+                                            className: "text-[12px] font-body mt-0.5 leading-relaxed",
+                                            style: { color: "oklch(0.7 0.15 200 / 0.8)" },
+                                            children: "The exact address will be disclosed on your WhatsApp number closer to the event."
+                                          }
+                                        )
+                                      ] })
+                                    ]
+                                  }
+                                )
+                              ] })
+                            ]
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          Button,
+                          {
+                            type: "button",
+                            onClick: () => navigate({ to: "/portal" }),
+                            "data-ocid": "status.portal_button",
+                            className: "w-full font-display font-bold tracking-wide text-sm",
+                            style: {
+                              background: "linear-gradient(135deg, oklch(0.75 0.30 145), oklch(0.65 0.25 165))",
+                              boxShadow: "0 0 20px oklch(0.75 0.30 145 / 0.5)"
+                            },
+                            children: "🎉 ENTER THE PORTAL"
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-body text-center", children: "Access quiz, confessions, gallery and more" })
+                      ]
+                    }
+                  ) : statusKey === "pending" ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-center gap-2", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-2 h-2 rounded-full bg-primary/60 animate-pulse" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-display tracking-widest text-muted-foreground", children: "AWAITING DECISION" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-2 h-2 rounded-full bg-primary/60 animate-pulse" })
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-body", children: "Check back soon. Decisions are made quickly." })
+                  ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-3", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-body", children: "Think there's been a mistake?" }),
                     /* @__PURE__ */ jsxRuntimeExports.jsx(
                       Button,
                       {
                         type: "button",
-                        onClick: () => navigate({ to: "/portal" }),
-                        "data-ocid": "status.portal_button",
-                        className: "w-full font-display font-bold tracking-wide text-sm",
-                        style: {
-                          background: "linear-gradient(135deg, oklch(0.75 0.30 145), oklch(0.65 0.25 165))",
-                          boxShadow: "0 0 20px oklch(0.75 0.30 145 / 0.5)"
-                        },
-                        children: "🎉 ENTER THE PORTAL"
+                        variant: "outline",
+                        asChild: true,
+                        "data-ocid": "status.home_button",
+                        className: "w-full border-border/40 text-muted-foreground hover:border-primary/40 font-display text-sm",
+                        children: /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/", children: "BACK TO HOME" })
                       }
-                    ),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-body text-center", children: "Access quiz, confessions, gallery and more" })
-                  ]
-                }
-              ) : statusKey === "pending" ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-center gap-2", children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-2 h-2 rounded-full bg-primary/60 animate-pulse" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs font-display tracking-widest text-muted-foreground", children: "AWAITING DECISION" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-2 h-2 rounded-full bg-primary/60 animate-pulse" })
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-body", children: "Check back soon. Decisions are made quickly." })
-              ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-3", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground font-body", children: "Think there's been a mistake?" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  Button,
-                  {
-                    type: "button",
-                    variant: "outline",
-                    asChild: true,
-                    "data-ocid": "status.home_button",
-                    className: "w-full border-border/40 text-muted-foreground hover:border-primary/40 font-display text-sm",
-                    children: /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/", children: "BACK TO HOME" })
-                  }
-                )
-              ] })
-            ] })
+                    )
+                  ] })
+                ]
+              }
+            )
           }
         ),
-        appId && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        sessionToken && userProfile && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center space-y-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs font-mono text-muted-foreground/50", children: [
+            "Signed in as",
+            " ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-primary/70", children: userProfile.emailOrPhone || "Guest" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              type: "button",
+              onClick: () => {
+                userLogout();
+                navigate({ to: "/login" });
+              },
+              className: "text-xs text-muted-foreground/40 hover:text-muted-foreground underline font-body transition-colors",
+              "data-ocid": "status.signout_button",
+              children: "Switch account"
+            }
+          )
+        ] }),
+        appId && !sessionToken && /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "p",
           {
             className: "text-center text-xs font-mono text-muted-foreground/40",
@@ -50426,12 +53802,24 @@ const adminRoute = createRoute({
   path: "/admin",
   component: () => /* @__PURE__ */ jsxRuntimeExports.jsx(ProtectedRoute, { requireAdmin: true, children: /* @__PURE__ */ jsxRuntimeExports.jsx(AdminPage, {}) })
 });
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login",
+  component: LoginPage
+});
+const profileSetupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/profile-setup",
+  component: () => /* @__PURE__ */ jsxRuntimeExports.jsx(ProtectedRoute, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(ProfileSetupPage, {}) })
+});
 const routeTree = rootRoute.addChildren([
   indexRoute,
   applyRoute,
   statusRoute,
   portalRoute,
-  adminRoute
+  adminRoute,
+  loginRoute,
+  profileSetupRoute
 ]);
 const router = createRouter({ routeTree });
 function App() {

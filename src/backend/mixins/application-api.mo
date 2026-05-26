@@ -9,6 +9,7 @@ import AppLib "../lib/application";
 
 mixin (
   accessControlState : AccessControl.AccessControlState,
+  approvalState : UserApproval.UserApprovalState,
   applications : Map.Map<Common.ApplicationId, AppTypes.Application>,
   inviteCodes : Map.Map<Text, Bool>,
   appState : { var nextAppId : Nat },
@@ -22,8 +23,8 @@ mixin (
       };
     };
   };
-  public shared func submitApplication(input : AppTypes.ApplicationInput) : async Common.ApplicationId {
-    let id = AppLib.submitApplication(applications, inviteCodes, appState, input);
+  public shared ({ caller }) func submitApplication(input : AppTypes.ApplicationInput) : async Common.ApplicationId {
+    let id = AppLib.submitApplication(applications, inviteCodes, appState, input, caller);
     switch (applications.get(id)) {
       case (?app) { await AppLib.sendSubmissionEmail<system>(app, id) };
       case null {};
@@ -39,7 +40,7 @@ mixin (
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admins can approve applications");
     };
-    await AppLib.approveApplication<system>(applications, id);
+    await AppLib.approveApplication<system>(applications, approvalState, id);
   };
 
   public shared ({ caller }) func rejectApplication(id : Common.ApplicationId) : async () {
@@ -61,10 +62,6 @@ mixin (
       Runtime.trap("Unauthorized: Only admins can view stats");
     };
     AppLib.getAdminStats(applications);
-  };
-
-  public query func getApprovedPhotos() : async [Storage.ExternalBlob] {
-    AppLib.getApprovedPhotos(applications);
   };
 
   public shared ({ caller }) func resendApprovalEmail(id : Common.ApplicationId) : async { #ok; #err : Text } {

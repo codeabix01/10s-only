@@ -10,6 +10,13 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface AdminConfessionView {
+  'id' : bigint,
+  'createdAt' : bigint,
+  'text' : string,
+  'submittedBy' : [] | [string],
+  'approved' : boolean,
+}
 export interface AdminStats {
   'total' : bigint,
   'pending' : bigint,
@@ -33,7 +40,7 @@ export interface ApplicationView {
   'id' : bigint,
   'status' : ApplicationStatus,
   'plusOne' : [] | [boolean],
-  'applicationId' : string,
+  'applicantPrincipal' : [] | [Principal],
   'name' : string,
   'instagramHandle' : string,
   'submittedAt' : bigint,
@@ -46,12 +53,25 @@ export interface ApplicationView {
 export type ApprovalStatus = { 'pending' : null } |
   { 'approved' : null } |
   { 'rejected' : null };
-export interface Confession {
+export interface ConfessionView {
   'id' : bigint,
   'createdAt' : bigint,
   'text' : string,
+  'approved' : boolean,
 }
 export type ExternalBlob = Uint8Array;
+export interface GalleryUpload {
+  'id' : GalleryUploadId,
+  'uploaderPrincipal' : Principal,
+  'approved' : boolean,
+  'caption' : [] | [string],
+  'photo' : ExternalBlob,
+  'uploadedAt' : bigint,
+}
+export type GalleryUploadId = string;
+export type Gender = { 'other' : null } |
+  { 'female' : null } |
+  { 'male' : null };
 export interface GuestQuizResult {
   'applicationId' : bigint,
   'takenAt' : bigint,
@@ -64,13 +84,47 @@ export interface QuizQuestion {
   'options' : Array<QuizOption>,
 }
 export interface QuizResult { 'description' : string, 'resultType' : string }
+export interface UpdateProfileInput {
+  'bio' : [] | [string],
+  'city' : [] | [string],
+  'name' : [] | [string],
+  'profilePhoto' : [] | [string],
+  'instagramHandle' : [] | [string],
+  'gender' : [] | [Gender],
+}
 export interface UserApprovalInfo {
   'status' : ApprovalStatus,
   'principal' : Principal,
 }
+export type UserId = bigint;
+export interface UserLoginInput { 'emailOrPhone' : string, 'password' : string }
+export interface UserProfile {
+  'id' : UserId,
+  'bio' : [] | [string],
+  'emailOrPhone' : string,
+  'city' : [] | [string],
+  'name' : string,
+  'createdAt' : bigint,
+  'profilePhoto' : [] | [string],
+  'instagramHandle' : [] | [string],
+  'linkedApplicationId' : [] | [string],
+  'gender' : [] | [Gender],
+  'profileCompleted' : [] | [boolean],
+}
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
+export interface UserSessionResult { 'token' : string, 'user' : UserProfile }
+export interface UserSignUpInput {
+  'bio' : [] | [string],
+  'emailOrPhone' : string,
+  'city' : [] | [string],
+  'password' : string,
+  'name' : string,
+  'profilePhoto' : [] | [string],
+  'instagramHandle' : [] | [string],
+  'gender' : [] | [Gender],
+}
 export interface _ImmutableObjectStorageCreateCertificateResult {
   'method' : string,
   'blob_hash' : string,
@@ -104,6 +158,28 @@ export interface _SERVICE {
   '_initializeAccessControl' : ActorMethod<[], undefined>,
   'addAdmin' : ActorMethod<[Principal], { 'ok' : null } | { 'err' : string }>,
   'addInviteCode' : ActorMethod<[string], undefined>,
+  'adminApproveConfession' : ActorMethod<
+    [bigint],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
+  'adminApproveGalleryPhoto' : ActorMethod<
+    [string],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
+  'adminDeleteConfession' : ActorMethod<
+    [bigint],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
+  'adminGetAllGalleryPhotos' : ActorMethod<[], Array<GalleryUpload>>,
+  'adminListConfessions' : ActorMethod<[], Array<AdminConfessionView>>,
+  'adminRejectGalleryPhoto' : ActorMethod<
+    [string],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
   'approveApplication' : ActorMethod<[ApplicationId], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'broadcastToApprovedGuests' : ActorMethod<
@@ -111,23 +187,47 @@ export interface _SERVICE {
     { 'ok' : bigint } |
       { 'err' : string }
   >,
+  'deleteUser' : ActorMethod<[string], { 'ok' : null } | { 'err' : string }>,
   'getAdminStats' : ActorMethod<[], AdminStats>,
   'getApplicationStatus' : ActorMethod<
     [ApplicationId],
     [] | [[ApplicationStatus, [] | [string]]]
   >,
-  'getApprovedPhotos' : ActorMethod<[], Array<ExternalBlob>>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getMyQuizResult' : ActorMethod<[ApplicationId], [] | [GuestQuizResult]>,
+  'getPublicGalleryPhotos' : ActorMethod<[], Array<GalleryUpload>>,
   'getQuizQuestions' : ActorMethod<[], Array<QuizQuestion>>,
   'getQuizResultTypes' : ActorMethod<[], Array<QuizResult>>,
+  'getRegisteredUsers' : ActorMethod<[], Array<UserProfile>>,
+  'getTotalUserCount' : ActorMethod<[], bigint>,
+  'getUserApplicationStatus' : ActorMethod<
+    [string],
+    { 'ok' : ApplicationView } |
+      { 'err' : string }
+  >,
+  'getUserProfile' : ActorMethod<
+    [string],
+    { 'ok' : UserProfile } |
+      { 'err' : string }
+  >,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isCallerApproved' : ActorMethod<[], boolean>,
+  'linkApplicationToUser' : ActorMethod<
+    [string, string],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
   'listAdmins' : ActorMethod<[], Array<Principal>>,
   'listApplications' : ActorMethod<[], Array<ApplicationView>>,
   'listApprovals' : ActorMethod<[], Array<UserApprovalInfo>>,
-  'listConfessions' : ActorMethod<[], Array<Confession>>,
+  'listConfessions' : ActorMethod<[[] | [string]], Array<ConfessionView>>,
   'listInviteCodes' : ActorMethod<[], Array<string>>,
+  'login' : ActorMethod<
+    [UserLoginInput],
+    { 'ok' : UserSessionResult } |
+      { 'err' : string }
+  >,
+  'logout' : ActorMethod<[string], { 'ok' : null } | { 'err' : string }>,
   'rejectApplication' : ActorMethod<[ApplicationId], undefined>,
   'removeAdmin' : ActorMethod<
     [Principal],
@@ -141,9 +241,29 @@ export interface _SERVICE {
       { 'err' : string }
   >,
   'setApproval' : ActorMethod<[Principal, ApprovalStatus], undefined>,
+  'signUp' : ActorMethod<
+    [UserSignUpInput],
+    { 'ok' : UserProfile } |
+      { 'err' : string }
+  >,
   'submitApplication' : ActorMethod<[ApplicationInput], ApplicationId>,
-  'submitConfession' : ActorMethod<[string], bigint>,
+  'submitConfession' : ActorMethod<[string, [] | [string]], bigint>,
   'submitQuizResult' : ActorMethod<[ApplicationId, string], undefined>,
+  'updateUserProfile' : ActorMethod<
+    [string, UpdateProfileInput],
+    { 'ok' : UserProfile } |
+      { 'err' : string }
+  >,
+  'uploadGalleryPhoto' : ActorMethod<
+    [ExternalBlob, [] | [string], [] | [string]],
+    { 'ok' : string } |
+      { 'err' : string }
+  >,
+  'verifySession' : ActorMethod<
+    [string],
+    { 'ok' : UserProfile } |
+      { 'err' : string }
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

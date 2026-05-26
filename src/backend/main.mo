@@ -12,11 +12,19 @@ import ApplicationMixin "mixins/application-api";
 import QuizMixin "mixins/quiz-api";
 import ConfessionMixin "mixins/confession-api";
 import AdminMixin "mixins/admin-api";
-import Migration "migration";
+import UserTypes "types/user";
+import UserMixin "mixins/user-api";
+import GalleryTypes "types/gallery";
+import GalleryMixin "mixins/gallery-api";
 
 
 
-(with migration = Migration.run)
+
+
+
+
+
+
 actor {
   // Authorization & approval state
   let accessControlState = AccessControl.initState();
@@ -32,9 +40,15 @@ actor {
   let inviteCodes = Map.empty<Text, Bool>();
   let appState = { var nextAppId = 0 };
 
-  include ApplicationMixin(accessControlState, applications, inviteCodes, appState);
+  include ApplicationMixin(accessControlState, approvalState, applications, inviteCodes, appState);
+
+  // User profile state
+  let users = Map.empty<Nat, UserTypes.User>();
+  let userState = { var nextUserId = 0 };
+  include UserMixin(users, userState, applications);
+
   // Admin management endpoints
-  include AdminMixin(accessControlState);
+  include AdminMixin(accessControlState, users);
 
   // Quiz state
   let quizQuestions = List.empty<QuizTypes.QuizQuestion>();
@@ -46,7 +60,13 @@ actor {
   let confessions = List.empty<ConfessionTypes.Confession>();
   let confessionState = { var nextConfessionId = 0 };
 
-  include ConfessionMixin(accessControlState, approvalState, confessions, confessionState);
+  include ConfessionMixin(accessControlState, approvalState, confessions, confessionState, users, applications);
+
+  // Gallery state — party photos voluntarily uploaded by approved members
+  let galleryUploads = Map.empty<GalleryTypes.GalleryUploadId, GalleryTypes.GalleryUpload>();
+  let galleryState = { var nextGalleryId = 0 };
+
+  include GalleryMixin(accessControlState, approvalState, applications, galleryUploads, galleryState, users);
 
   // User approval endpoints
   public query ({ caller }) func isCallerApproved() : async Bool {

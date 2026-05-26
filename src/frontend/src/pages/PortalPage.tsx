@@ -1,4 +1,5 @@
-import type { ExternalBlob } from "@/backend";
+import { type ExternalBlob, createActor } from "@/backend";
+import type { UserProfile } from "@/backend";
 import { NeonCard } from "@/components/NeonCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,20 +7,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  doUploadGalleryPhoto,
   useApplicationStatus,
-  useApprovedPhotos,
   useConfessions,
+  useGalleryPhotos,
   useMyQuizResult,
   useQuizQuestions,
   useQuizResultTypes,
   useSubmitConfession,
   useSubmitQuizResult,
 } from "@/hooks/useBackend";
+import { useUserAuth } from "@/hooks/useUserAuth";
 import { cn } from "@/lib/utils";
-import type { Confession, QuizQuestion, QuizResult } from "@/types";
-import { useNavigate } from "@tanstack/react-router";
+import type { ConfessionView, QuizQuestion, QuizResult } from "@/types";
+import { useActor } from "@caffeineai/core-infrastructure";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { CheckCircle2, ImageIcon, Loader2, Upload, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 const PERSONA_COLORS: Record<string, string> = {
   "The Icon": "oklch(0.68 0.27 305)",
@@ -383,13 +389,18 @@ const MAX_CHARS = 200;
 const PAGE_SIZE = 10;
 
 function ConfessionsTab() {
-  const { data: confessions = [], isLoading } = useConfessions();
-  const submitConfession = useSubmitConfession();
+  const { sessionToken } = useUserAuth();
+  const {
+    data: confessions = [],
+    isLoading,
+    refetch: refetchConfessions,
+  } = useConfessions(sessionToken);
+  const submitConfession = useSubmitConfession(sessionToken);
   const [text, setText] = useState("");
   const [page, setPage] = useState(1);
   const [submitted, setSubmitted] = useState(false);
 
-  const sorted = [...confessions].sort((a: Confession, b: Confession) =>
+  const sorted = [...confessions].sort((a: ConfessionView, b: ConfessionView) =>
     Number(b.createdAt - a.createdAt),
   );
   const visible = sorted.slice(0, page * PAGE_SIZE);
@@ -399,7 +410,8 @@ function ConfessionsTab() {
     await submitConfession.mutateAsync(text.trim());
     setText("");
     setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
+    refetchConfessions();
+    setTimeout(() => setSubmitted(false), 2000);
   }
 
   function formatTime(ts: bigint) {
@@ -431,6 +443,17 @@ function ConfessionsTab() {
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value.slice(0, MAX_CHARS))}
+          onKeyDown={(e) => {
+            if (
+              e.key === "Enter" &&
+              !e.shiftKey &&
+              !submitConfession.isPending
+            ) {
+              e.preventDefault();
+              e.stopPropagation();
+              handlePost();
+            }
+          }}
           placeholder="Drop your confession into the void…"
           data-ocid="confessions.input"
           rows={3}
@@ -474,6 +497,16 @@ function ConfessionsTab() {
           </Button>
         </div>
       </NeonCard>
+      {submitted && (
+        <motion.p
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-xs font-body text-center pt-2"
+          style={{ color: "oklch(0.75 0.18 145)" }}
+        >
+          Confession posted!
+        </motion.p>
+      )}
 
       <div className="space-y-3" data-ocid="confessions.list">
         {isLoading ? (
@@ -494,7 +527,7 @@ function ConfessionsTab() {
           </NeonCard>
         ) : (
           <AnimatePresence>
-            {visible.map((c: Confession, idx: number) => (
+            {visible.map((c: ConfessionView, idx: number) => (
               <motion.div
                 key={c.id.toString()}
                 initial={{ opacity: 0, y: 10 }}
@@ -531,127 +564,497 @@ function ConfessionsTab() {
   );
 }
 
-function GalleryTab() {
-  const { data: photos = [], isLoading } = useApprovedPhotos();
-  const [lightbox, setLightbox] = useState<string | null>(null);
-
-  if (isLoading)
-    return (
-      <div
-        data-ocid="gallery.loading_state"
-        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-      >
-        {[1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} className="aspect-square rounded-lg" />
-        ))}
-      </div>
-    );
-
-  if (photos.length === 0)
-    return (
-      <div className="space-y-6" data-ocid="gallery.section">
-        <h2
-          className="text-xl font-display font-bold tracking-wide"
-          style={{
-            background:
-              "linear-gradient(90deg, oklch(0.68 0.27 305), oklch(0.65 0.22 290))",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}
-        >
-          THE NIGHT
-        </h2>
-        <NeonCard
-          glow="none"
-          className="p-12 text-center"
-          data-ocid="gallery.empty_state"
-        >
-          <p className="text-4xl mb-3">📷</p>
-          <p className="font-display font-semibold text-foreground mb-1">
-            The night hasn't started yet.
-          </p>
-          <p className="text-sm text-muted-foreground font-body">
-            Photos will appear here after the event.
-          </p>
-        </NeonCard>
-      </div>
-    );
+// ── Gallery card component — premium photo wall tile ──
+function GalleryCard({
+  photo,
+  idx,
+  getPhotoUrl,
+  formatDate,
+  onClick,
+}: {
+  photo: any;
+  idx: number;
+  getPhotoUrl: (photo: any, key?: string) => string;
+  formatDate: (ts: bigint | number) => string;
+  onClick: () => void;
+}) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const url = getPhotoUrl(photo.photo, String(photo.id));
 
   return (
-    <div className="space-y-6" data-ocid="gallery.section">
-      <h2
-        className="text-xl font-display font-bold tracking-wide"
-        style={{
-          background:
-            "linear-gradient(90deg, oklch(0.68 0.27 305), oklch(0.65 0.22 290))",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
-        }}
+    <motion.button
+      type="button"
+      whileHover={{ y: -3 }}
+      transition={{ type: "spring", stiffness: 320, damping: 20 }}
+      onClick={onClick}
+      className="cursor-pointer group text-left w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-xl"
+      data-ocid={`gallery.item.${idx + 1}`}
+    >
+      <div
+        className={[
+          "bg-white/8 backdrop-blur-md border border-white/15 rounded-xl p-3",
+          "transition-all duration-300 ease-out",
+          "group-hover:border-pink-500/40 group-hover:shadow-[0_0_28px_oklch(0.55_0.25_315_/_0.35),0_0_8px_oklch(0.65_0.22_290_/_0.2)]",
+        ].join(" ")}
       >
-        THE NIGHT
-      </h2>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {photos.map((photo: ExternalBlob, idx: number) => (
-          <motion.button
-            key={`${idx}-${photo.getDirectURL()}`}
-            type="button"
-            data-ocid={`gallery.item.${idx + 1}`}
-            whileHover={{
-              scale: 1.04,
-              rotate: 0,
-              y: -4,
-              boxShadow: "0 12px 40px oklch(0.65 0.22 290 / 0.5)",
-            }}
-            initial={{ rotate: idx % 2 === 0 ? -1.5 : 1.5 }}
-            onClick={() => setLightbox(photo.getDirectURL())}
-            className="relative aspect-square bg-white p-3 pb-8 shadow-lg cursor-pointer focus-visible:outline-2 focus-visible:outline-primary"
-            style={{
-              boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
-              transform: `rotate(${idx % 2 === 0 ? -2 : 2}deg)`,
-            }}
-            aria-label={`Guest submission ${idx + 1}`}
-          >
+        {/* Locked-ratio image container */}
+        <div className="relative w-full aspect-square overflow-hidden rounded-lg bg-card/30">
+          {/* Shimmer shown until image loads or fails */}
+          {!imgLoaded && !imgFailed && (
+            <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-white/5 via-white/10 to-white/5" />
+          )}
+          {!imgFailed && (
             <img
-              src={photo.getDirectURL()}
-              alt={`Guest submission ${idx + 1}`}
-              className="w-full h-full object-cover"
+              src={url}
+              alt={photo.caption || "Party photo"}
               loading="lazy"
+              className={[
+                "w-full h-full object-cover transition-opacity duration-500",
+                imgLoaded ? "opacity-100" : "opacity-0",
+              ].join(" ")}
+              onLoad={() => setImgLoaded(true)}
+              onError={() => setImgFailed(true)}
             />
-          </motion.button>
-        ))}
+          )}
+          {imgFailed && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-card/40">
+              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                <span className="text-white/30 text-sm">✕</span>
+              </div>
+            </div>
+          )}
+        </div>
+        {/* Caption / date row */}
+        <div className="pt-2.5 pb-0.5 px-0.5 space-y-0.5">
+          {photo.caption && (
+            <p className="text-white/65 text-xs font-body truncate leading-tight">
+              {photo.caption}
+            </p>
+          )}
+          <p className="text-white/25 text-[10px] font-body tracking-wide">
+            {formatDate(photo.uploadedAt)}
+          </p>
+        </div>
       </div>
+    </motion.button>
+  );
+}
 
+function GalleryTab() {
+  const { actor } = useActor(createActor);
+  const { sessionToken } = useUserAuth();
+  const { photos: galleryPhotos, loading, refetch } = useGalleryPhotos();
+  const [selectedPhoto, setSelectedPhoto] = useState<any | null>(null);
+  const [photos, setPhotos] = useState<
+    Array<{
+      file: File;
+      preview: string;
+      progress: number;
+      blob: ExternalBlob | null;
+      uploading: boolean;
+      done: boolean;
+    }>
+  >([]);
+  const [caption, setCaption] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const interval = setInterval(() => refetch(), 15000);
+    return () => clearInterval(interval);
+  }, [refetch]);
+
+  const handleAddPhotos = useCallback(
+    (files: FileList) => {
+      const currentCount = photos.length;
+      const remaining = 10 - currentCount;
+      const toAdd = Array.from(files).slice(0, remaining);
+      const newEntries = toAdd.map((f) => ({
+        file: f,
+        preview: URL.createObjectURL(f),
+        progress: 0,
+        blob: null as ExternalBlob | null,
+        uploading: false,
+        done: true,
+      }));
+      setPhotos((prev) => [...prev, ...newEntries]);
+    },
+    [photos.length],
+  );
+
+  const handleRemovePhoto = useCallback((idx: number) => {
+    setPhotos((prev) => {
+      const removed = prev[idx];
+      if (removed?.preview) URL.revokeObjectURL(removed.preview);
+      return prev.filter((_, i) => i !== idx);
+    });
+  }, []);
+
+  const handleUpload = async () => {
+    const readyPhotos = photos.filter((p) => p.done);
+    if (readyPhotos.length === 0) return;
+    if (!actor) {
+      setUploadError("Not connected to server");
+      return;
+    }
+    setUploading(true);
+    setUploadError(null);
+    setUploadSuccess(false);
+    try {
+      let successCount = 0;
+      for (const photo of readyPhotos) {
+        try {
+          const result = await doUploadGalleryPhoto(
+            actor,
+            photo.file,
+            caption || undefined,
+            sessionToken,
+          );
+          if (result && ("ok" in result || result.__kind__ === "ok")) {
+            successCount++;
+          } else {
+            const errMsg =
+              result?.err || result?.__kind__ === "err"
+                ? result.err
+                : "Upload failed";
+            console.error(`Failed to upload ${photo.file.name}:`, errMsg);
+          }
+        } catch (e) {
+          console.error(`Failed to upload ${photo.file.name}:`, e);
+        }
+      }
+      if (successCount > 0) {
+        setUploadSuccess(true);
+        for (const p of photos) {
+          if (p.preview) URL.revokeObjectURL(p.preview);
+        }
+        setPhotos([]);
+        setCaption("");
+        refetch();
+        setTimeout(() => setUploadSuccess(false), 5000);
+      } else {
+        setUploadError("All uploads failed. Please try again.");
+      }
+    } catch (e) {
+      console.error("Gallery handleUpload error:", e);
+      setUploadError(String(e));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const readyCount = photos.filter((p) => p.done).length;
+  const uploadingCount = photos.filter((p) => p.uploading).length;
+  const canAdd = photos.length < 10;
+
+  const formatDate = (ts: bigint | number) => {
+    const ms = typeof ts === "bigint" ? Number(ts) / 1_000_000 : ts;
+    return new Date(ms).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  // Stable URL cache — creates ObjectURLs once per photo id, revokes on unmount
+  const urlCacheRef = useRef<Map<string, string>>(new Map());
+  useEffect(() => {
+    const cache = urlCacheRef.current;
+    return () => {
+      for (const url of cache.values()) URL.revokeObjectURL(url);
+      cache.clear();
+    };
+  }, []);
+
+  const getPhotoUrl = useCallback((photo: any, cacheKey?: string): string => {
+    if (!photo) return "";
+    const key =
+      cacheKey ??
+      String(photo.contentType ?? "") +
+        String((photo.data as Uint8Array)?.length ?? 0);
+    if (urlCacheRef.current.has(key))
+      return urlCacheRef.current.get(key) as string;
+    const data =
+      photo.data instanceof Uint8Array
+        ? photo.data
+        : new Uint8Array(photo.data);
+    const blob = new Blob([data], { type: photo.contentType || "image/jpeg" });
+    const url = URL.createObjectURL(blob);
+    urlCacheRef.current.set(key, url);
+    return url;
+  }, []);
+
+  return (
+    <div className="space-y-8" data-ocid="gallery.section">
+      {/* Upload Section */}
+      <NeonCard glow="magenta" className="p-6 space-y-4">
+        <div>
+          <h3 className="text-lg font-display font-bold text-foreground mb-1">
+            Share Your Night
+          </h3>
+          <p className="text-xs text-muted-foreground font-body">
+            Upload photos from the party — up to 10 at once.
+          </p>
+        </div>
+
+        {uploadSuccess ? (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-emerald-500/15 border border-emerald-500/30 rounded-xl p-4 text-emerald-300 text-center text-sm font-body"
+            data-ocid="gallery.success_state"
+          >
+            ✓ Photos uploaded! They will appear after admin approval.
+          </motion.div>
+        ) : (
+          <div className="space-y-3">
+            {/* Photo dropzone */}
+            {canAdd && (
+              <button
+                type="button"
+                data-ocid="gallery.dropzone"
+                onClick={() => fileInputRef.current?.click()}
+                tabIndex={0}
+                aria-label="Upload photos"
+                onKeyDown={(e) =>
+                  e.key === "Enter" && fileInputRef.current?.click()
+                }
+                className={cn(
+                  "relative border-2 border-dashed rounded-xl p-6 cursor-pointer transition-all duration-300",
+                  "flex flex-col items-center justify-center gap-2 min-h-[120px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                  "border-border/40 hover:border-primary/50 hover:bg-primary/5",
+                )}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="sr-only"
+                  onChange={(e) =>
+                    e.target.files && handleAddPhotos(e.target.files)
+                  }
+                  data-ocid="gallery.photo_input"
+                />
+                <Upload className="w-7 h-7 text-primary/70" />
+                <div className="text-center">
+                  <p className="text-sm font-display font-semibold text-foreground/80">
+                    Upload your photos
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Click to select — {photos.length}/10
+                  </p>
+                </div>
+              </button>
+            )}
+
+            {/* Photo preview grid */}
+            {/* Photo preview grid */}
+            {photos.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                <AnimatePresence>
+                  {photos.map((p, i) => (
+                    <motion.div
+                      key={p.preview}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.7 }}
+                      transition={{ duration: 0.25 }}
+                      data-ocid={`gallery.photo_thumb.${i + 1}`}
+                      className="relative aspect-square rounded-lg overflow-hidden border border-border/30 bg-card/20 group"
+                    >
+                      <img
+                        src={p.preview}
+                        alt={`upload ${i + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      {p.uploading && (
+                        <div className="absolute inset-0 bg-background/70 flex flex-col items-center justify-center gap-1">
+                          <Loader2 className="w-5 h-5 text-accent animate-spin" />
+                          <span className="text-[10px] font-display text-accent">
+                            {p.progress}%
+                          </span>
+                        </div>
+                      )}
+                      {p.done && !p.uploading && (
+                        <div className="absolute top-1 right-1">
+                          <CheckCircle2 className="w-4 h-4 text-primary drop-shadow-[0_0_4px_oklch(var(--primary)/0.8)]" />
+                        </div>
+                      )}
+                      {!p.uploading && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePhoto(i)}
+                          aria-label={`Remove photo ${i + 1}`}
+                          data-ocid={`gallery.photo_remove.${i + 1}`}
+                          className="absolute top-1 left-1 w-5 h-5 rounded-full bg-background/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        >
+                          <X className="w-3 h-3 text-foreground" />
+                        </button>
+                      )}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {/* Progress bars */}
+            {photos.length > 0 && (
+              <div className="flex items-center gap-2">
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+                  <div
+                    key={`progress-${n}`}
+                    className={cn(
+                      "h-1 flex-1 rounded-full transition-all duration-300",
+                      n < readyCount
+                        ? "bg-primary shadow-[0_0_6px_oklch(var(--primary)/0.6)]"
+                        : n === readyCount && uploadingCount > 0
+                          ? "bg-accent/50 animate-pulse"
+                          : "bg-border/30",
+                    )}
+                  />
+                ))}
+                <span className="text-xs font-display text-muted-foreground ml-1">
+                  {readyCount}/10
+                </span>
+              </div>
+            )}
+
+            {photos.length === 0 && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
+                <ImageIcon className="w-4 h-4" />
+                Select photos to upload
+              </div>
+            )}
+
+            <input
+              type="text"
+              placeholder="Add a caption (optional)"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              className="w-full bg-card/20 border border-border/30 rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/40 text-sm font-body focus:outline-none focus:border-secondary/50 transition-colors"
+              data-ocid="gallery.input"
+            />
+            {uploadError && (
+              <p
+                className="text-destructive text-sm font-body"
+                data-ocid="gallery.error_state"
+              >
+                {uploadError}
+              </p>
+            )}
+            <Button
+              type="button"
+              onClick={handleUpload}
+              disabled={
+                !photos.some((p) => p.done) || uploading || uploadingCount > 0
+              }
+              className="w-full font-display font-bold tracking-wide"
+              style={{
+                background:
+                  "linear-gradient(135deg, oklch(0.55 0.25 315), oklch(0.68 0.27 305))",
+                boxShadow: "0 0 16px oklch(0.55 0.25 315 / 0.3)",
+              }}
+              data-ocid="gallery.submit_button"
+            >
+              {uploading
+                ? "Uploading…"
+                : `Submit ${readyCount > 0 ? `${readyCount} Photo${readyCount > 1 ? "s" : ""}` : "Photo"}`}
+            </Button>
+          </div>
+        )}
+      </NeonCard>
+
+      {/* Gallery Grid */}
+      {loading ? (
+        <div
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 lg:gap-8"
+          data-ocid="gallery.loading_state"
+        >
+          {(["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"] as const).map(
+            (k) => (
+              <div
+                key={k}
+                className="rounded-xl p-3 bg-white/8 border border-white/10"
+              >
+                <div className="aspect-square rounded-lg bg-white/8 animate-pulse" />
+                <div className="mt-2.5 h-2 w-3/4 rounded bg-white/8 animate-pulse" />
+                <div className="mt-1 h-2 w-1/3 rounded bg-white/6 animate-pulse" />
+              </div>
+            ),
+          )}
+        </div>
+      ) : galleryPhotos.length === 0 ? (
+        <NeonCard
+          glow="none"
+          className="p-12 text-center space-y-2"
+          data-ocid="gallery.empty_state"
+        >
+          <div className="text-4xl mb-2">🎞</div>
+          <p className="text-foreground font-display font-semibold">
+            Be the first to share the vibe.
+          </p>
+          <p className="text-sm text-muted-foreground font-body">
+            Upload a photo above.
+          </p>
+        </NeonCard>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 lg:gap-8">
+          {galleryPhotos.map((photo: any, idx: number) => (
+            <GalleryCard
+              key={photo.id}
+              photo={photo}
+              idx={idx}
+              getPhotoUrl={getPhotoUrl}
+              formatDate={formatDate}
+              onClick={() => setSelectedPhoto(photo)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Lightbox */}
       <AnimatePresence>
-        {lightbox && (
+        {selectedPhoto && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
-            onClick={() => setLightbox(null)}
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedPhoto(null)}
             data-ocid="gallery.dialog"
           >
-            <motion.img
-              src={lightbox}
-              alt="Expanded view"
+            <motion.div
+              className="max-w-2xl w-full"
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.8 }}
-              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
               onClick={(e) => e.stopPropagation()}
-            />
-            <button
-              type="button"
-              aria-label="Close lightbox"
-              data-ocid="gallery.close_button"
-              onClick={() => setLightbox(null)}
-              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-card/60 backdrop-blur border border-border/40 flex items-center justify-center text-foreground hover:bg-card/90 transition-smooth"
             >
-              ✕
-            </button>
+              <img
+                src={getPhotoUrl(selectedPhoto.photo, String(selectedPhoto.id))}
+                alt={selectedPhoto.caption || "Party photo"}
+                className="w-full rounded-xl"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+              {selectedPhoto.caption && (
+                <p className="text-white/70 text-center mt-3 text-sm">
+                  {selectedPhoto.caption}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => setSelectedPhoto(null)}
+                className="mt-4 mx-auto block text-white/40 hover:text-white text-sm"
+                data-ocid="gallery.close_button"
+              >
+                Close
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -659,31 +1062,228 @@ function GalleryTab() {
   );
 }
 
+// ── Profile card shown to logged-in users who haven't applied yet ──
+function ProfileCard({ profile }: { profile: UserProfile }) {
+  const initials = profile.name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="w-full max-w-sm mx-auto space-y-5"
+      data-ocid="portal.profile_card"
+    >
+      <NeonCard glow="purple" className="p-6">
+        {/* Avatar row */}
+        <div className="flex items-center gap-4 mb-4">
+          {profile.profilePhoto ? (
+            <img
+              src={profile.profilePhoto}
+              alt={profile.name}
+              className="w-16 h-16 rounded-full object-cover border-2 shrink-0"
+              style={{ borderColor: "oklch(0.65 0.22 290 / 0.5)" }}
+            />
+          ) : (
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-display font-black shrink-0 border-2"
+              style={{
+                background:
+                  "linear-gradient(135deg, oklch(0.65 0.22 290 / 0.25), oklch(0.55 0.25 315 / 0.25))",
+                borderColor: "oklch(0.65 0.22 290 / 0.4)",
+                color: "oklch(0.78 0.18 290)",
+              }}
+            >
+              {initials}
+            </div>
+          )}
+          <div className="min-w-0">
+            <p
+              className="font-display font-black text-lg leading-tight truncate"
+              style={{
+                background:
+                  "linear-gradient(90deg, oklch(0.78 0.18 290), oklch(0.68 0.27 305))",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              {profile.name}
+            </p>
+            {profile.instagramHandle && (
+              <p className="text-xs font-mono text-muted-foreground mt-0.5 truncate">
+                @{profile.instagramHandle}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {profile.bio && (
+          <p className="text-sm font-body text-muted-foreground leading-relaxed border-t border-border/20 pt-4">
+            {profile.bio}
+          </p>
+        )}
+      </NeonCard>
+    </motion.div>
+  );
+}
+
+// ── No-application state for portal ──
+function PortalNoApplication({ profile }: { profile: UserProfile | null }) {
+  return (
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-16 gap-6"
+      data-ocid="portal.no_application"
+    >
+      {/* Ambient blobs */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 overflow-hidden"
+      >
+        <div className="absolute top-[-15%] left-[5%] w-[45vw] h-[45vw] rounded-full bg-primary/8 blur-[130px]" />
+        <div className="absolute bottom-[-10%] right-[8%] w-[38vw] h-[38vw] rounded-full bg-secondary/6 blur-[110px]" />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55 }}
+        className="text-center space-y-1"
+      >
+        <p className="text-xs font-display tracking-[0.4em] text-muted-foreground uppercase">
+          Your Portal
+        </p>
+        <h1
+          className="text-3xl md:text-4xl font-display font-black tracking-tight"
+          style={{
+            background:
+              "linear-gradient(90deg, oklch(0.72 0.25 200), oklch(0.65 0.22 290))",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          }}
+        >
+          Welcome{profile ? `, ${profile.name.split(" ")[0]}` : ""}
+        </h1>
+      </motion.div>
+
+      {/* Profile info if logged in */}
+      {profile && <ProfileCard profile={profile} />}
+
+      {/* Apply CTA */}
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, delay: 0.15 }}
+        className="w-full max-w-sm"
+      >
+        <NeonCard
+          glow="magenta"
+          className="p-7 text-center space-y-4"
+          data-ocid="portal.apply_cta_card"
+        >
+          <p className="text-3xl">🎟️</p>
+          <div className="space-y-1.5">
+            <h2 className="font-display font-black text-xl text-foreground tracking-tight">
+              You're Not on the List — Yet
+            </h2>
+            <p className="text-sm text-muted-foreground font-body leading-relaxed">
+              Apply for the party and let the committee decide. Spots are
+              limited and every application is reviewed personally.
+            </p>
+          </div>
+          <Button
+            type="button"
+            asChild
+            className="w-full font-display font-bold tracking-widest text-sm h-12"
+            style={{
+              background:
+                "linear-gradient(135deg, oklch(0.68 0.27 305), oklch(0.55 0.25 315))",
+              boxShadow: "0 0 20px oklch(0.55 0.25 315 / 0.4)",
+            }}
+            data-ocid="portal.apply_now_button"
+          >
+            <Link to="/apply">APPLY FOR THE PARTY →</Link>
+          </Button>
+        </NeonCard>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function PortalPage() {
   const navigate = useNavigate();
+  const {
+    sessionToken,
+    userProfile,
+    isLoading: authLoading,
+    getUserApplicationStatus,
+  } = useUserAuth();
+  const { actor } = useActor(createActor);
+
+  // Resolved state: null = no application, bigint = app id found
   const [appId, setAppId] = useState<bigint | null>(null);
+  const [resolved, setResolved] = useState(false);
+  // Profile fetched from backend (may differ from cached userProfile)
+  const [fetchedProfile, setFetchedProfile] = useState<UserProfile | null>(
+    null,
+  );
 
   useEffect(() => {
-    const stored = localStorage.getItem("applicationId");
-    if (!stored) {
-      navigate({ to: "/apply" });
+    if (authLoading) return;
+
+    // Logged-in path: fetch status from backend
+    if (sessionToken && actor) {
+      Promise.all([
+        getUserApplicationStatus().catch(() => null),
+        actor.getUserProfile(sessionToken).catch(() => null),
+      ]).then(([statusRes, profileRes]) => {
+        if (profileRes && profileRes.__kind__ === "ok") {
+          setFetchedProfile(profileRes.ok);
+        }
+        if (statusRes && statusRes.__kind__ === "ok") {
+          const app = statusRes.ok;
+          const idStr = String(app.id);
+          try {
+            setAppId(BigInt(idStr));
+            // Persist so other parts of the page can use it
+            localStorage.setItem("applicationId", idStr);
+          } catch {
+            // ignore
+          }
+        }
+        setResolved(true);
+      });
       return;
     }
-    try {
-      setAppId(BigInt(stored));
-    } catch {
-      navigate({ to: "/apply" });
-    }
-  }, [navigate]);
 
-  const { data: status, isLoading: statusLoading } =
-    useApplicationStatus(appId);
+    // Not logged in — fall back to localStorage
+    const stored = localStorage.getItem("applicationId");
+    if (stored) {
+      try {
+        setAppId(BigInt(stored));
+      } catch {
+        // invalid
+      }
+    }
+    setResolved(true);
+  }, [authLoading, sessionToken, actor, getUserApplicationStatus]);
+
+  const { data: status, isLoading: statusLoading } = useApplicationStatus(
+    resolved && appId !== null ? appId : null,
+  );
 
   const qrToken = status?.[1] ?? null;
   const appStatus = status?.[0];
-  const plusOne = false; // derived from applicationView if needed
+  const plusOne = false;
 
-  if (!appId || statusLoading) {
+  // Still waiting on auth or initial fetch
+  if (!resolved || authLoading || (appId !== null && statusLoading)) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -697,6 +1297,12 @@ export default function PortalPage() {
         </div>
       </div>
     );
+  }
+
+  // No application found → show profile + apply CTA
+  if (appId === null) {
+    const displayProfile = fetchedProfile ?? userProfile;
+    return <PortalNoApplication profile={displayProfile} />;
   }
 
   if (appStatus !== "approved") {
@@ -744,20 +1350,6 @@ export default function PortalPage() {
             style={{
               background:
                 "radial-gradient(ellipse 80% 60% at 50% 0%, oklch(0.65 0.22 290 / 0.15) 0%, transparent 70%)",
-            }}
-          />
-          <div
-            className="party-blob-1 absolute top-1/3 left-1/4 w-96 h-96 rounded-full opacity-15 blur-3xl pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(circle, oklch(0.65 0.25 15), oklch(0.55 0.22 340))",
-            }}
-          />
-          <div
-            className="party-blob-2 absolute bottom-1/3 right-1/3 w-80 h-80 rounded-full opacity-[0.12] blur-3xl pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(circle, oklch(0.75 0.18 80), oklch(0.60 0.20 45))",
             }}
           />
         </div>

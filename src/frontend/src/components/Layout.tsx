@@ -1,30 +1,39 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserAuth } from "@/hooks/useUserAuth";
 import { cn } from "@/lib/utils";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Menu, X, Zap } from "lucide-react";
 import { useState } from "react";
 
 const NAV_LINKS = [
   { label: "Home", href: "/", always: true },
   { label: "Apply", href: "/apply", always: true },
-  { label: "My Status", href: "/status", requiresConnected: true },
+  { label: "My Status", href: "/status", always: true },
   { label: "Portal", href: "/portal", requiresApproved: true },
   { label: "Admin", href: "/admin", requiresAdmin: true },
-];
+] satisfies Array<{
+  label: string;
+  href: string;
+  always?: boolean;
+  requiresApproved?: boolean;
+  requiresAdmin?: boolean;
+}>;
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { isConnected, isApproved, isAdmin, login, logout, loginStatus } =
     useAuth();
+  const { userProfile, logout: userLogout } = useUserAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
+  const navigate = useNavigate();
 
   const visibleLinks = NAV_LINKS.filter((link) => {
     if (link.always) return true;
     if (link.requiresAdmin) return isAdmin;
-    if (link.requiresApproved) return isConnected && isApproved;
-    if (link.requiresConnected) return isConnected;
+    if (link.requiresApproved)
+      return (isConnected && isApproved) || !!userProfile;
     return true;
   });
 
@@ -112,8 +121,45 @@ export function Layout({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          {/* Auth Button */}
-          <div className="hidden md:block">
+          {/* Auth Buttons */}
+          <div className="hidden md:flex items-center gap-2">
+            {/* Regular user auth */}
+            {userProfile ? (
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center font-display font-bold text-xs text-foreground"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, oklch(0.65 0.22 290), oklch(0.68 0.27 305))",
+                    boxShadow: "0 0 10px oklch(0.65 0.22 290 / 0.4)",
+                  }}
+                  title={userProfile.name}
+                >
+                  {userProfile.name.slice(0, 2).toUpperCase()}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    userLogout();
+                    navigate({ to: "/login" });
+                  }}
+                  data-ocid="nav.user_logout_button"
+                  className="border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/60 transition-smooth font-display text-xs"
+                >
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                data-ocid="nav.signin_link"
+                className="px-4 py-2 rounded-lg text-sm font-display font-medium border border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/60 transition-smooth"
+              >
+                Sign In
+              </Link>
+            )}
+            {/* Admin / Internet Identity */}
             {isConnected ? (
               <Button
                 variant="outline"
@@ -124,7 +170,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               >
                 Disconnect
               </Button>
-            ) : (
+            ) : isAdmin ? null : (
               <Button
                 size="sm"
                 onClick={login}
@@ -137,7 +183,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   boxShadow: "0 0 16px oklch(0.65 0.22 290 / 0.4)",
                 }}
               >
-                {isLoggingIn ? "Connecting…" : "Connect"}
+                {isLoggingIn ? "Connecting…" : "Admin"}
               </Button>
             )}
           </div>
@@ -178,7 +224,33 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 {link.label}
               </Link>
             ))}
-            <div className="pt-2 border-t border-border/30">
+            <div className="pt-2 border-t border-border/30 flex flex-col gap-2">
+              {/* Regular user mobile auth */}
+              {userProfile ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    userLogout();
+                    setMenuOpen(false);
+                    navigate({ to: "/login" });
+                  }}
+                  data-ocid="nav.mobile_user_logout_button"
+                  className="w-full border-primary/30 text-primary hover:bg-primary/10 transition-smooth font-display text-xs"
+                >
+                  Sign Out ({userProfile.name.split(" ")[0]})
+                </Button>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setMenuOpen(false)}
+                  data-ocid="nav.mobile_signin_link"
+                  className="block w-full text-center px-4 py-2.5 rounded-lg text-sm font-display font-medium border border-primary/30 text-primary hover:bg-primary/10 transition-smooth"
+                >
+                  Sign In
+                </Link>
+              )}
+              {/* Admin / II mobile */}
               {isConnected ? (
                 <Button
                   variant="outline"
@@ -192,7 +264,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 >
                   Disconnect
                 </Button>
-              ) : (
+              ) : isAdmin ? null : (
                 <Button
                   size="sm"
                   onClick={() => {
@@ -208,7 +280,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     boxShadow: "0 0 16px oklch(0.65 0.22 290 / 0.4)",
                   }}
                 >
-                  {isLoggingIn ? "Connecting…" : "Connect"}
+                  {isLoggingIn ? "Connecting…" : "Admin"}
                 </Button>
               )}
             </div>

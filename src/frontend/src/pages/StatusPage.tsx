@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApplicationStatus } from "@/hooks/useBackend";
+import { useUserAuth } from "@/hooks/useUserAuth";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
@@ -48,12 +49,53 @@ const STATUS_CONFIG: Record<
 
 export default function StatusPage() {
   const navigate = useNavigate();
+  const {
+    userProfile,
+    sessionToken,
+    isLoading: authLoading,
+    logout: userLogout,
+    getUserApplicationStatus,
+  } = useUserAuth();
   const [appId, setAppId] = useState<bigint | null>(null);
   const [resolved, setResolved] = useState(false);
   const [lookupValue, setLookupValue] = useState("");
   const [lookupError, setLookupError] = useState("");
+  const [sessionStatusData, setSessionStatusData] = useState<
+    [string, string] | null
+  >(null);
+  const [sessionStatusLoading, setSessionStatusLoading] = useState(false);
 
+  // Track whether session fetch found no application
+  const [sessionHasNoApplication, setSessionHasNoApplication] = useState(false);
+
+  // On mount: if we have a session token, auto-load from backend
   useEffect(() => {
+    if (authLoading) return;
+    if (sessionToken) {
+      setSessionStatusLoading(true);
+      getUserApplicationStatus()
+        .then((result) => {
+          if (result && result.__kind__ === "ok") {
+            const app = result.ok;
+            const status = String(app.status);
+            const qr = app.qrToken ?? "";
+            setSessionStatusData([status, qr]);
+          } else {
+            // err result means no application for this user
+            setSessionHasNoApplication(true);
+          }
+        })
+        .catch(() => {
+          // fetch error → treat as no application so we don't stay loading
+          setSessionHasNoApplication(true);
+        })
+        .finally(() => {
+          setSessionStatusLoading(false);
+          setResolved(true);
+        });
+      return;
+    }
+    // Fall back to URL param / localStorage appId
     const params = new URLSearchParams(window.location.search);
     const paramId = params.get("id");
     const stored = localStorage.getItem("applicationId");
@@ -66,11 +108,18 @@ export default function StatusPage() {
       }
     }
     setResolved(true);
-  }, []);
+  }, [authLoading, sessionToken, getUserApplicationStatus]);
 
-  const { data: statusData, isLoading } = useApplicationStatus(appId);
+  const { data: statusData, isLoading } = useApplicationStatus(
+    sessionToken ? null : appId,
+  );
 
-  const statusKey = statusData?.[0] as StatusState | undefined;
+  // Merge: prefer session-based status when available
+  const activeStatusData = sessionToken ? sessionStatusData : statusData;
+
+  const statusKey = (activeStatusData?.[0] ?? statusData?.[0]) as
+    | StatusState
+    | undefined;
   const config = statusKey ? STATUS_CONFIG[statusKey] : null;
 
   function handleLookup(e: React.FormEvent) {
@@ -93,7 +142,12 @@ export default function StatusPage() {
     }
   }
 
-  if (!resolved || (appId !== null && isLoading)) {
+  if (
+    !resolved ||
+    authLoading ||
+    sessionStatusLoading ||
+    (appId !== null && isLoading)
+  ) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -109,7 +163,8 @@ export default function StatusPage() {
     );
   }
 
-  if (!appId) {
+  // If user is logged in but no status found yet, show sign-in prompt
+  if (!appId && !sessionToken) {
     return (
       <div
         className="min-h-screen flex items-center justify-center px-4 py-16"
@@ -182,8 +237,24 @@ export default function StatusPage() {
                 Check Status
               </Button>
             </form>
-            <div className="border-t border-border/30 pt-4 text-center">
-              <p className="text-xs text-muted-foreground font-body mb-3">
+            <div className="border-t border-border/30 pt-4 space-y-3 text-center">
+              <p className="text-xs text-muted-foreground font-body">
+                Have an account? Sign in to auto-load your status.
+              </p>
+              <Button
+                type="button"
+                asChild
+                className="w-full font-display font-bold tracking-wide text-sm"
+                style={{
+                  background:
+                    "linear-gradient(135deg, oklch(0.65 0.22 290), oklch(0.55 0.25 315))",
+                  boxShadow: "0 0 16px oklch(0.65 0.22 290 / 0.3)",
+                }}
+                data-ocid="status.signin_button"
+              >
+                <Link to="/login">Sign In</Link>
+              </Button>
+              <p className="text-xs text-muted-foreground font-body">
                 Don't have an application yet?
               </p>
               <Button
@@ -202,7 +273,69 @@ export default function StatusPage() {
     );
   }
 
-  if (!statusData || !config) {
+  // Logged-in user but no application found → show apply prompt
+  if (sessionToken && sessionHasNoApplication) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center px-4 py-16"
+        data-ocid="status.no_application"
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 overflow-hidden"
+        >
+          <div className="absolute top-[-20%] left-[10%] w-[40vw] h-[40vw] rounded-full bg-primary/8 blur-[120px]" />
+          <div className="absolute bottom-[-10%] right-[5%] w-[35vw] h-[35vw] rounded-full bg-secondary/6 blur-[100px]" />
+        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, type: "spring" }}
+          className="w-full max-w-sm"
+        >
+          <NeonCard glow="magenta" className="p-8 text-center space-y-5">
+            <motion.p
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+              className="text-5xl"
+            >
+              🎟️
+            </motion.p>
+            <div className="space-y-2">
+              <h2 className="font-display font-black text-xl text-foreground tracking-tight">
+                You haven't applied yet.
+              </h2>
+              <p className="text-sm text-muted-foreground font-body leading-relaxed">
+                Your status will appear here once you apply. Submit your
+                application and let the committee decide.
+              </p>
+            </div>
+            <Button
+              type="button"
+              asChild
+              className="w-full font-display font-bold tracking-widest text-sm h-12"
+              style={{
+                background:
+                  "linear-gradient(135deg, oklch(0.68 0.27 305), oklch(0.55 0.25 315))",
+                boxShadow: "0 0 20px oklch(0.55 0.25 315 / 0.4)",
+              }}
+              data-ocid="status.apply_now_button"
+            >
+              <a href="/apply">APPLY NOW →</a>
+            </Button>
+            {userProfile && (
+              <p className="text-xs text-muted-foreground/50 font-mono">
+                Signed in as {userProfile.emailOrPhone}
+              </p>
+            )}
+          </NeonCard>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (!activeStatusData && !statusData && !config) {
     return (
       <div
         className="min-h-screen flex items-center justify-center px-4"
@@ -235,7 +368,9 @@ export default function StatusPage() {
           <div
             className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full opacity-10"
             style={{
-              background: `radial-gradient(ellipse, ${config.color} 0%, transparent 70%)`,
+              background: config
+                ? `radial-gradient(ellipse, ${config.color} 0%, transparent 70%)`
+                : undefined,
             }}
           />
         </div>
@@ -245,14 +380,17 @@ export default function StatusPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, type: "spring" }}
         >
-          <NeonCard glow={config.glow} className="p-8 text-center space-y-5">
+          <NeonCard
+            glow={config?.glow ?? "purple"}
+            className="p-8 text-center space-y-5"
+          >
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
               className="text-6xl"
             >
-              {config.emoji}
+              {config?.emoji}
             </motion.div>
 
             <div className="space-y-2">
@@ -262,20 +400,22 @@ export default function StatusPage() {
               <motion.h1
                 className="text-3xl font-display font-black tracking-tight"
                 style={{
-                  color: config.color,
-                  filter: `drop-shadow(0 0 16px ${config.color})`,
+                  color: config?.color,
+                  filter: config
+                    ? `drop-shadow(0 0 16px ${config.color})`
+                    : undefined,
                 }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
                 data-ocid="status.status_label"
               >
-                {config.label}
+                {config?.label}
               </motion.h1>
             </div>
 
             <p className="text-sm text-muted-foreground font-body leading-relaxed">
-              {config.message}
+              {config?.message}
             </p>
 
             {/* Divider */}
@@ -333,7 +473,7 @@ export default function StatusPage() {
 
                   {/* QR code */}
                   <div className="px-5 py-5 flex flex-col items-center gap-4">
-                    {statusData?.[1] ? (
+                    {activeStatusData?.[1] ? (
                       <div
                         className="rounded-xl overflow-hidden p-2"
                         style={{
@@ -342,7 +482,7 @@ export default function StatusPage() {
                         }}
                       >
                         <img
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(statusData[1] as string)}&bgcolor=f5f5f5&color=0a0a12&qzone=2`}
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(activeStatusData[1] as string)}&bgcolor=f5f5f5&color=0a0a12&qzone=2`}
                           alt="Entry QR code"
                           width={220}
                           height={220}
@@ -461,8 +601,31 @@ export default function StatusPage() {
           </NeonCard>
         </motion.div>
 
-        {/* Application ID reference */}
-        {appId && (
+        {/* Session user: sign-out link */}
+        {sessionToken && userProfile && (
+          <div className="text-center space-y-1">
+            <p className="text-xs font-mono text-muted-foreground/50">
+              Signed in as{" "}
+              <span className="text-primary/70">
+                {userProfile.emailOrPhone || "Guest"}
+              </span>
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                userLogout();
+                navigate({ to: "/login" });
+              }}
+              className="text-xs text-muted-foreground/40 hover:text-muted-foreground underline font-body transition-colors"
+              data-ocid="status.signout_button"
+            >
+              Switch account
+            </button>
+          </div>
+        )}
+
+        {/* Application ID reference (manual lookup) */}
+        {appId && !sessionToken && (
           <p
             className="text-center text-xs font-mono text-muted-foreground/40"
             data-ocid="status.app_id"

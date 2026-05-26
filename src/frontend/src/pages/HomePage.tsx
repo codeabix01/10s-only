@@ -90,10 +90,10 @@ export default function HomePage() {
       <audio
         ref={audioRef}
         loop
-        src="https://iriefm.fast.idealsolutions.media/iriefm"
+        src="https://stream.zeno.fm/0r0xa792kwzuv"
         preload="none"
         onCanPlay={(e) => {
-          (e.currentTarget as HTMLAudioElement).volume = 0.08;
+          (e.currentTarget as HTMLAudioElement).volume = 0.18;
         }}
       />
 
@@ -497,7 +497,7 @@ export default function HomePage() {
               : "oklch(0.55 0.15 270)",
           }}
         >
-          IRIE FM
+          MUSIC
         </span>
       </button>
     </>
