@@ -4,6 +4,6 @@
     "builder": "dockerfile"
   },
   "deploy": {
-    "startCommand": "java -jar target/*.jar"
+    "startCommand": "java -jar target/tensonly-backend-1.0.0.jar"
   }
 }
