@@ -8,7 +8,7 @@ spring:
         invalid-host-name-allowed: ${MONGODB_SSL_INVALID_HOSTNAME_ALLOWED:false}
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 app:
   jwt:
