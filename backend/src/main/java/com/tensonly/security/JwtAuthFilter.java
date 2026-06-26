@@ -28,33 +28,56 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
+
+        // 🔥 IMPORTANT: Skip CORS preflight requests
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String header = request.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
-            Claims claims = jwtService.parse(token);
+            try {
+                String token = header.substring(7);
+                Claims claims = jwtService.parse(token);
 
-            if (claims != null && claims.getSubject() != null) {
-                String userId = claims.getSubject();
-                String email = claims.get("email", String.class);
-                Object rolesObj = claims.get("roles");
-                List<SimpleGrantedAuthority> authorities;
+                if (claims != null && claims.getSubject() != null) {
 
-                if (rolesObj instanceof List<?> roles) {
-                    authorities = roles.stream()
-                            .filter(r -> r instanceof String)
-                            .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
-                            .toList();
-                } else {
-                    authorities = Collections.emptyList();
+                    String userId = claims.getSubject();
+                    String email = claims.get("email", String.class);
+                    Object rolesObj = claims.get("roles");
+
+                    List<SimpleGrantedAuthority> authorities;
+
+                    if (rolesObj instanceof List<?> roles) {
+                        authorities = roles.stream()
+                                .filter(r -> r instanceof String)
+                                .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
+                                .toList();
+                    } else {
+                        authorities = Collections.emptyList();
+                    }
+
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    userId,
+                                    email,
+                                    authorities
+                            );
+
+                    authentication.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
 
-                // Store email in credentials so SecurityUtil can access it for user fallback lookups
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userId, email, authorities);
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+            } catch (Exception e) {
+                // If token is invalid, just continue without authentication
+                SecurityContextHolder.clearContext();
             }
         }
 
