@@ -40,6 +40,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+
+                        // 🔥 CRITICAL FIX: allow preflight requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         // Public endpoints
                         .requestMatchers(HttpMethod.GET, "/api/events").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/{id}").permitAll()
@@ -53,17 +57,21 @@ public class SecurityConfig {
                         .requestMatchers("/api/confessions/**").permitAll()
                         .requestMatchers("/api/webhooks/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+
                         // Admin-only
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
                         // Host-only
                         .requestMatchers("/api/host/**").hasRole("HOST")
                         .requestMatchers(HttpMethod.POST, "/api/events").hasRole("HOST")
                         .requestMatchers(HttpMethod.GET, "/api/events/host").hasRole("HOST")
+
                         // Authenticated
                         .requestMatchers("/api/tickets/**").authenticated()
                         .requestMatchers("/api/payments/**").authenticated()
                         .requestMatchers("/api/host-applications/**").authenticated()
                         .requestMatchers("/api/auth/me").authenticated()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -72,45 +80,36 @@ public class SecurityConfig {
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
-        // Parse comma-separated origins from environment
+
         String[] origins = allowedOrigins.split(",");
         for (int i = 0; i < origins.length; i++) {
             origins[i] = origins[i].trim();
         }
+
         configuration.setAllowedOrigins(Arrays.asList(origins));
-        
-        // Allowed HTTP methods
         configuration.setAllowedMethods(Arrays.asList(
-            "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
         ));
-        
-        // Allowed headers
         configuration.setAllowedHeaders(Arrays.asList(
-            "Authorization", "Content-Type", "Accept", "Origin", 
-            "X-Requested-With", "X-CSRF-Token"
+                "Authorization", "Content-Type", "Accept", "Origin",
+                "X-Requested-With", "X-CSRF-Token"
         ));
-        
-        // Expose headers
         configuration.setExposedHeaders(Arrays.asList(
-            "Authorization", "Content-Type", "X-Total-Count", "X-Page-Count"
+                "Authorization", "Content-Type", "X-Total-Count", "X-Page-Count"
         ));
-        
-        // Credentials
         configuration.setAllowCredentials(true);
-        
-        // Cache preflight
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+
         return source;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
