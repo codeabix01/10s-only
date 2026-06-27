@@ -85,10 +85,12 @@ public class AuthService {
         user.setName(request.getName());
         user.setAvatarUrl(request.getAvatarUrl());
         user.setCity(request.getCity());
-        if (user.getRole() == null) {
-            user.setRole(resolveSupabaseRole(request.getEmailOrPhone()));
-        }
-        if (user.getRole() == null) {
+        // A whitelisted admin email is always promoted to ADMIN, even if an
+        // earlier login had already persisted this user as a MEMBER.
+        Role whitelistedRole = resolveSupabaseRole(request.getEmailOrPhone());
+        if (whitelistedRole != null) {
+            user.setRole(whitelistedRole);
+        } else if (user.getRole() == null) {
             user.setRole(Role.MEMBER);
         }
         if (user.getPasswordHash() == null) {

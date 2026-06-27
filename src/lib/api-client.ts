@@ -324,11 +324,22 @@ async function signOutSupabase(): Promise<void> {
 async function syncSupabaseSession(): Promise<{ user: User; token: string } | null> {
   const client = getSupabaseClient();
   if (!client) throw new Error("Supabase is not configured");
-  const {
-    data: { session },
-    error,
-  } = await client.auth.getSession();
-  if (error) throw error;
+
+  let session;
+  try {
+    const { data, error } = await client.auth.getSession();
+    if (error) throw error;
+    session = data.session;
+  } catch (err) {
+    // A stale/expired session in storage (e.g. "Invalid Refresh Token: Refresh
+    // Token Not Found") poisons every subsequent load. Clear it so the next
+    // sign-in attempt starts from a clean slate instead of hanging forever.
+    await client.auth.signOut().catch(() => {});
+    throw err instanceof Error
+      ? err
+      : new Error("Could not read your Supabase session. Please sign in again.");
+  }
+
   if (!session || !session.user) return null;
   const user = mapSupabaseUser(session.user);
   if (API_URL) {

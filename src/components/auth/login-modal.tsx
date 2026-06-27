@@ -54,21 +54,36 @@ export function LoginModal({ open, onOpenChange, onClose }: LoginModalProps) {
 
   useEffect(() => {
     if (!open || isAuthenticated || !shouldRestoreSupabaseSession()) return;
+    let cancelled = false;
     const loadSession = async () => {
+      setStage("verifying");
       try {
         const session = await authApi.syncSupabaseSession();
+        if (cancelled) return;
         if (session) {
           setSession(session.user, session.token);
           onOpenChange(false);
           onClose?.();
           const dest = ROLE_DASHBOARD[session.user.role];
           router.push(dest);
+          return;
         }
-      } catch {
-        // ignore session sync failures until the user interacts
+        // Callback URL present but no session could be restored — fall back to
+        // the sign-in form instead of leaving the user on a dead spinner.
+        setStage("input");
+      } catch (err) {
+        if (cancelled) return;
+        setStage("input");
+        toast.error("Sign-in could not be completed", {
+          description:
+            err instanceof Error ? err.message : "Please try signing in again.",
+        });
       }
     };
     loadSession();
+    return () => {
+      cancelled = true;
+    };
   }, [open, isAuthenticated, onClose, onOpenChange, router, setSession]);
 
   // Reset internal state when modal closes
