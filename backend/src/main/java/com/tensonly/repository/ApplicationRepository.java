@@ -20,5 +20,6 @@ public interface ApplicationRepository extends MongoRepository<Application, Stri
 
     long countByStatus(ApplicationStatus status);
 
+    @Query(value = "{ 'emailOrPhone': ?0, 'status': ?1 }", exists = true)
     boolean existsByEmailOrPhoneAndStatus(String emailOrPhone, ApplicationStatus status);
 }
