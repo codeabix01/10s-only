@@ -28,6 +28,9 @@ import {
   XCircle,
   Loader2,
   Send,
+  Navigation,
+  MapPin,
+  CheckCircle,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -438,6 +441,8 @@ function LedgerTab({ ledger }: { ledger: LedgerEntry[] }) {
 
 function CreateEventTab({ hostId, hostName }: { hostId: string; hostName: string }) {
   const qc = useQueryClient();
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [locationLabel, setLocationLabel] = useState<string | null>(null);
   const [form, setForm] = useState<EventCreateInput>({
     hostId,
     hostName,
@@ -453,7 +458,43 @@ function CreateEventTab({ hostId, hostName }: { hostId: string; hostName: string
     description: "",
     lineup: "",
     visibility: "members",
+    latitude: 0,
+    longitude: 0,
   });
+
+  function pinVenueLocation() {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation not supported by your browser.");
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        update({ latitude, longitude });
+        // Reverse geocode for a human label
+        let label = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+            { headers: { "Accept-Language": "en" } }
+          );
+          const data = await res.json();
+          const addr = data.address;
+          label = [addr?.road, addr?.suburb ?? addr?.neighbourhood, addr?.city ?? addr?.town]
+            .filter(Boolean)
+            .join(", ") || label;
+        } catch { /* keep coordinate fallback */ }
+        setLocationLabel(label);
+        setGpsLoading(false);
+        toast.success("Venue location pinned.");
+      },
+      () => {
+        setGpsLoading(false);
+        toast.error("Location permission denied. Please enable it and try again.");
+      }
+    );
+  }
 
   const mutation = useMutation({
     mutationFn: (input: EventCreateInput) => eventsApi.create(input),
@@ -462,6 +503,7 @@ function CreateEventTab({ hostId, hostName }: { hostId: string; hostName: string
         description: `"${evt.title}" is pending admin review.`,
       });
       qc.invalidateQueries({ queryKey: ["host", "events", hostId] });
+      setLocationLabel(null);
       setForm((f) => ({
         ...f,
         title: "",
@@ -471,6 +513,8 @@ function CreateEventTab({ hostId, hostName }: { hostId: string; hostName: string
         endsAt: "",
         description: "",
         lineup: "",
+        latitude: 0,
+        longitude: 0,
       }));
     },
     onError: (err) => {
@@ -487,6 +531,10 @@ function CreateEventTab({ hostId, hostName }: { hostId: string; hostName: string
     e.preventDefault();
     if (!form.title.trim() || !form.venue.trim() || !form.startsAt) {
       toast.error("Fill in title, venue, and start time.");
+      return;
+    }
+    if (!form.latitude || !form.longitude) {
+      toast.error("Pin the venue location using GPS before submitting.");
       return;
     }
     mutation.mutate(form);
@@ -557,6 +605,47 @@ function CreateEventTab({ hostId, hostName }: { hostId: string; hostName: string
             placeholder="Lower Parel, Mumbai"
             className="glass-input h-11"
           />
+        </div>
+
+        {/* GPS location — mandatory */}
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Venue location <span className="text-destructive">*</span>
+          </Label>
+          <button
+            type="button"
+            onClick={pinVenueLocation}
+            disabled={gpsLoading}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-xl border px-4 h-11 text-sm font-sans font-medium transition-all",
+              locationLabel
+                ? "border-primary/50 bg-primary/5 text-primary"
+                : "border-border bg-transparent text-muted-foreground hover:border-primary/30 hover:text-foreground"
+            )}
+          >
+            {gpsLoading ? (
+              <Loader2 className="size-4 animate-spin shrink-0" />
+            ) : locationLabel ? (
+              <CheckCircle className="size-4 shrink-0 text-primary" />
+            ) : (
+              <Navigation className="size-4 shrink-0" />
+            )}
+            <span className="truncate">
+              {gpsLoading
+                ? "Detecting location…"
+                : locationLabel
+                ? locationLabel
+                : "Pin venue location using GPS"}
+            </span>
+            {!locationLabel && !gpsLoading && (
+              <MapPin className="size-4 shrink-0 ml-auto opacity-50" />
+            )}
+          </button>
+          {!locationLabel && (
+            <p className="text-[11px] text-muted-foreground">
+              Required — used to show this event in nearby discovery.
+            </p>
+          )}
         </div>
 
         <div className="space-y-1.5">

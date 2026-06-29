@@ -666,6 +666,8 @@ export interface EventCreateInput {
   description: string;
   lineup?: string;
   visibility: ProposedEvent["visibility"];
+  latitude: number;
+  longitude: number;
 }
 
 // Maps backend event field names to frontend ProposedEvent field names
@@ -949,6 +951,8 @@ export const eventsApi = {
         : [],
       coverImage: "",
       visibility: toBackendVisibility(input.visibility),
+      latitude: input.latitude,
+      longitude: input.longitude,
     };
     return http<any>("/api/events", {
       method: "POST",
