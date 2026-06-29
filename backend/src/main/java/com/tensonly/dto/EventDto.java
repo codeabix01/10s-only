@@ -207,7 +207,10 @@ public class EventDto {
         private List<String> lineup;
         private String coverImage;
         private EventVisibility visibility;
+        @NotNull
         private Double latitude;
+
+        @NotNull
         private Double longitude;
 
         public String getTitle() { return title; }
