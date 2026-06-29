@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion, type Variants } from "framer-motion";
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 export function AmbientBackground() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoBlocked, setVideoBlocked] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -17,18 +18,11 @@ export function AmbientBackground() {
     video.setAttribute("webkit-playsinline", "");
     video.muted = true;
 
-    const tryPlay = () => video.play().catch(() => {});
-
-    tryPlay();
-
-    // iOS Safari blocks autoplay until a user gesture — play on first touch
-    document.addEventListener("touchstart", tryPlay, { once: true });
-    document.addEventListener("click", tryPlay, { once: true });
-
-    return () => {
-      document.removeEventListener("touchstart", tryPlay);
-      document.removeEventListener("click", tryPlay);
-    };
+    video.play().catch(() => {
+      // Low Power Mode or strict autoplay policy — hide video so the ugly
+      // play-button overlay doesn't sit on top of content; poster image shows.
+      setVideoBlocked(true);
+    });
   }, []);
 
   return (
@@ -36,7 +30,12 @@ export function AmbientBackground() {
       aria-hidden
       className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
     >
-      {/* Party video backdrop */}
+      {/* Static fallback shown when video autoplay is blocked (e.g. iOS Low Power Mode) */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/hero-bg.jpg')" }}
+      />
+      {/* Party video backdrop — hidden if autoplay is blocked */}
       <video
         ref={videoRef}
         autoPlay
@@ -44,8 +43,8 @@ export function AmbientBackground() {
         loop
         playsInline
         preload="auto"
-        className="absolute inset-0 h-full w-full object-cover"
-        poster="/hero-bg.jpg"
+        className="absolute inset-0 h-full w-full object-cover transition-opacity duration-700"
+        style={{ opacity: videoBlocked ? 0 : 1, pointerEvents: "none" }}
       >
         <source src="/party-bg.mp4" type="video/mp4" />
       </video>
