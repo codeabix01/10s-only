@@ -2,6 +2,7 @@ package com.tensonly.entity;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -55,6 +56,8 @@ public class Event {
     private String hostId;
 
     private String hostName;
+
+    private GeoJsonPoint location;
 
     @CreatedDate
     private Instant createdAt;
@@ -124,6 +127,9 @@ public class Event {
 
     public String getHostName() { return hostName; }
     public void setHostName(String hostName) { this.hostName = hostName; }
+
+    public GeoJsonPoint getLocation() { return location; }
+    public void setLocation(GeoJsonPoint location) { this.location = location; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

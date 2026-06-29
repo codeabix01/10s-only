@@ -109,6 +109,9 @@ export interface ProposedEvent {
   createdAt: string;
   ticketsSold: number;
   rejectionReason?: string;
+  distanceKm?: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 // ---------------------------------------------------------------------------

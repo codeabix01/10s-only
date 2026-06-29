@@ -35,6 +35,14 @@ public class EventController {
         return ResponseEntity.ok(eventService.pending());
     }
 
+    @GetMapping("/nearby")
+    public ResponseEntity<List<EventDto>> nearby(
+            @RequestParam double lat,
+            @RequestParam double lng,
+            @RequestParam(defaultValue = "25") double radius) {
+        return ResponseEntity.ok(eventService.nearby(lat, lng, radius));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<EventDto> get(@PathVariable String id) {
         return ResponseEntity.ok(eventService.get(id));
