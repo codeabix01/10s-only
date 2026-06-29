@@ -10,5 +10,7 @@ public enum EventVibe {
     BEACH,
     RETRO,
     EXPERIMENTAL,
-    AFRO
+    AFRO,
+    DRUM_AND_BASS,
+    AMBIENT
 }

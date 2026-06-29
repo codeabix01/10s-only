@@ -13,4 +13,8 @@ public interface ApplicationRepository extends MongoRepository<Application, Stri
     List<Application> findByStatus(ApplicationStatus status);
 
     List<Application> findByStatusOrderByIdDesc(ApplicationStatus status);
+
+    List<Application> findByEmailOrPhoneOrderBySubmittedAtDesc(String emailOrPhone);
+
+    long countByStatus(ApplicationStatus status);
 }

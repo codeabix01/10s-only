@@ -7,6 +7,7 @@ import com.tensonly.entity.EventVisibility;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -32,6 +33,7 @@ public class EventDto {
     private String coverImage;
     private EventVisibility visibility;
     private EventStatus status;
+    private String rejectionReason;
     private String hostId;
     private HostDto host;
     private Instant createdAt;
@@ -59,6 +61,7 @@ public class EventDto {
         dto.coverImage = e.getCoverImage();
         dto.visibility = e.getVisibility();
         dto.status = e.getStatus();
+        dto.rejectionReason = e.getRejectionReason();
         dto.hostId = e.getHostId();
         dto.host = new HostDto(e.getHostId(), e.getHostName());
         dto.createdAt = e.getCreatedAt();
@@ -119,6 +122,9 @@ public class EventDto {
     public EventStatus getStatus() { return status; }
     public void setStatus(EventStatus status) { this.status = status; }
 
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
+
     public String getHostId() { return hostId; }
     public void setHostId(String hostId) { this.hostId = hostId; }
 
@@ -167,7 +173,7 @@ public class EventDto {
         private Instant endAt;
 
         @NotNull
-        @Positive
+        @PositiveOrZero
         private BigDecimal ticketPrice;
 
         @NotNull

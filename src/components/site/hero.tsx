@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EVENTS, CITY_LABELS, VIBE_LABELS } from "@/lib/mock-data";
 import { getSafeEventCover } from "@/lib/event-covers";
+import { useLoginModal } from "./site-layout";
 
 const HERO_STATS = [
   { label: "Members", value: "2,876", icon: Users2 },
@@ -148,6 +149,8 @@ function UpcomingNights() {
 
 export function Hero({ onLoginClick }: { onLoginClick?: () => void }) {
   const router = useRouter();
+  const openLogin = useLoginModal();
+  const handleSignIn = onLoginClick ?? openLogin;
 
   return (
     <section className="relative z-10 mx-auto w-full px-6 pt-16 pb-20 sm:px-8 lg:px-12">
@@ -215,7 +218,7 @@ export function Hero({ onLoginClick }: { onLoginClick?: () => void }) {
                 <button
                   type="button"
                   className="text-primary font-semibold hover:underline underline-offset-4 transition-colors"
-                  onClick={onLoginClick}
+                  onClick={handleSignIn}
                 >
                   Sign in
                 </button>

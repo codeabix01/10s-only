@@ -33,6 +33,11 @@ public class ApplicationController {
         return ResponseEntity.ok(applicationService.list(status));
     }
 
+    @GetMapping("/mine")
+    public ResponseEntity<ApplicationDto> mine() {
+        return ResponseEntity.ok(applicationService.mine(securityUtil.currentUserEmail()));
+    }
+
     @PostMapping("/{id}/review")
     public ResponseEntity<ApplicationDto> review(
             @PathVariable String id,

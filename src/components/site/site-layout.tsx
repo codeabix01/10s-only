@@ -1,10 +1,23 @@
 "use client";
 
-import { useState, useCallback, type ReactNode } from "react";
+import {
+  useState,
+  useCallback,
+  createContext,
+  useContext,
+  type ReactNode,
+} from "react";
 import { AmbientBackground } from "./ambient";
 import { Navbar } from "./navbar";
 import { Footer } from "./footer";
 import { LoginModal } from "@/components/auth/login-modal";
+
+// Lets any descendant (Hero, CTAs, etc.) open the shared login modal owned by
+// SiteLayout — not just the Navbar that receives it as a prop.
+const LoginModalContext = createContext<() => void>(() => {});
+export function useLoginModal() {
+  return useContext(LoginModalContext);
+}
 
 interface SiteLayoutProps {
   children: ReactNode;
@@ -24,14 +37,16 @@ export function SiteLayout({
   const closeLogin = useCallback(() => setLoginOpen(false), []);
 
   return (
-    <div className="relative flex min-h-screen flex-col">
-      <AmbientBackground />
-      <Navbar onLoginClick={openLogin} />
-      <main className="relative z-10 flex-1">{children}</main>
-      {showFooter ? <Footer /> : null}
-      {showLoginModal ? (
-        <LoginModal open={loginOpen} onOpenChange={setLoginOpen} onClose={closeLogin} />
-      ) : null}
-    </div>
+    <LoginModalContext.Provider value={openLogin}>
+      <div className="relative flex min-h-screen flex-col">
+        <AmbientBackground />
+        <Navbar onLoginClick={openLogin} />
+        <main className="relative z-10 flex-1">{children}</main>
+        {showFooter ? <Footer /> : null}
+        {showLoginModal ? (
+          <LoginModal open={loginOpen} onOpenChange={setLoginOpen} onClose={closeLogin} />
+        ) : null}
+      </div>
+    </LoginModalContext.Provider>
   );
 }

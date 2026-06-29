@@ -1,4 +1,7 @@
 spring:
+  jackson:
+    mapper:
+      accept-case-insensitive-enums: true
   data:
     mongodb:
       uri: "${MONGODB_URI:mongodb://localhost:27017/tensonly?retryWrites=true&w=majority&connectTimeoutMS=10000&socketTimeoutMS=30000&serverSelectionTimeoutMS=10000}"

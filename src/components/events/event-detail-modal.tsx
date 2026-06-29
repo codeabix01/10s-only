@@ -58,15 +58,13 @@ function MetaCell({
   );
 }
 
-function ConfessionWall({ vibe }: { vibe: ProposedEvent["vibe"] }) {
+function ConfessionWall({ event }: { event: ProposedEvent }) {
   const { data, isLoading } = useQuery({
-    queryKey: ["confessions", vibe],
-    queryFn: () => confessionsApi.list(),
+    queryKey: ["confessions", event.id],
+    queryFn: () => confessionsApi.list(event.id, event.vibe, event.city),
   });
 
-  const confessions: ConfessionView[] = (data ?? []).filter(
-    (c) => c.vibe === vibe
-  );
+  const confessions: ConfessionView[] = data ?? [];
 
   if (isLoading) {
     return (
@@ -338,7 +336,7 @@ export function EventDetailModal({
                 <h3 className="mb-2 font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                   Wall · anonymous confessions
                 </h3>
-                <ConfessionWall vibe={event.vibe} />
+                <ConfessionWall event={event} />
               </div>
             </div>
           </ScrollArea>
