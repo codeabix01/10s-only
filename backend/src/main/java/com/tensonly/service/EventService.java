@@ -19,9 +19,20 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class EventService {
+
+    // Center coordinates [lng, lat] for each city slug the frontend uses
+    public static final Map<String, double[]> CITY_COORDS = Map.of(
+        "mumbai",    new double[]{72.8777, 19.0760},
+        "delhi",     new double[]{77.2090, 28.6139},
+        "bangalore", new double[]{77.5946, 12.9716},
+        "goa",       new double[]{74.1240, 15.2993},
+        "pune",      new double[]{73.8567, 18.5204},
+        "hyderabad", new double[]{78.4867, 17.3850}
+    );
 
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
@@ -90,9 +101,7 @@ public class EventService {
         event.setLineup(request.getLineup());
         event.setCoverImage(request.getCoverImage());
         event.setVisibility(request.getVisibility() != null ? request.getVisibility() : com.tensonly.entity.EventVisibility.MEMBERS_ONLY);
-        if (request.getLatitude() != null && request.getLongitude() != null) {
-            event.setLocation(new GeoJsonPoint(request.getLongitude(), request.getLatitude()));
-        }
+        event.setLocation(resolveLocation(request.getLongitude(), request.getLatitude(), request.getCity()));
         // New events always start as DRAFT for admin approval
         event.setStatus(EventStatus.DRAFT);
         event.setHostId(host.getId());
@@ -143,6 +152,16 @@ public class EventService {
                 .stream()
                 .map(EventDto::from)
                 .toList();
+    }
+
+    /** Returns explicit coords if provided, otherwise falls back to the city centre. */
+    public static GeoJsonPoint resolveLocation(Double lng, Double lat, String city) {
+        if (lng != null && lat != null) return new GeoJsonPoint(lng, lat);
+        if (city != null) {
+            double[] coords = CITY_COORDS.get(city.trim().toLowerCase());
+            if (coords != null) return new GeoJsonPoint(coords[0], coords[1]);
+        }
+        return null;
     }
 
     public Event incrementTicketsSold(String eventId, int by, BigDecimal revenueAddition) {

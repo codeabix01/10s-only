@@ -38,15 +38,18 @@ interface PaymentModalProps {
 
 type Stage = "summary" | "creating" | "checkout" | "verifying" | "success" | "error";
 
-const PLATFORM_FEE_RATE = 0.02; // 2%
-const GST_RATE = 0.009; // 0.9%
+const RAZORPAY_FEE_RATE = 0.02;  // 2%
+const TENSONLY_FEE_RATE = 0.01;  // 1%
+const GST_RATE = 0.18;           // 18% on platform fees only
 
 function computeTotals(price: number) {
-  const platformFee = Math.round(price * PLATFORM_FEE_RATE);
-  const taxable = price + platformFee;
-  const gst = Math.round(taxable * GST_RATE);
-  const total = price + platformFee + gst;
-  return { platformFee, gst, total };
+  const razorpayFee = Math.round(price * RAZORPAY_FEE_RATE * 100) / 100;
+  const tensonlyFee = Math.round(price * TENSONLY_FEE_RATE * 100) / 100;
+  const totalFees   = razorpayFee + tensonlyFee;
+  const gst         = Math.round(totalFees * GST_RATE * 100) / 100;
+  const totalDeduction = totalFees + gst;
+  const total = Math.round((price + totalDeduction) * 100) / 100;
+  return { razorpayFee, tensonlyFee, totalFees, gst, totalDeduction, total };
 }
 
 export function PaymentModal({ event, onClose, onSuccess }: PaymentModalProps) {
@@ -327,15 +330,25 @@ export function PaymentModal({ event, onClose, onSuccess }: PaymentModalProps) {
 
                     {/* Price breakdown */}
                     <div className="border border-border bg-card/50 rounded-xl p-4">
-                      <Row label="Ticket" value={`₹${event.price.toLocaleString("en-IN")}`} />
+                      <Row label="Ticket price" value={`₹${event.price.toLocaleString("en-IN")}`} />
                       <Row
-                        label="Platform fee (2%)"
-                        value={`₹${totals.platformFee.toLocaleString("en-IN")}`}
+                        label="Razorpay fee (2%)"
+                        value={`₹${totals.razorpayFee.toLocaleString("en-IN")}`}
                         muted
                       />
                       <Row
-                        label="GST (0.9%)"
+                        label="10s Only fee (1%)"
+                        value={`₹${totals.tensonlyFee.toLocaleString("en-IN")}`}
+                        muted
+                      />
+                      <Row
+                        label={`GST (18% on ₹${totals.totalFees.toLocaleString("en-IN")})`}
                         value={`₹${totals.gst.toLocaleString("en-IN")}`}
+                        muted
+                      />
+                      <Row
+                        label="Total deduction"
+                        value={`₹${totals.totalDeduction.toLocaleString("en-IN")}`}
                         muted
                       />
                       <Separator className="my-3 bg-white/10" />
