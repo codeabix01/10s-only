@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import org.springframework.data.geo.GeoResult;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -37,6 +38,9 @@ public class EventDto {
     private String hostId;
     private HostDto host;
     private Instant createdAt;
+    private Double distanceKm;
+    private Double latitude;
+    private Double longitude;
 
     public EventDto() {
     }
@@ -65,6 +69,16 @@ public class EventDto {
         dto.hostId = e.getHostId();
         dto.host = new HostDto(e.getHostId(), e.getHostName());
         dto.createdAt = e.getCreatedAt();
+        if (e.getLocation() != null) {
+            dto.latitude  = e.getLocation().getY();
+            dto.longitude = e.getLocation().getX();
+        }
+        return dto;
+    }
+
+    public static EventDto from(GeoResult<Event> gr) {
+        EventDto dto = from(gr.getContent());
+        dto.distanceKm = gr.getDistance().getValue();
         return dto;
     }
 
@@ -134,6 +148,15 @@ public class EventDto {
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 
+    public Double getDistanceKm() { return distanceKm; }
+    public void setDistanceKm(Double distanceKm) { this.distanceKm = distanceKm; }
+
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
+
     public static class HostDto {
         private String id;
         private String name;
@@ -184,6 +207,8 @@ public class EventDto {
         private List<String> lineup;
         private String coverImage;
         private EventVisibility visibility;
+        private Double latitude;
+        private Double longitude;
 
         public String getTitle() { return title; }
         public void setTitle(String title) { this.title = title; }
@@ -226,5 +251,11 @@ public class EventDto {
 
         public EventVisibility getVisibility() { return visibility; }
         public void setVisibility(EventVisibility visibility) { this.visibility = visibility; }
+
+        public Double getLatitude() { return latitude; }
+        public void setLatitude(Double latitude) { this.latitude = latitude; }
+
+        public Double getLongitude() { return longitude; }
+        public void setLongitude(Double longitude) { this.longitude = longitude; }
     }
 }

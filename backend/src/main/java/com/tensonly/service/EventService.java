@@ -6,6 +6,12 @@ import com.tensonly.entity.EventStatus;
 import com.tensonly.entity.User;
 import com.tensonly.repository.EventRepository;
 import com.tensonly.repository.UserRepository;
+import org.springframework.data.geo.Metrics;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.NearQuery;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,10 +25,12 @@ public class EventService {
 
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
+    private final MongoTemplate mongoTemplate;
 
-    public EventService(EventRepository eventRepository, UserRepository userRepository) {
+    public EventService(EventRepository eventRepository, UserRepository userRepository, MongoTemplate mongoTemplate) {
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
+        this.mongoTemplate = mongoTemplate;
     }
 
     public List<EventDto> list(String city, String vibe) {
@@ -82,6 +90,9 @@ public class EventService {
         event.setLineup(request.getLineup());
         event.setCoverImage(request.getCoverImage());
         event.setVisibility(request.getVisibility() != null ? request.getVisibility() : com.tensonly.entity.EventVisibility.MEMBERS_ONLY);
+        if (request.getLatitude() != null && request.getLongitude() != null) {
+            event.setLocation(new GeoJsonPoint(request.getLongitude(), request.getLatitude()));
+        }
         // New events always start as DRAFT for admin approval
         event.setStatus(EventStatus.DRAFT);
         event.setHostId(host.getId());
@@ -116,6 +127,22 @@ public class EventService {
         event.setStatus(EventStatus.REJECTED);
         event.setRejectionReason(reason);
         return EventDto.from(eventRepository.save(event));
+    }
+
+    public List<EventDto> nearby(double lat, double lng, double radiusKm) {
+        NearQuery nearQuery = NearQuery
+                .near(lng, lat, Metrics.KILOMETERS)
+                .maxDistance(radiusKm, Metrics.KILOMETERS)
+                .spherical(true)
+                .query(Query.query(
+                        Criteria.where("status").in(EventStatus.LIVE, EventStatus.APPROVED)
+                                .and("location").exists(true)
+                ));
+        return mongoTemplate.geoNear(nearQuery, Event.class)
+                .getContent()
+                .stream()
+                .map(EventDto::from)
+                .toList();
     }
 
     public Event incrementTicketsSold(String eventId, int by, BigDecimal revenueAddition) {

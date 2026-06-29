@@ -695,6 +695,9 @@ function mapEvent(raw: any): ProposedEvent {
     createdAt: raw.createdAt ?? new Date().toISOString(),
     ticketsSold: raw.ticketsSold ?? 0,
     rejectionReason: raw.rejectionReason,
+    distanceKm: raw.distanceKm != null ? Number(raw.distanceKm) : undefined,
+    latitude:   raw.latitude   != null ? Number(raw.latitude)   : undefined,
+    longitude:  raw.longitude  != null ? Number(raw.longitude)  : undefined,
   };
 }
 
@@ -894,6 +897,11 @@ export const eventsApi = {
       return delay(result, 300);
     }
     return http<any[]>("/api/events", { query: filters }).then(arr => arr.map(mapEvent));
+  },
+
+  async nearby(params: { lat: number; lng: number; radius: number }): Promise<ProposedEvent[]> {
+    if (USE_MOCK) return delay(mockEvents.filter((e) => e.status === "live" || e.status === "soldout"), 300);
+    return http<any[]>("/api/events/nearby", { query: params }).then(arr => arr.map(mapEvent));
   },
 
   async get(id: string): Promise<ProposedEvent> {

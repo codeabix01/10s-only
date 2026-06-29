@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
+  Navigation,
+  Search,
+  X,
   CalendarDays,
   Users2,
   Clock,
@@ -12,6 +15,7 @@ import {
   SlidersHorizontal,
   Loader2,
 } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 import { eventsApi } from "@/lib/api-client";
 import { CITY_LABELS, VIBE_LABELS } from "@/lib/mock-data";
 import { getSafeEventCover, getVibeColor } from "@/lib/event-covers";
@@ -20,6 +24,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/site/ambient";
 import { cn } from "@/lib/utils";
+
+interface NominatimResult {
+  display_name: string;
+  lat: string;
+  lon: string;
+}
+
+async function geocodeQuery(q: string): Promise<NominatimResult[]> {
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&addressdetails=0`,
+    { headers: { "Accept-Language": "en" } }
+  );
+  return res.json();
+}
 
 interface EventsSectionProps {
   onSelectEvent?: (event: ProposedEvent) => void;
@@ -206,20 +224,100 @@ export function EventsSection({
 }: EventsSectionProps) {
   const [vibe, setVibe] = useState<EventVibe | "all">("all");
   const [visibility, setVisibility] = useState<"all" | "members" | "public">("all");
+  const [radius, setRadius] = useState(25);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; label: string } | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+
+  // Location search bar state
+  const [searchInput, setSearchInput] = useState("");
+  const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Fetch Nominatim suggestions debounced
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (searchInput.trim().length < 2) { setSuggestions([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      setSuggestionsLoading(true);
+      try {
+        const results = await geocodeQuery(searchInput);
+        setSuggestions(results);
+        setShowSuggestions(true);
+      } catch { setSuggestions([]); }
+      finally { setSuggestionsLoading(false); }
+    }, 350);
+  }, [searchInput]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  function detectGps() {
+    if (!navigator.geolocation) return;
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        // Reverse geocode to get a human-readable label
+        let label = "Current location";
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+            { headers: { "Accept-Language": "en" } }
+          );
+          const data = await res.json();
+          const addr = data.address;
+          label = addr?.suburb ?? addr?.city_district ?? addr?.city ?? addr?.state ?? "Current location";
+        } catch { /* keep default label */ }
+        setUserLocation({ lat, lng, label });
+        setSearchInput(label);
+        setShowSuggestions(false);
+        setGpsLoading(false);
+      },
+      () => setGpsLoading(false)
+    );
+  }
+
+  function selectSuggestion(s: NominatimResult) {
+    const shortLabel = s.display_name.split(",").slice(0, 2).join(", ");
+    setUserLocation({ lat: parseFloat(s.lat), lng: parseFloat(s.lon), label: shortLabel });
+    setSearchInput(shortLabel);
+    setSuggestions([]);
+    setShowSuggestions(false);
+  }
+
+  function clearLocation() {
+    setUserLocation(null);
+    setSearchInput("");
+    setSuggestions([]);
+  }
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["events", "list", vibe],
+    queryKey: userLocation
+      ? ["events", "nearby", userLocation.lat, userLocation.lng, radius]
+      : ["events", "list", vibe],
     queryFn: () =>
-      eventsApi.list({
-        vibe: vibe === "all" ? undefined : vibe,
-      }),
+      userLocation
+        ? eventsApi.nearby({ lat: userLocation.lat, lng: userLocation.lng, radius })
+        : eventsApi.list({ vibe: vibe === "all" ? undefined : vibe }),
   });
 
   const events = useMemo(() => {
     const raw = data ?? [];
-    if (visibility === "all") return raw;
-    return raw.filter((e) => e.visibility === visibility);
-  }, [data, visibility]);
+    const byVisibility = visibility === "all" ? raw : raw.filter((e) => e.visibility === visibility);
+    if (userLocation && vibe !== "all") return byVisibility.filter((e) => e.vibe === vibe);
+    return byVisibility;
+  }, [data, visibility, userLocation, vibe]);
 
   const visibleEvents = preview ? events.slice(0, 3) : events;
 
@@ -244,53 +342,143 @@ export function EventsSection({
           </Reveal>
         )}
 
-      {/* Compact filter bar — only on standalone events page */}
+      {/* Filter bar — only on standalone events page */}
       {!preview ? (
         <Reveal delay={0.05} className="mb-8">
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-border/50">
-            {/* Left: visibility filters */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {VISIBILITY_FILTERS.map((f) => (
+          <div className="flex flex-col gap-5 pb-6 border-b border-border/50">
+
+            {/* ── Location search bar ── */}
+            <div ref={searchRef} className="relative">
+              <div className={cn(
+                "flex items-center gap-2 rounded-xl border bg-card px-4 py-3 transition-colors",
+                showSuggestions ? "border-primary/60" : "border-border hover:border-primary/30"
+              )}>
+                <MapPin className="size-4 shrink-0 text-primary" />
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  placeholder="Search area, city or neighbourhood…"
+                  className="flex-1 bg-transparent text-sm font-sans text-foreground placeholder:text-muted outline-none min-w-0"
+                />
+                {suggestionsLoading && <Loader2 className="size-4 shrink-0 text-muted animate-spin" />}
+                {searchInput && !suggestionsLoading && (
+                  <button type="button" onClick={clearLocation} className="text-muted hover:text-foreground transition-colors">
+                    <X className="size-4" />
+                  </button>
+                )}
+                <div className="h-4 w-px bg-border mx-1 shrink-0" />
                 <button
-                  key={f.value}
                   type="button"
-                  onClick={() => setVisibility(f.value)}
+                  onClick={detectGps}
+                  disabled={gpsLoading}
+                  title="Use my current location"
                   className={cn(
-                    "rounded-full border px-4 py-1.5 text-sm font-sans font-medium tracking-wide transition-all",
-                    visibility === f.value
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-secondary hover:text-foreground hover:border-primary/30"
+                    "flex items-center gap-1.5 shrink-0 text-xs font-sans font-semibold transition-colors",
+                    gpsLoading ? "text-muted" : "text-primary hover:text-primary/80"
                   )}
                 >
-                  {f.label}
+                  {gpsLoading
+                    ? <Loader2 className="size-3.5 animate-spin" />
+                    : <Navigation className="size-3.5" />}
+                  <span className="hidden sm:inline">{gpsLoading ? "Detecting…" : "Use GPS"}</span>
                 </button>
-              ))}
+              </div>
+
+              {/* Suggestions dropdown */}
+              <AnimatePresence>
+                {showSuggestions && suggestions.length > 0 && (
+                  <motion.ul
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute z-50 left-0 right-0 top-full mt-1 rounded-xl border border-border bg-card shadow-xl overflow-hidden"
+                  >
+                    {suggestions.map((s, i) => (
+                      <li key={i}>
+                        <button
+                          type="button"
+                          onMouseDown={() => selectSuggestion(s)}
+                          className="flex items-start gap-3 w-full px-4 py-3 text-left hover:bg-primary/5 transition-colors border-b border-border/50 last:border-0"
+                        >
+                          <Search className="size-3.5 mt-0.5 shrink-0 text-muted" />
+                          <span className="text-sm font-sans text-foreground line-clamp-1">
+                            {s.display_name}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </motion.ul>
+                )}
+              </AnimatePresence>
             </div>
-            {/* Right: vibe filters + filter icon */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {VIBE_QUICK_FILTERS.filter((v) => v.value !== "all").map((v) => (
+
+            {/* ── Distance slider — shown only when a location is set ── */}
+            {userLocation && (
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-sm text-muted font-sans whitespace-nowrap">
+                  Showing parties within{" "}
+                  <span className="text-foreground font-semibold">{radius} km</span>
+                  {" "}of{" "}
+                  <span className="text-primary font-semibold">{userLocation.label}</span>
+                </span>
+                <Slider
+                  min={1}
+                  max={100}
+                  step={1}
+                  value={[radius]}
+                  onValueChange={([v]) => setRadius(v)}
+                  className="w-40 sm:w-56"
+                />
+              </div>
+            )}
+
+            {/* ── Vibe + visibility filter chips ── */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                {VISIBILITY_FILTERS.map((f) => (
+                  <button
+                    key={f.value}
+                    type="button"
+                    onClick={() => setVisibility(f.value)}
+                    className={cn(
+                      "rounded-full border px-4 py-1.5 text-sm font-sans font-medium tracking-wide transition-all",
+                      visibility === f.value
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-secondary hover:text-foreground hover:border-primary/30"
+                    )}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {VIBE_QUICK_FILTERS.filter((v) => v.value !== "all").map((v) => (
+                  <button
+                    key={v.value}
+                    type="button"
+                    onClick={() => setVibe(vibe === v.value ? "all" : v.value)}
+                    className={cn(
+                      "rounded-full border px-4 py-1.5 text-sm font-sans font-medium tracking-wide transition-all",
+                      vibe === v.value
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-secondary hover:text-foreground hover:border-primary/30"
+                    )}
+                  >
+                    {v.label}
+                  </button>
+                ))}
                 <button
-                  key={v.value}
                   type="button"
-                  onClick={() => setVibe(vibe === v.value ? "all" : v.value)}
-                  className={cn(
-                    "rounded-full border px-4 py-1.5 text-sm font-sans font-medium tracking-wide transition-all",
-                    vibe === v.value
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-secondary hover:text-foreground hover:border-primary/30"
-                  )}
+                  onClick={() => { setVibe("all"); setVisibility("all"); clearLocation(); }}
+                  className="flex items-center gap-1.5 rounded-full border border-border px-4 py-1.5 text-sm font-sans font-medium text-secondary hover:text-foreground hover:border-primary/30 transition-all"
                 >
-                  {v.label}
+                  <SlidersHorizontal className="size-3.5" />
+                  Reset
                 </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => { setVibe("all"); setVisibility("all"); }}
-                className="flex items-center gap-1.5 rounded-full border border-border px-4 py-1.5 text-sm font-sans font-medium text-secondary hover:text-foreground hover:border-primary/30 transition-all"
-              >
-                <SlidersHorizontal className="size-3.5" />
-                Filter
-              </button>
+              </div>
             </div>
           </div>
         </Reveal>

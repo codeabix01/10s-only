@@ -51,6 +51,7 @@ public class SecurityConfig {
 
                         // Public endpoints
                         .requestMatchers(HttpMethod.GET, "/api/events").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/events/nearby").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/{id}").permitAll()
                         .requestMatchers("/api/quiz/**").permitAll()
                         .requestMatchers("/api/auth/otp/**").permitAll()
