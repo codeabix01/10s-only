@@ -2,8 +2,10 @@ package com.tensonly.service;
 
 import com.tensonly.dto.UserDto;
 import com.tensonly.config.AppProperties;
+import com.tensonly.entity.ApplicationStatus;
 import com.tensonly.entity.Role;
 import com.tensonly.entity.User;
+import com.tensonly.repository.ApplicationRepository;
 import com.tensonly.repository.UserRepository;
 import com.tensonly.security.JwtService;
 import org.springframework.http.HttpStatus;
@@ -18,17 +20,20 @@ import java.util.Locale;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final ApplicationRepository applicationRepository;
     private final OtpService otpService;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final AppProperties appProperties;
 
     public AuthService(UserRepository userRepository,
+                       ApplicationRepository applicationRepository,
                        OtpService otpService,
                        JwtService jwtService,
                        PasswordEncoder passwordEncoder,
                        AppProperties appProperties) {
         this.userRepository = userRepository;
+        this.applicationRepository = applicationRepository;
         this.otpService = otpService;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
@@ -59,6 +64,10 @@ public class AuthService {
         user.setGender(request.getGender());
         user.setLoyaltyPoints(0);
         user.setAttendedCount(0);
+        // Auto-approve if they already have an approved membership application
+        if (applicationRepository.existsByEmailOrPhoneAndStatus(request.getEmailOrPhone(), ApplicationStatus.APPROVED)) {
+            user.setApproved(true);
+        }
         user = userRepository.save(user);
 
         String token = jwtService.generate(user.getId(), user.getEmailOrPhone(), List.of(user.getRole().name()));
