@@ -14,12 +14,21 @@ export function AmbientBackground() {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    // webkit-playsinline needed for older iOS Safari — React doesn't pass it through JSX
     video.setAttribute("webkit-playsinline", "");
     video.muted = true;
-    video.play().catch(() => {
-      // autoplay blocked (low-power mode, data-saver) — poster image shows instead
-    });
+
+    const tryPlay = () => video.play().catch(() => {});
+
+    tryPlay();
+
+    // iOS Safari blocks autoplay until a user gesture — play on first touch
+    document.addEventListener("touchstart", tryPlay, { once: true });
+    document.addEventListener("click", tryPlay, { once: true });
+
+    return () => {
+      document.removeEventListener("touchstart", tryPlay);
+      document.removeEventListener("click", tryPlay);
+    };
   }, []);
 
   return (
