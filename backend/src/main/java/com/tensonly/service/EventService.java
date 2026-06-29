@@ -28,21 +28,11 @@ public class EventService {
     public List<EventDto> list(String city, String vibe) {
         List<Event> events;
         if (city != null && vibe != null) {
-            try {
-                com.tensonly.entity.EventVibe v = com.tensonly.entity.EventVibe.valueOf(vibe.toUpperCase());
-                events = eventRepository.findByCityAndVibe(city, v);
-            } catch (IllegalArgumentException e) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid vibe: " + vibe);
-            }
+            events = eventRepository.findByCityAndVibe(city, parseVibe(vibe));
         } else if (city != null) {
             events = eventRepository.findByCity(city);
         } else if (vibe != null) {
-            try {
-                com.tensonly.entity.EventVibe v = com.tensonly.entity.EventVibe.valueOf(vibe.toUpperCase());
-                events = eventRepository.findByVibe(v);
-            } catch (IllegalArgumentException e) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid vibe: " + vibe);
-            }
+            events = eventRepository.findByVibe(parseVibe(vibe));
         } else {
             events = eventRepository.findAll();
         }
@@ -51,6 +41,15 @@ public class EventService {
                 .filter(e -> e.getStatus() == EventStatus.LIVE || e.getStatus() == EventStatus.APPROVED)
                 .toList();
         return events.stream().map(EventDto::from).toList();
+    }
+
+    /** Tolerant vibe parser: accepts lowercase and hyphenated forms (e.g. "drum-and-bass"). */
+    private com.tensonly.entity.EventVibe parseVibe(String vibe) {
+        try {
+            return com.tensonly.entity.EventVibe.valueOf(vibe.trim().toUpperCase().replace('-', '_'));
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid vibe: " + vibe);
+        }
     }
 
     public EventDto get(String id) {
@@ -94,6 +93,29 @@ public class EventService {
 
     public List<EventDto> byHost(String hostUserId) {
         return eventRepository.findByHostId(hostUserId).stream().map(EventDto::from).toList();
+    }
+
+    /** Events awaiting admin review. */
+    public List<EventDto> pending() {
+        return eventRepository
+                .findByStatusIn(List.of(EventStatus.DRAFT, EventStatus.PENDING_APPROVAL))
+                .stream()
+                .map(EventDto::from)
+                .toList();
+    }
+
+    public EventDto approve(String id) {
+        Event event = getEntity(id);
+        event.setStatus(EventStatus.LIVE);
+        event.setRejectionReason(null);
+        return EventDto.from(eventRepository.save(event));
+    }
+
+    public EventDto reject(String id, String reason) {
+        Event event = getEntity(id);
+        event.setStatus(EventStatus.REJECTED);
+        event.setRejectionReason(reason);
+        return EventDto.from(eventRepository.save(event));
     }
 
     public Event incrementTicketsSold(String eventId, int by, BigDecimal revenueAddition) {

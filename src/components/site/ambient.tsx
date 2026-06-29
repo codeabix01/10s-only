@@ -14,6 +14,20 @@ export function AmbientBackground() {
       aria-hidden
       className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
     >
+      {/* Nightclub photo backdrop */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/hero-bg.jpg')" }}
+      />
+      {/* Dark wash over the photo so foreground text stays legible */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.72) 35%, rgba(10,10,10,0.88) 100%)",
+        }}
+      />
+
       {/* Three drifting neon blobs */}
       <div
         className="neon-blob animate-blob-1"

@@ -61,6 +61,20 @@ public class ApplicationService {
             .toList();
     }
 
+    /** Latest application submitted by the currently-authenticated user, or null. */
+    public ApplicationDto mine(String emailOrPhone) {
+        if (emailOrPhone == null || emailOrPhone.isBlank()) {
+            return null;
+        }
+        return applicationRepository.findByEmailOrPhoneOrderBySubmittedAtDesc(emailOrPhone).stream()
+                .findFirst()
+                .map(app -> ApplicationDto.from(
+                        app,
+                        userRepository.findByEmailOrPhone(app.getEmailOrPhone()).map(UserDto::from).orElse(null)
+                ))
+                .orElse(null);
+    }
+
     public ApplicationDto review(String applicationId, ApplicationStatus status, String reviewerNotes, String reviewerId) {
         if (applicationId == null || applicationId.isBlank()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Application not found");

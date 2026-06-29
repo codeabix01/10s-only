@@ -44,6 +44,11 @@ public class SecurityConfig {
                         // 🔥 CRITICAL FIX: allow preflight requests
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // Admin event moderation — must precede the public /{id} rule
+                        .requestMatchers(HttpMethod.GET, "/api/events/pending").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/events/*/approve").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/events/*/reject").hasRole("ADMIN")
+
                         // Public endpoints
                         .requestMatchers(HttpMethod.GET, "/api/events").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/{id}").permitAll()

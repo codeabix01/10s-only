@@ -21,5 +21,7 @@ public interface EventRepository extends MongoRepository<Event, String> {
 
     List<Event> findByStatus(EventStatus status);
 
+    List<Event> findByStatusIn(List<EventStatus> statuses);
+
     long countByStatus(EventStatus status);
 }

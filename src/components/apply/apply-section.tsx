@@ -124,8 +124,14 @@ export function ApplySection() {
       setDominantVibe(result.dominantVibe);
 
       const app = await applicationsApi.submit({
-        userId: user?.id ?? "guest",
+        fullName: form.name.trim(),
+        emailOrPhone: (form.email || form.phone).trim(),
+        whyJoin: form.why.trim(),
+        city: form.city,
+        favoriteVibe: result.dominantVibe,
         answers,
+        quizScore: result.vibeAlignment,
+        userId: user?.id,
       });
       setReference(app.id.toUpperCase());
       toast.success("Application submitted", {

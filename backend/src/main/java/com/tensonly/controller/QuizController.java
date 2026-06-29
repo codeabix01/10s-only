@@ -2,10 +2,9 @@ package com.tensonly.controller;
 
 import com.tensonly.entity.EventVibe;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -51,6 +50,74 @@ public class QuizController {
                         .map(v -> Map.of("value", v.name(), "label", prettify(v.name())))
                         .toList()
         );
+    }
+
+    /**
+     * Scores submitted quiz answers. Each answered option maps to a vibe; the
+     * dominant vibe and an alignment percentage are returned.
+     */
+    @PostMapping("/submit")
+    public ResponseEntity<Map<String, Object>> submit(@RequestBody SubmitRequest request) {
+        Map<String, Map<String, String>> lookup = optionVibeLookup();
+        Map<String, Integer> tally = new HashMap<>();
+        int total = 0;
+        if (request != null && request.getAnswers() != null) {
+            for (Answer a : request.getAnswers()) {
+                if (a == null || a.getQuestionId() == null || a.getOptionId() == null) continue;
+                Map<String, String> opts = lookup.get(a.getQuestionId());
+                if (opts == null) continue;
+                String vibe = opts.get(a.getOptionId());
+                if (vibe == null) continue;
+                tally.merge(vibe, 1, Integer::sum);
+                total++;
+            }
+        }
+
+        String dominant = "TECHNO";
+        int max = 0;
+        for (Map.Entry<String, Integer> e : tally.entrySet()) {
+            if (e.getValue() > max) {
+                max = e.getValue();
+                dominant = e.getKey();
+            }
+        }
+        int alignment = total == 0 ? 0 : Math.min(98, (int) Math.round((double) max / total * 100) + 20);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("vibeAlignment", alignment);
+        result.put("dominantVibe", dominant);
+        return ResponseEntity.ok(result);
+    }
+
+    /** questionId -> (optionId -> vibe), mirrors the data returned by /questions. */
+    private Map<String, Map<String, String>> optionVibeLookup() {
+        Map<String, Map<String, String>> lookup = new HashMap<>();
+        for (Map<String, Object> q : questions().getBody()) {
+            String qid = (String) q.get("id");
+            @SuppressWarnings("unchecked")
+            List<Map<String, String>> opts = (List<Map<String, String>>) q.get("options");
+            Map<String, String> byOption = new HashMap<>();
+            for (Map<String, String> o : opts) {
+                byOption.put(o.get("id"), o.get("vibe"));
+            }
+            lookup.put(qid, byOption);
+        }
+        return lookup;
+    }
+
+    public static class SubmitRequest {
+        private List<Answer> answers;
+        public List<Answer> getAnswers() { return answers; }
+        public void setAnswers(List<Answer> answers) { this.answers = answers; }
+    }
+
+    public static class Answer {
+        private String questionId;
+        private String optionId;
+        public String getQuestionId() { return questionId; }
+        public void setQuestionId(String questionId) { this.questionId = questionId; }
+        public String getOptionId() { return optionId; }
+        public void setOptionId(String optionId) { this.optionId = optionId; }
     }
 
     private Map<String, Object> question(String id, String text, List<Map<String, String>> options) {

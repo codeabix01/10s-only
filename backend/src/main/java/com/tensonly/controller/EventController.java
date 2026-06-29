@@ -30,9 +30,28 @@ public class EventController {
         return ResponseEntity.ok(eventService.list(city, vibe));
     }
 
+    @GetMapping("/pending")
+    public ResponseEntity<List<EventDto>> pending() {
+        return ResponseEntity.ok(eventService.pending());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<EventDto> get(@PathVariable String id) {
         return ResponseEntity.ok(eventService.get(id));
+    }
+
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<EventDto> approve(@PathVariable String id) {
+        return ResponseEntity.ok(eventService.approve(id));
+    }
+
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<EventDto> reject(
+            @PathVariable String id,
+            @RequestBody(required = false) java.util.Map<String, String> body
+    ) {
+        String reason = body != null ? body.get("reason") : null;
+        return ResponseEntity.ok(eventService.reject(id, reason));
     }
 
     @GetMapping("/host")

@@ -138,9 +138,53 @@ function normalizeVisibility(value: unknown): ProposedEvent["visibility"] {
   if (typeof value !== "string") return "members";
   const normalized = value.toLowerCase().replace(/_/g, "-");
   if (normalized === "members-only") return "members";
-  if (normalized === "private") return "private";
+  if (normalized === "private" || normalized === "invite-only") return "private";
   if (normalized === "public") return "public";
   return "members";
+}
+
+// --- Request-side converters (frontend value -> backend enum token) ----------
+
+/** "drum-and-bass" -> "DRUM_AND_BASS", "techno" -> "TECHNO". */
+function toBackendVibe(vibe: EventVibe): string {
+  return vibe.toUpperCase().replace(/-/g, "_");
+}
+
+/** Frontend visibility -> backend EventVisibility enum. */
+function toBackendVisibility(v: ProposedEvent["visibility"]): string {
+  if (v === "members") return "MEMBERS_ONLY";
+  if (v === "private") return "INVITE_ONLY";
+  return "PUBLIC";
+}
+
+/** datetime-local / ISO string -> backend Instant (ISO-8601 UTC), or undefined. */
+function toInstant(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+}
+
+/** Backend EventStatus (UPPER, underscored) -> frontend EventStatus. */
+function normalizeEventStatus(value: unknown): ProposedEvent["status"] {
+  if (typeof value !== "string") return "live";
+  switch (value.toLowerCase()) {
+    case "draft":
+    case "pending_approval":
+      return "pending";
+    case "approved":
+    case "live":
+      return "live";
+    case "rejected":
+    case "cancelled":
+      return "cancelled";
+    case "completed":
+      return "ended";
+    case "soldout":
+    case "sold_out":
+      return "soldout";
+    default:
+      return "live";
+  }
 }
 
 function normalizeCity(value: unknown): City {
@@ -217,6 +261,60 @@ function mapSupabaseUser(user: SupabaseAuthUser): User {
   };
 }
 
+/**
+ * Maps a backend UserDto (emailOrPhone / avatarUrl / approved / createdAt, with
+ * UPPERCASE role) onto the frontend `User` shape (email / avatar / verified /
+ * joinedAt / handle, lowercase role). A raw cast leaves verified/email/avatar
+ * undefined, which breaks approval gating and the navbar.
+ */
+function mapBackendUser(raw: any): User {
+  const email =
+    (typeof raw?.email === "string" && raw.email) ||
+    (typeof raw?.emailOrPhone === "string" && raw.emailOrPhone) ||
+    "";
+  const name =
+    (typeof raw?.name === "string" && raw.name) ||
+    (email.includes("@") ? email.split("@")[0] : "") ||
+    "Guest";
+  const roleRaw = typeof raw?.role === "string" ? raw.role.toLowerCase() : "member";
+  const role = (["member", "host", "admin"].includes(roleRaw)
+    ? roleRaw
+    : "member") as User["role"];
+  const handle =
+    (typeof raw?.handle === "string" && raw.handle) ||
+    (name || email)
+      .toLowerCase()
+      .replace(/\s+/g, ".")
+      .replace(/[^a-z0-9._-]/g, "") ||
+    "guest";
+
+  return {
+    id: String(raw?.id ?? ""),
+    name,
+    handle,
+    email,
+    phone: typeof raw?.phone === "string" ? raw.phone : undefined,
+    avatar:
+      (typeof raw?.avatar === "string" && raw.avatar) ||
+      (typeof raw?.avatarUrl === "string" && raw.avatarUrl) ||
+      "",
+    role,
+    city: normalizeCity(raw?.city),
+    bio: typeof raw?.bio === "string" ? raw.bio : undefined,
+    joinedAt:
+      raw?.joinedAt ?? raw?.createdAt ?? new Date().toISOString(),
+    verified: raw?.verified ?? raw?.approved ?? false,
+    vibeAlignment:
+      typeof raw?.vibeAlignment === "number"
+        ? raw.vibeAlignment
+        : typeof raw?.quizScore === "number"
+        ? raw.quizScore
+        : undefined,
+    hostCollective: raw?.hostCollective ?? raw?.crewName ?? undefined,
+    adminTitle: raw?.adminTitle ?? undefined,
+  };
+}
+
 function normalizeIdentifier(input: string): string {
   const trimmed = input.trim();
   if (!trimmed) return trimmed;
@@ -289,7 +387,7 @@ async function verifySupabaseOtp(
         const json = await synced.json();
         return {
           token: json.token,
-          user: normalizeEnums(json.user) as User,
+          user: mapBackendUser(json.user),
         };
       }
     } catch {
@@ -362,7 +460,7 @@ async function syncSupabaseSession(): Promise<{ user: User; token: string } | nu
     const json = await synced.json();
     return {
       token: json.token,
-      user: normalizeEnums(json.user) as User,
+      user: mapBackendUser(json.user),
     };
   }
   return {
@@ -539,6 +637,20 @@ export const authApi = {
 // Events API
 // ---------------------------------------------------------------------------
 
+export interface ApplicationSubmitInput {
+  fullName: string;
+  emailOrPhone: string;
+  whyJoin: string;
+  city?: City;
+  favoriteVibe?: EventVibe;
+  age?: number;
+  occupation?: string;
+  answers?: ApplicationAnswer[];
+  quizScore?: number;
+  /** Only used by the mock branch. */
+  userId?: string;
+}
+
 export interface EventCreateInput {
   hostId: string;
   hostName: string;
@@ -579,7 +691,7 @@ function mapEvent(raw: any): ProposedEvent {
     lineup: Array.isArray(raw.lineup) ? raw.lineup.join(" · ") : (raw.lineup ?? ""),
     cover: resolveCover(raw.coverImage ?? raw.cover ?? "", vibe, title, city),
     visibility: normalizeVisibility(raw.visibility),
-    status: (raw.status?.toLowerCase()?.replace(/_/g, "") ?? "listed") as ProposedEvent["status"],
+    status: normalizeEventStatus(raw.status),
     createdAt: raw.createdAt ?? new Date().toISOString(),
     ticketsSold: raw.ticketsSold ?? 0,
     rejectionReason: raw.rejectionReason,
@@ -669,6 +781,104 @@ function mapHostApplication(raw: any): HostApplication {
   };
 }
 
+// Maps a backend ApplicationDto onto the frontend Application shape.
+function mapApplication(raw: any): Application {
+  let answers: ApplicationAnswer[] = [];
+  if (typeof raw?.quizAnswersJson === "string" && raw.quizAnswersJson.trim()) {
+    try {
+      const parsed = JSON.parse(raw.quizAnswersJson);
+      if (Array.isArray(parsed)) answers = parsed as ApplicationAnswer[];
+    } catch {
+      // ignore malformed quiz payloads
+    }
+  }
+  const user = raw?.user ? mapBackendUser(raw.user) : undefined;
+  return {
+    id: String(raw?.id ?? ""),
+    userId: String(raw?.user?.id ?? raw?.userId ?? ""),
+    user,
+    status: (typeof raw?.status === "string"
+      ? raw.status.toLowerCase()
+      : "pending") as Application["status"],
+    answers,
+    vibeAlignment: toNumber(raw?.vibeAlignment ?? raw?.quizScore, 0),
+    submittedAt: raw?.submittedAt ?? new Date().toISOString(),
+    reviewedAt: raw?.reviewedAt ?? undefined,
+    reviewerNote: raw?.reviewerNote ?? raw?.reviewerNotes ?? undefined,
+  };
+}
+
+// Maps a backend quiz question ({id,text,options:[{id,text,vibe}]}) onto the
+// frontend QuizQuestion shape ({id,prompt,options:[{id,label,vibeWeights}]}).
+function mapQuizQuestion(raw: any): QuizQuestion {
+  const options = Array.isArray(raw?.options)
+    ? raw.options.map((o: any) => ({
+        id: String(o?.id ?? ""),
+        label: o?.label ?? o?.text ?? "",
+        vibeWeights:
+          o?.vibeWeights ??
+          (typeof o?.vibe === "string"
+            ? { [normalizeVibe(o.vibe)]: 1 }
+            : {}),
+      }))
+    : [];
+  return {
+    id: String(raw?.id ?? ""),
+    prompt: raw?.prompt ?? raw?.text ?? "",
+    hint: raw?.hint,
+    options,
+  } as QuizQuestion;
+}
+
+// Backend LedgerType -> frontend ledger category.
+function normalizeLedgerType(value: unknown): LedgerEntry["type"] {
+  if (typeof value !== "string") return "revenue";
+  switch (value.toLowerCase()) {
+    case "ticket_sale":
+      return "revenue";
+    case "refund":
+      return "refund";
+    case "payout":
+      return "payout";
+    default:
+      return "expense";
+  }
+}
+
+function mapLedgerEntry(raw: any): LedgerEntry {
+  return {
+    id: String(raw?.id ?? ""),
+    date: raw?.date ?? raw?.timestamp ?? new Date().toISOString(),
+    description: raw?.description ?? raw?.eventTitle ?? "",
+    type: normalizeLedgerType(raw?.type),
+    amount: toNumber(raw?.amount, 0),
+    eventId: raw?.eventId ?? undefined,
+    reference: raw?.reference ?? raw?.id ?? undefined,
+  };
+}
+
+// Backend ConfessionDto (message/likes, event-scoped) -> frontend ConfessionView.
+function mapConfession(raw: any, vibe: EventVibe, city: City): ConfessionView {
+  return {
+    id: String(raw?.id ?? ""),
+    body: raw?.body ?? raw?.message ?? "",
+    vibe,
+    city,
+    createdAt: raw?.createdAt ?? new Date().toISOString(),
+    hearts: toNumber(raw?.hearts ?? raw?.likes, 0),
+    flagged: Boolean(raw?.flagged ?? false),
+  };
+}
+
+function mapCityStat(raw: any): CityStat {
+  return {
+    city: normalizeCity(raw?.city),
+    events: toNumber(raw?.events, 0),
+    members: toNumber(raw?.members, 0),
+    revenue: toNumber(raw?.revenue, 0),
+  };
+}
+
 export const eventsApi = {
   async list(filters?: {
     city?: City;
@@ -710,17 +920,39 @@ export const eventsApi = {
       mockPendingEvents = [event, ...mockPendingEvents];
       return delay(event, 500);
     }
-    return http<ProposedEvent>("/api/events", {
+    // Translate the frontend form shape into the backend CreateRequest contract.
+    const payload = {
+      title: input.title,
+      vibe: toBackendVibe(input.vibe),
+      city: input.city,
+      venueName: input.venue,
+      venueAddress: input.address,
+      venueCapacity: input.capacity,
+      startAt: toInstant(input.startsAt),
+      endAt: toInstant(input.endsAt),
+      ticketPrice: input.price,
+      totalTickets: input.capacity,
+      description: input.description,
+      lineup: input.lineup
+        ? input.lineup
+            .split(/[·•|,]/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [],
+      coverImage: "",
+      visibility: toBackendVisibility(input.visibility),
+    };
+    return http<any>("/api/events", {
       method: "POST",
-      body: JSON.stringify(input),
-    });
+      body: JSON.stringify(payload),
+    }).then(mapEvent);
   },
 
   async pending(): Promise<ProposedEvent[]> {
     if (USE_MOCK) {
       return delay(mockPendingEvents, 300);
     }
-    return http<ProposedEvent[]>("/api/events/pending");
+    return http<any[]>("/api/events/pending").then((arr) => arr.map(mapEvent));
   },
 
   async approveEvent(id: string): Promise<ProposedEvent> {
@@ -736,7 +968,7 @@ export const eventsApi = {
       mockEvents = [approved, ...mockEvents];
       return delay(approved, 400);
     }
-    return http<ProposedEvent>(`/api/events/${id}/approve`, { method: "POST" });
+    return http<any>(`/api/events/${id}/approve`, { method: "POST" }).then(mapEvent);
   },
 
   async rejectEvent(id: string, reason: string): Promise<ProposedEvent> {
@@ -752,10 +984,10 @@ export const eventsApi = {
       mockPendingEvents[idx] = rejected;
       return delay(rejected, 400);
     }
-    return http<ProposedEvent>(`/api/events/${id}/reject`, {
+    return http<any>(`/api/events/${id}/reject`, {
       method: "POST",
       body: JSON.stringify({ reason }),
-    });
+    }).then(mapEvent);
   },
 
   async byHost(hostId: string): Promise<ProposedEvent[]> {
@@ -766,7 +998,9 @@ export const eventsApi = {
         300
       );
     }
-    return http<ProposedEvent[]>(`/api/events/by-host/${hostId}`);
+    // Backend derives the host from the JWT; hostId is kept only for cache keys.
+    void hostId;
+    return http<any[]>("/api/events/host").then((arr) => arr.map(mapEvent));
   },
 };
 
@@ -775,40 +1009,51 @@ export const eventsApi = {
 // ---------------------------------------------------------------------------
 
 export const applicationsApi = {
-  async submit(input: {
-    userId: string;
-    answers: ApplicationAnswer[];
-  }): Promise<Application> {
+  async submit(input: ApplicationSubmitInput): Promise<Application> {
     if (USE_MOCK) {
       const app: Application = {
         id: uid("app"),
-        userId: input.userId,
+        userId: input.userId ?? "guest",
         user: CURRENT_USER,
         status: "pending",
-        answers: input.answers,
-        vibeAlignment: 80,
+        answers: input.answers ?? [],
+        vibeAlignment: input.quizScore ?? 80,
         submittedAt: new Date().toISOString(),
       };
       mockApplications = [app, ...mockApplications];
       return delay(app, 500);
     }
-    return http<Application>("/api/applications", {
+    // Backend ApplicationDto.SubmitRequest contract.
+    const payload = {
+      fullName: input.fullName,
+      emailOrPhone: input.emailOrPhone,
+      whyJoin: input.whyJoin,
+      city: input.city,
+      favoriteVibe: input.favoriteVibe ? toBackendVibe(input.favoriteVibe) : undefined,
+      age: input.age,
+      occupation: input.occupation,
+      quizAnswersJson: input.answers ? JSON.stringify(input.answers) : undefined,
+      quizScore: input.quizScore,
+    };
+    return http<any>("/api/applications", {
       method: "POST",
-      body: JSON.stringify(input),
-    });
+      body: JSON.stringify(payload),
+    }).then(mapApplication);
   },
 
   async list(): Promise<Application[]> {
     if (USE_MOCK) return delay(mockApplications, 300);
-    return http<Application[]>("/api/applications");
+    return http<any[]>("/api/applications").then((arr) => arr.map(mapApplication));
   },
 
-  async mine(userId: string): Promise<Application | null> {
+  async mine(_userId: string): Promise<Application | null> {
     if (USE_MOCK) {
-      const found = mockApplications.find((a) => a.userId === userId) || null;
+      const found = mockApplications.find((a) => a.userId === _userId) || null;
       return delay(found, 200);
     }
-    return http<Application | null>(`/api/applications/mine/${userId}`);
+    // Backend resolves the application from the authenticated user's token.
+    const raw = await http<any | null>(`/api/applications/mine`);
+    return raw ? mapApplication(raw) : null;
   },
 
   async review(id: string, decision: "approved" | "rejected" | "waitlisted", note?: string): Promise<Application> {
@@ -824,10 +1069,10 @@ export const applicationsApi = {
       mockApplications[idx] = updated;
       return delay(updated, 400);
     }
-    return http<Application>(`/api/applications/${id}/review`, {
+    return http<any>(`/api/applications/${id}/review`, {
       method: "POST",
-      body: JSON.stringify({ decision, note }),
-    });
+      body: JSON.stringify({ status: decision.toUpperCase(), reviewerNotes: note }),
+    }).then(mapApplication);
   },
 };
 
@@ -838,7 +1083,7 @@ export const applicationsApi = {
 export const quizApi = {
   async questions(): Promise<QuizQuestion[]> {
     if (USE_MOCK) return delay(QUIZ_QUESTIONS, 200);
-    return http<QuizQuestion[]>("/api/quiz/questions");
+    return http<any[]>("/api/quiz/questions").then((arr) => arr.map(mapQuizQuestion));
   },
 
   async submit(answers: ApplicationAnswer[]): Promise<{ vibeAlignment: number; dominantVibe: EventVibe }> {
@@ -865,10 +1110,17 @@ export const quizApi = {
       const alignment = Math.min(98, Math.round((max / total) * 100 + 25));
       return delay({ vibeAlignment: alignment, dominantVibe }, 600);
     }
-    return http("/api/quiz/submit", {
-      method: "POST",
-      body: JSON.stringify({ answers }),
-    });
+    const res = await http<{ vibeAlignment: number; dominantVibe: string }>(
+      "/api/quiz/submit",
+      {
+        method: "POST",
+        body: JSON.stringify({ answers }),
+      }
+    );
+    return {
+      vibeAlignment: toNumber(res.vibeAlignment, 0),
+      dominantVibe: normalizeVibe(res.dominantVibe),
+    };
   },
 };
 
@@ -944,12 +1196,13 @@ export const hostApi = {
         300
       );
     }
-    return http<HostVenue[]>(`/api/host/${hostId}/venues`);
+    void hostId;
+    return http<HostVenue[]>(`/api/host/venues`);
   },
 
   async ledger(): Promise<LedgerEntry[]> {
     if (USE_MOCK) return delay(LEDGER, 300);
-    return http<LedgerEntry[]>("/api/host/ledger");
+    return http<any[]>("/api/host/ledger").then((arr) => arr.map(mapLedgerEntry));
   },
 };
 
@@ -1028,7 +1281,7 @@ export const adminApi = {
 
   async cityStats(): Promise<CityStat[]> {
     if (USE_MOCK) return delay(CITY_STATS, 300);
-    return http<CityStat[]>("/api/admin/city-stats");
+    return http<any[]>("/api/admin/city-stats").then((arr) => arr.map(mapCityStat));
   },
 
   async ledger(): Promise<LedgerEntry[]> {
@@ -1047,9 +1300,18 @@ export const adminApi = {
 // ---------------------------------------------------------------------------
 
 export const confessionsApi = {
-  async list(): Promise<ConfessionView[]> {
+  async list(
+    eventId: string,
+    vibe: EventVibe = "techno",
+    city: City = "mumbai"
+  ): Promise<ConfessionView[]> {
     if (USE_MOCK) return delay(CONFESSIONS, 300);
-    return http<ConfessionView[]>("/api/confessions");
+    if (!eventId) return [];
+    // Backend confessions are event-scoped and carry no vibe/city — the caller
+    // supplies the event's vibe/city so the wall can still render those chips.
+    return http<any[]>("/api/confessions", { query: { eventId } }).then((arr) =>
+      arr.map((c) => mapConfession(c, vibe, city))
+    );
   },
 
   async create(input: { body: string; vibe: EventVibe; city: City }): Promise<ConfessionView> {

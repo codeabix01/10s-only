@@ -49,6 +49,8 @@ public class Event {
 
     private EventStatus status;
 
+    private String rejectionReason;
+
     @Indexed
     private String hostId;
 
@@ -113,6 +115,9 @@ public class Event {
 
     public EventStatus getStatus() { return status; }
     public void setStatus(EventStatus status) { this.status = status; }
+
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
 
     public String getHostId() { return hostId; }
     public void setHostId(String hostId) { this.hostId = hostId; }
