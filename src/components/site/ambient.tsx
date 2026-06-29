@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion, type Variants } from "framer-motion";
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -9,6 +9,19 @@ import { cn } from "@/lib/utils";
 // ---------------------------------------------------------------------------
 
 export function AmbientBackground() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    // webkit-playsinline needed for older iOS Safari — React doesn't pass it through JSX
+    video.setAttribute("webkit-playsinline", "");
+    video.muted = true;
+    video.play().catch(() => {
+      // autoplay blocked (low-power mode, data-saver) — poster image shows instead
+    });
+  }, []);
+
   return (
     <div
       aria-hidden
@@ -16,15 +29,16 @@ export function AmbientBackground() {
     >
       {/* Party video backdrop */}
       <video
+        ref={videoRef}
         autoPlay
         muted
         loop
         playsInline
+        preload="auto"
         className="absolute inset-0 h-full w-full object-cover"
         poster="/hero-bg.jpg"
       >
         <source src="/party-bg.mp4" type="video/mp4" />
-        {/* Falls back to the poster image if video can't play */}
       </video>
       {/* Dark wash over the video so foreground text stays legible */}
       <div
