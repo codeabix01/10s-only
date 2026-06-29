@@ -14,17 +14,24 @@ export function AmbientBackground() {
       aria-hidden
       className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
     >
-      {/* Nightclub photo backdrop */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/hero-bg.jpg')" }}
-      />
-      {/* Dark wash over the photo so foreground text stays legible */}
+      {/* Party video backdrop */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 h-full w-full object-cover"
+        poster="/hero-bg.jpg"
+      >
+        <source src="/party-bg.mp4" type="video/mp4" />
+        {/* Falls back to the poster image if video can't play */}
+      </video>
+      {/* Dark wash over the video so foreground text stays legible */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(to bottom, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.72) 35%, rgba(10,10,10,0.88) 100%)",
+            "linear-gradient(to bottom, rgba(10,10,10,0.75) 0%, rgba(10,10,10,0.60) 35%, rgba(10,10,10,0.82) 100%)",
         }}
       />
 
