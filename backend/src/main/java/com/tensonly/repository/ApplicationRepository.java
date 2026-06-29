@@ -19,4 +19,6 @@ public interface ApplicationRepository extends MongoRepository<Application, Stri
     List<Application> findByEmailOrPhoneOrderBySubmittedAtDesc(String emailOrPhone);
 
     long countByStatus(ApplicationStatus status);
+
+    boolean existsByEmailOrPhoneAndStatus(String emailOrPhone, ApplicationStatus status);
 }
