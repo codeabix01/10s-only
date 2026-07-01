@@ -272,27 +272,13 @@ function renderPattern(palette: VibePalette, rng: () => number): string {
   }
 }
 
-function escapeXml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
-function truncateTitle(title: string): string {
-  if (title.length <= 26) return title;
-  return title.slice(0, 24) + "…";
-}
-
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
 /**
  * Generates a deterministic SVG event cover (data URI).
- * Each vibe gets a unique gradient + pattern.
+ * Title + city are used only as RNG seed so each event gets a unique pattern.
  */
 export function getEventCover(
   vibe: EventVibe | string | undefined,
@@ -306,8 +292,6 @@ export function getEventCover(
   const rng = seededRandom(seed);
 
   const patternSvg = renderPattern(palette, rng);
-  const titleText = escapeXml(truncateTitle(title || "Event"));
-  const cityText = escapeXml(String(normalizedCity).toUpperCase());
 
   // Deterministic blob positions
   const blob1X = (rng() * 600).toFixed(1);
@@ -333,10 +317,6 @@ export function getEventCover(
       <stop offset="0%" stop-color="${palette.accent2}" stop-opacity="0.18"/>
       <stop offset="100%" stop-color="${palette.accent2}" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="overlay-${seed}" x1="0%" y1="30%" y2="100%" x2="0%">
-      <stop offset="0%" stop-color="rgba(0,0,0,0.15)"/>
-      <stop offset="100%" stop-color="rgba(0,0,0,0.88)"/>
-    </linearGradient>
   </defs>
 
   <rect width="600" height="320" fill="url(#bg-${seed})"/>
@@ -346,14 +326,6 @@ export function getEventCover(
   <circle cx="${blob2X}" cy="${blob2Y}" r="110" fill="url(#blob-${seed}-2)"/>
 
   <g opacity="0.35">${patternSvg}</g>
-
-  <rect width="600" height="320" fill="url(#overlay-${seed})"/>
-
-  <text x="32" y="270" font-family="'Cormorant Garamond', Georgia, serif"
-    font-size="32" font-weight="700" fill="#F5F1E8" letter-spacing="-0.5">${titleText}</text>
-
-  <text x="32" y="298" font-family="'Inter', system-ui, sans-serif"
-    font-size="11" font-weight="500" fill="${palette.accent}" letter-spacing="3" opacity="0.9">${cityText} · ${(vibe ?? "").toUpperCase()}</text>
 </svg>`;
 
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;

@@ -2,16 +2,14 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { Lock } from "lucide-react";
 import { SiteLayout } from "@/components/site/site-layout";
-import { Hero } from "@/components/site/hero";
 import { Manifesto } from "@/components/site/manifesto";
 import { HostsSection } from "@/components/site/hosts-section";
 import { EventsSection } from "@/components/events/events-section";
 import { EventDetailModal } from "@/components/events/event-detail-modal";
 import { PaymentModal } from "@/components/payment/payment-modal";
-import { Button } from "@/components/ui/button";
-import { Reveal } from "@/components/site/ambient";
+import { Badge } from "@/components/ui/badge";
 import type { ProposedEvent, Ticket } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -35,25 +33,30 @@ export default function HomePage() {
 
   return (
     <SiteLayout>
-      <Hero />
+      {/* Compact action header */}
+      <section className="relative z-10 mx-auto w-full px-6 pt-10 pb-8 sm:px-8 lg:px-12">
+        <div className="mx-auto max-w-container">
+          <Badge
+            variant="outline"
+            className="mb-3 border-primary/40 bg-primary/8 px-3 py-1 text-primary font-sans font-semibold uppercase tracking-[0.18em] text-[10px] w-fit gap-1.5"
+          >
+            <Lock className="size-2.5" />
+            Members Only · Underground
+          </Badge>
+          <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-foreground leading-tight">
+            Find your next night.
+          </h1>
+          <p className="mt-1.5 text-sm text-secondary font-sans">
+            Vetted underground parties across India — techno, house, ambient &amp; more.
+          </p>
+        </div>
+      </section>
 
+      {/* Events — full discovery experience, right on the homepage */}
       <EventsSection
-        preview
         onSelectEvent={openDetail}
         onApplyToJoin={() => router.push("/apply")}
       />
-
-      <Reveal className="mx-auto -mt-4 mb-8 flex w-full max-w-7xl justify-center px-4">
-        <Button
-          size="lg"
-          variant="outline"
-          className="gap-2 rounded-xl border-border bg-white/5 px-6 text-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
-          onClick={() => router.push("/events")}
-        >
-          View all events
-          <ArrowRight className="size-4" />
-        </Button>
-      </Reveal>
 
       <Manifesto />
       <HostsSection />
