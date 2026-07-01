@@ -21,8 +21,7 @@ interface NavLink {
 }
 
 const PRIMARY_LINKS: NavLink[] = [
-  { label: "Events", href: "/events" },
-  { label: "Apply", href: "/apply" },
+  { label: "Become a Host", href: "/become-host" },
   { label: "Hosts", href: "/#hosts" },
   { label: "Manifesto", href: "/#manifesto" },
 ];

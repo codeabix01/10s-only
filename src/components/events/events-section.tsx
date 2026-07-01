@@ -100,116 +100,90 @@ function EventCard({
     <motion.button
       type="button"
       onClick={() => onSelect?.(event)}
-      whileHover={{ y: -8 }}
-      transition={{ type: "spring", stiffness: 250, damping: 30 }}
-      className="group relative block w-full h-[480px] overflow-hidden rounded-2xl border border-border bg-card text-left shadow-lg hover:shadow-2xl transition-all duration-300"
+      whileHover={{ y: -4 }}
+      transition={{ type: "spring", stiffness: 280, damping: 32 }}
+      className="group relative block w-full overflow-hidden rounded-xl border border-border bg-card text-left shadow-md hover:shadow-xl hover:border-primary/30 transition-all duration-300"
     >
-      {/* Cover - 65% of card height */}
-      <div className="relative overflow-hidden h-[312px]">
+      {/* Cover image */}
+      <div className="relative overflow-hidden h-[190px]">
         <img
           src={cover}
           alt={event.cover ? `${event.title} cover` : event.title}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent" />
 
-        {/* Top row badges */}
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4">
+        {/* Top badges */}
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3">
           <Badge
-            className="border-none text-foreground font-sans font-semibold text-xs"
-            style={{
-              background: `${accent}25`,
-              color: accent,
-            }}
+            className="border-none font-sans font-semibold text-[10px] px-2 py-0.5"
+            style={{ background: `${accent}30`, color: accent }}
           >
             {VIBE_LABELS[event.vibe] ?? VIBE_LABELS.techno}
           </Badge>
           {soldOut ? (
-            <Badge className="border border-destructive/50 bg-destructive/15 text-destructive font-sans font-semibold text-xs">
+            <Badge className="border border-destructive/50 bg-destructive/15 text-destructive font-sans font-semibold text-[10px] px-2 py-0.5">
               Sold out
             </Badge>
           ) : event.visibility === "members" ? (
-            <Badge className="border border-primary/40 bg-primary/15 text-primary font-sans font-semibold text-xs">
+            <Badge className="border border-primary/40 bg-primary/15 text-primary font-sans font-semibold text-[10px] px-2 py-0.5">
               Members
             </Badge>
           ) : event.visibility === "private" ? (
-            <Badge className="border border-muted/50 bg-muted/15 text-muted font-sans font-semibold text-xs">
+            <Badge className="border border-muted/50 bg-muted/15 text-muted font-sans font-semibold text-[10px] px-2 py-0.5">
               Private
             </Badge>
           ) : (
-            <Badge className="border border-border bg-background/80 text-foreground/80 backdrop-blur font-sans font-semibold text-xs">
+            <Badge className="border border-border bg-background/80 text-foreground/80 backdrop-blur font-sans font-semibold text-[10px] px-2 py-0.5">
               Public
             </Badge>
           )}
         </div>
 
-        {/* Bottom meta on cover */}
-        <div className="absolute inset-x-0 bottom-0 p-5">
-          <p className="font-display text-3xl font-bold leading-tight text-foreground drop-shadow tracking-tight">
+        {/* Title + quick meta overlaid on image */}
+        <div className="absolute inset-x-0 bottom-0 p-3">
+          <p className="font-display text-base font-bold leading-snug text-foreground drop-shadow tracking-tight line-clamp-2">
             {event.title}
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-foreground/85 font-sans font-normal">
-            <span className="inline-flex items-center gap-1.5">
-              <MapPin className="size-4" />
+          <div className="mt-1.5 flex items-center gap-x-3 text-[11px] text-foreground/80 font-sans">
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="size-3 shrink-0" />
               {CITY_LABELS[event.city]}
             </span>
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarDays className="size-4" />
+            <span className="inline-flex items-center gap-1">
+              <CalendarDays className="size-3 shrink-0" />
               {formatEventDate(event.startsAt)}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Body - 35% of card height */}
-      <div className="p-5 border-t border-border flex flex-col justify-between h-[168px]">
-        <div>
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div className="min-w-0">
-              <p className="truncate text-xs text-muted font-sans font-normal">
-                {event.venue} · {event.hostName}
-              </p>
-              <p className="mt-1.5 inline-flex items-center gap-1 text-xs text-muted font-sans font-normal">
-                <Clock className="size-3.5" />
-                {formatEventTime(event.startsAt)}
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="font-display text-2xl font-bold text-primary tracking-tight">
-                ₹{event.price.toLocaleString("en-IN")}
-              </div>
-              <div className="text-xs uppercase tracking-widest text-muted font-sans font-normal">
-                per ticket
-              </div>
-            </div>
+      {/* Compact footer strip */}
+      <div className="px-3 py-2.5 border-t border-border flex items-center justify-between gap-3">
+        {/* Price + time */}
+        <div className="min-w-0">
+          <div className="font-display text-lg font-bold text-primary leading-none tracking-tight">
+            ₹{event.price.toLocaleString("en-IN")}
           </div>
-
-          {/* Capacity bar */}
-          <div className="mt-4">
-            <div className="flex items-center justify-between text-xs text-muted font-sans font-normal mb-2">
-              <span className="inline-flex items-center gap-1">
-                <Users2 className="size-4" />
-                {event.ticketsSold}/{event.capacity} in
-              </span>
-              <span className="font-semibold">{pct}% full</span>
-            </div>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-border">
-              <div
-                className="h-full rounded-full transition-all duration-300"
-                style={{
-                  width: `${pct}%`,
-                  background: accent,
-                }}
-              />
-            </div>
+          <div className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-muted font-sans">
+            <Clock className="size-3 shrink-0" />
+            {formatEventTime(event.startsAt)}
           </div>
         </div>
 
-        {/* CTA Footer */}
-        <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-          <span className="text-xs text-muted font-sans font-semibold">View details</span>
-          <span className="grid size-9 place-items-center rounded-full border border-primary/30 bg-primary/10 text-primary transition-all duration-200 group-hover:border-primary/60 group-hover:bg-primary/20">
-            <ArrowUpRight className="size-4" />
+        {/* Capacity bar + CTA */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div className="text-right">
+            <div className="text-[10px] text-muted font-sans font-medium">{pct}% full</div>
+            <div className="mt-1 h-1.5 w-14 overflow-hidden rounded-full bg-border">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${pct}%`, background: accent }}
+              />
+            </div>
+          </div>
+          <span className="grid size-8 place-items-center rounded-full border border-primary/30 bg-primary/10 text-primary transition-all duration-200 group-hover:border-primary/60 group-hover:bg-primary/20 shrink-0">
+            <ArrowUpRight className="size-3.5" />
           </span>
         </div>
       </div>
@@ -325,8 +299,8 @@ export function EventsSection({
     <section
       id="events"
       className={cn(
-        "relative z-10 mx-auto w-full px-6 sm:px-8 lg:px-12",
-        preview ? "py-16 sm:py-20" : "py-12 sm:py-16"
+        "relative z-10 mx-auto w-full px-6 sm:px-8 lg:px-12 border-t border-border/30",
+        preview ? "py-16 sm:py-20" : "pt-6 pb-12 sm:pb-16"
       )}
     >
       <div className="mx-auto max-w-container">
@@ -342,7 +316,7 @@ export function EventsSection({
           </Reveal>
         )}
 
-      {/* Filter bar — only on standalone events page */}
+      {/* Filter bar */}
       {!preview ? (
         <Reveal delay={0.05} className="mb-8">
           <div className="flex flex-col gap-5 pb-6 border-b border-border/50">
@@ -417,20 +391,22 @@ export function EventsSection({
 
             {/* ── Distance slider — shown only when a location is set ── */}
             {userLocation && (
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-sm text-muted font-sans whitespace-nowrap">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap">
+                <p className="min-w-0 text-sm text-muted font-sans">
                   Showing parties within{" "}
                   <span className="text-foreground font-semibold">{radius} km</span>
                   {" "}of{" "}
-                  <span className="text-primary font-semibold">{userLocation.label}</span>
-                </span>
+                  <span className="inline-block max-w-[160px] sm:max-w-[220px] truncate align-bottom text-primary font-semibold">
+                    {userLocation.label}
+                  </span>
+                </p>
                 <Slider
                   min={1}
                   max={100}
                   step={1}
                   value={[radius]}
                   onValueChange={([v]) => setRadius(v)}
-                  className="w-40 sm:w-56"
+                  className="w-full sm:w-56"
                 />
               </div>
             )}
@@ -512,12 +488,7 @@ export function EventsSection({
           ) : null}
         </div>
       ) : (
-        <div
-          className={cn(
-            "grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3",
-            preview ? "lg:grid-cols-3" : "lg:grid-cols-3"
-          )}
-        >
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {visibleEvents.map((e, i) => (
             <Reveal key={e.id} delay={(i % 3) * 0.08}>
               <EventCard event={e} onSelect={onSelectEvent} />
